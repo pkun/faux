@@ -26,28 +26,5 @@ EXTRA_DIST = \
 	faux/Makefile.am \
 	testc/Makefile.am
 
-#	bin/module.am \
-#	clish/module.am \
-#	tinyrl/module.am \
-#	konf/module.am \
-#	plugins/module.am \
-#	libc/module.am \
-#	doc/module.am \
-#	contrib \
-#	xml-examples \
-#	debian \
-#	clish.xsd \
-#	LICENCE \
-#	README \
-#	CHANGES \
-#	ISSUES
-
 include $(top_srcdir)/faux/Makefile.am
 include $(top_srcdir)/testc/Makefile.am
-#include $(top_srcdir)/tinyrl/module.am
-#include $(top_srcdir)/konf/module.am
-#include $(top_srcdir)/clish/module.am
-#include $(top_srcdir)/bin/module.am
-#include $(top_srcdir)/plugins/module.am
-#include $(top_srcdir)/libc/module.am
-#include $(top_srcdir)/doc/module.am

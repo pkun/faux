@@ -23,7 +23,6 @@
 /config.h.in
 /aclocal.m4
 /Makefile.in
-/clish/plugin_builtin.c
 /*.patch
 
 # Debian files
@@ -31,24 +30,21 @@
 /debian/*.log
 /debian/tmp
 /debian/*substvars
-/debian/klish
-/debian/klish-dev
+/debian/faux
+/debian/faux-dev
 /debian/files
 
 # Binaries
-/bin/clish
-/bin/konf
-/bin/konfd
-/bin/sigexec
 /testc/testc
 
 # Docs
-/doc/*.html
-/doc/*.pdf
-/doc/*.tex
-/doc/*.fpr
-/doc/*.log
+/docs/*.html
+/docs/*.pdf
+/docs/*.tex
+/docs/*.fpr
+/docs/*.log
 
 /cov-int
-/klish-*.tar*
+/faux-*.tar*
 /*.tgz
+/*.xz
