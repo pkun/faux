@@ -96,12 +96,6 @@ int main(int argc, char *argv[]) {
 
 		printf("--------------------------------------------------------------------------------\n");
 
-		if (access(so, R_OK) < 0) {
-			fprintf(stderr, "Error: Can't read module \"%s\"... Skipped\n", so);
-			total_errors++;
-			continue;
-		}
-
 		so_handle = dlopen(so, RTLD_LAZY | RTLD_LOCAL);
 		if (!so_handle) {
 			fprintf(stderr, "Error: Can't open module \"%s\"... Skipped\n", so);
