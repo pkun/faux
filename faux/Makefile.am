@@ -2,6 +2,10 @@ lib_LTLIBRARIES += libfaux.la
 libfaux_la_SOURCES =
 libfaux_la_LIBADD =
 
+if TESTC
+libfaux_la_CFLAGS = -DTESTC
+endif
+
 nobase_include_HEADERS += \
 	faux/faux.h \
 	faux/ctype.h \
@@ -13,10 +17,6 @@ nobase_include_HEADERS += \
 	faux/ini.h \
 	faux/file.h
 
-#	faux/argv.h \
-#	faux/dump.h \
-#	faux/system.h
-
 EXTRA_DIST += \
 	faux/base/Makefile.am \
 	faux/ctype/Makefile.am \
@@ -27,11 +27,6 @@ EXTRA_DIST += \
 	faux/list/Makefile.am \
 	faux/ini/Makefile.am \
 	faux/file/Makefile.am
-
-#	faux/argv/Makefile.am \
-#	faux/dump/Makefile.am \
-#	faux/system/Makefile.am \
-#	faux/README
 
 include $(top_srcdir)/faux/base/Makefile.am
 include $(top_srcdir)/faux/ctype/Makefile.am
