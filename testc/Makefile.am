@@ -9,7 +9,8 @@ testc_testc_SOURCES = \
 # to test not-installed libraries. This LD_LIBRARY_PATH can influence testc
 # itself. So build necessary parts of faux library statically.
 testc_testc_SOURCES += \
-	testc/base/base.c \
+	testc/base/mem.c \
+	testc/base/io.c \
 	testc/ctype/ctype.c \
 	testc/str/str.c \
 	testc/list/list.c

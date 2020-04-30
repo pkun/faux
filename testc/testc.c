@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <sys/types.h>
@@ -55,7 +56,128 @@ typedef struct opts_s opts_t;
 static opts_t *opts_parse(int argc, char *argv[]);
 static void opts_free(opts_t *opts);
 static void help(int status, const char *argv0);
-static int exec_test(int (*test_sym)(void));
+static int exec_test(int (*test_sym)(void), faux_list_t *buf_list);
+
+struct faux_chunk_s {
+	void *data;
+	size_t size;
+	size_t len;
+};
+
+typedef struct faux_chunk_s faux_chunk_t;
+
+faux_chunk_t *faux_chunk_new(size_t size) {
+
+	faux_chunk_t *chunk = NULL;
+
+	if (0 == size) // Illegal 0 size
+		return NULL;
+
+	chunk = faux_zmalloc(sizeof(*chunk));
+	if (!chunk)
+		return NULL;
+
+	// Init
+	chunk->data = faux_zmalloc(size);
+	if (!chunk->data) {
+		faux_free(chunk);
+		return NULL;
+	}
+	chunk->size = size;
+	chunk->len = 0;
+
+	return chunk;
+}
+
+
+void faux_chunk_free(faux_chunk_t *chunk) {
+
+	// Without assert()
+	if (!chunk)
+		return;
+
+	faux_free(chunk->data);
+	faux_free(chunk);
+}
+
+
+ssize_t faux_chunk_len(faux_chunk_t *chunk) {
+
+	assert(chunk);
+	if (!chunk)
+		return -1;
+
+	return chunk->len;
+}
+
+ssize_t faux_chunk_set_len(faux_chunk_t *chunk, size_t len) {
+
+	assert(chunk);
+	if (!chunk)
+		return -1;
+
+	return (chunk->len = len);
+}
+
+ssize_t faux_chunk_inc_len(faux_chunk_t *chunk, size_t inc_len) {
+
+	assert(chunk);
+	if (!chunk)
+		return -1;
+	assert((chunk->len + inc_len) <= chunk->size);
+	if ((chunk->len + inc_len) > chunk->size)
+		return -1;
+
+	return (chunk->len += inc_len);
+}
+
+ssize_t faux_chunk_dec_len(faux_chunk_t *chunk, size_t dec_len) {
+
+	assert(chunk);
+	if (!chunk)
+		return -1;
+	assert(chunk->len >= dec_len);
+	if (chunk->len < dec_len)
+		return -1;
+
+	return (chunk->len -= dec_len);
+}
+
+ssize_t faux_chunk_size(faux_chunk_t *chunk) {
+
+	assert(chunk);
+	if (!chunk)
+		return -1;
+
+	return chunk->size;
+}
+
+void *faux_chunk_data(faux_chunk_t *chunk) {
+
+	assert(chunk);
+	if (!chunk)
+		return NULL;
+
+	return chunk->data;
+}
+
+void *faux_chunk_pos(faux_chunk_t *chunk) {
+
+	assert(chunk);
+	if (!chunk)
+		return NULL;
+
+	return (chunk->data + chunk->len);
+}
+
+ssize_t faux_chunk_left(faux_chunk_t *chunk) {
+
+	assert(chunk);
+	if (!chunk)
+		return -1;
+
+	return chunk->size - chunk->len;
+}
 
 
 int main(int argc, char *argv[]) {
@@ -143,6 +265,9 @@ int main(int argc, char *argv[]) {
 			int wstatus = 0;
 			char *result_str = NULL;
 			char *attention_str = NULL;
+			faux_list_t *buf_list = NULL;
+			faux_list_node_t *iter = NULL;
+			faux_chunk_t *chunk = NULL;
 
 			test_name = (*testc_module)[0];
 			test_desc = (*testc_module)[1];
@@ -158,7 +283,9 @@ int main(int argc, char *argv[]) {
 				continue;
 			}
 
-			wstatus = exec_test(test_sym);
+			buf_list = faux_list_new(BOOL_FALSE, BOOL_FALSE, NULL, NULL, (void (*)(void *))faux_chunk_free);
+
+			wstatus = exec_test(test_sym, buf_list);
 
 			if (WIFEXITED(wstatus)) {
 				if (WEXITSTATUS(wstatus) == 0) {
@@ -184,6 +311,16 @@ int main(int argc, char *argv[]) {
 			printf("%sTest #%03u %s() %s: %s\n", attention_str, module_tests, test_name, test_desc, result_str);
 			faux_str_free(result_str);
 			faux_str_free(attention_str);
+
+			// Print test output if error
+			if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
+				iter = faux_list_head(buf_list);
+				while ((chunk = faux_list_each(&iter))) {
+					faux_write(STDOUT_FILENO, faux_chunk_data(chunk), faux_chunk_len(chunk));
+				}
+			}
+
+			faux_list_free(buf_list);
 		}
 
 
@@ -212,10 +349,41 @@ int main(int argc, char *argv[]) {
 }
 
 
-static int exec_test(int (*test_sym)(void)) {
+
+
+
+#define CHUNK_SIZE 1024
+
+static faux_list_t *read_test_output(int fd, size_t limit, faux_list_t *buf_list) {
+
+	faux_chunk_t *chunk = NULL;
+	size_t total_len = 0;
+
+	do {
+		ssize_t bytes_readed = 0;
+
+		chunk = faux_chunk_new(CHUNK_SIZE);
+		bytes_readed = faux_read(fd, faux_chunk_pos(chunk), faux_chunk_left(chunk));
+		if (bytes_readed <= 0)
+			break;
+		faux_chunk_inc_len(chunk, bytes_readed);
+		faux_list_add(buf_list, chunk);
+		total_len += faux_chunk_len(chunk);
+
+	} while((!faux_chunk_left(chunk)) && (total_len < limit));
+
+	return buf_list;
+}
+
+
+static int exec_test(int (*test_sym)(void), faux_list_t *buf_list) {
 
 	pid_t pid = -1;
 	int wstatus = -1;
+	int pipefd[2];
+
+	if (pipe(pipefd))
+		return -1;
 
 	pid = fork();
 	assert(pid != -1);
@@ -223,8 +391,16 @@ static int exec_test(int (*test_sym)(void)) {
 		return -1;
 
 	// Child
-	if (pid == 0)
+	if (pid == 0) {
+		dup2(pipefd[1], 1);
+		dup2(pipefd[1], 2);
+		close(pipefd[0]);
+		close(pipefd[1]);
 		_exit(test_sym());
+	}
+
+	close(pipefd[1]);
+	read_test_output(pipefd[0], 4096, buf_list);
 
 	// Parent
 	while (waitpid(pid, &wstatus, 0) != pid);

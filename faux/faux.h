@@ -58,10 +58,15 @@ typedef enum {
 
 C_DECL_BEGIN
 
+// Memory
 void faux_free(void *ptr);
 void *faux_malloc(size_t size);
 void faux_bzero(void *ptr, size_t size);
 void *faux_zmalloc(size_t size);
+
+// IO
+ssize_t faux_write(int fd, const void *buf, size_t n);
+ssize_t faux_read(int fd, void *buf, size_t n);
 
 C_DECL_END
 

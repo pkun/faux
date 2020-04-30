@@ -14,6 +14,7 @@ int testc_faux_ini_good(void) {
 
 int testc_faux_ini_bad(void) {
 
+	printf("Some debug information here\n");
 	return -1;
 }
 

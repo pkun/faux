@@ -1,3 +1,4 @@
 libfaux_la_SOURCES += \
-	faux/base/base.c
+	faux/base/mem.c \
+	faux/base/io.c
 
