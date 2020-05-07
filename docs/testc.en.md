@@ -1,34 +1,37 @@
 ---
-title: Система тестирования 'testc'
-author: Сергей Каличев &lt;serj.kalichev(at)gmail.com&gt;
+title: Unit testing framework `testc`
+author: Sergey Kalichev &lt;serj.kalichev(at)gmail.com&gt;
 date: 2020
 ...
 
-# О проекте
 
-Система тестирования 'testc' является частью проекта 'faux' (библиотека вспомогательных функций) и предназначена для модульного тестирования (unit-test) програмного обеспечения, написанного на языке C (Си). Утилита 'testc' последовательно запускает набор тестов, получает результат (успех/неуспех) и генерирует отчет. Каждый тест представляет собой функцию. Источником тестов может являться любой двоичный исполняемый файл - программа или разделяемая библиотека. Для этого внутри исполняемого файла должен быть определен символ с фиксированным именем. Символ указывает на массив, в котором хранится список тестовых функций. Таким образом исполняемый файл может содержать и рабочий код и тестовый код одновременно. Также тестовый код может содержаться и в отдельном модуле. В этом случае модуль должен быть слинкован с необходимыми ему библиотеками.
+# About
 
-Система расчитана на максимальную простоту создания тестов, а также на максимальную интеграцию тестирования в процесс разработки кода.
+The `testc` is a unit testing framework for code written in C. The `testc` is a part of `faux` project (library of aux functions). The utility executes a set of unit tests, gets a results (success/fail) and generates a report. Each test is a C-function. The source of tests is a shared object - executable binary or shared library. The tested shared object must contain the symbol with prefixed name. This symbol references the list of test functions. So the shared object can contain production code and testing code simultaneously. Also testing code can has its own shared object that linked to tested libraries.
 
-## Ссылки
+The goal of `testc` framework is simplicity and integration of testing to the development process.
 
-* Репозиторий GIT <https://src.libcode.org/pkun/faux>
-* Релизы <http://libcode.org/projects/faux>
-* Список рассылки <http://groups.google.com/group/libfaux>
 
-# Утилита 'testc'
+## Links
 
-Утилита 'testc' принимает на вход список исполняемых двоичных файлов и запускает все функции тестирования, содержащиеся в них. В процессе исполнения тестов генерируется отчет и выводится на экран.
+* GIT repository <https://src.libcode.org/pkun/faux>
+* Download <http://libcode.org/projects/faux>
+* Mailing list <http://groups.google.com/group/libfaux>
 
-Каждая функция тестирования исполняется в отдельном процессе. Благодаря этому неудачные тесты, которые могут быть прерваны сигналом, не влияют на работу самой утилиты 'testc', которая продолжит запускать тесты и собирать статистику. Для каждого теста на экран выводится результат его выполнения. Это может быть 'успех', 'неуспех' или сообщение, что 'тест прерван сигналом'. Если тест завершился с ошибкой, то в отчете появится также текстовый вывод (stdout, stderr) теста. В случае успешного завершения теста, его текстовый вывод подавляется.
 
-Код возврата утилиты 'testc' будет равен нулю, если все тесты выполнились успешно. Если хоть один тест выполнился с ошибкой или был прерван сигналом, то утилита вернет значение отличное от нуля.
+# The `testc` utility
 
-Утилита 'testc' написана и собрана таким образом, чтобы не иметь внешних зависимостей, за исключением стандартной библиотека 'libc'. Это позволяет использовать переменную окружения 'LD_LIBRARY_PATH' для указания пути к тестируемым библиотекам, что полезно для тестирования программного обеспечения на месте, без установки его в систему.
+The `testc` utility gets a list of need to be tested shared objects from command line, executes all the test functions from them. It generates a report while tests execution.
 
-Тестируемые файлы могут задаваться в командной строке утилиты с абсолютным или относительным путем, а также без пути, т.е. только имя разделяемой библиотеки. В случае, когда путь не указан, утилита будет искать файл в путях 'LD_LIBRARY_PATH', а затем в стандартных системных путях.
+The utility executes fork() for each test. So broken test interrupted by signal can't break `testc` itself. The utility prints a return value for each test. It can be `success`, `failed`, `interrupted by signal`. For failed tests their output (stdout, stderr) is printed to report for debugging purposes. The successfull tests are silent.
 
-Ниже приведены примеры запуска утилиты 'testc' с указанием относительного пути, абсолютного пути, поиска по стандартным путям и поиска по путям 'LD_LIBRARY_PATH', соответственно.
+The utility's return value will be `0` if all the tests are successful. Single failed test will lead to non-null return value.
+
+The `testc` utility has no dependencies excluding standard `libc` library. This fact allows to use `LD_LIBRARY_PATH` environment variable to define path to tested shared objects and tests the software in place without installing it.
+
+User can define tested files in command line using absolute path, relative path or library name only. If path is not specified then utility will search for the library within `LD_LIBRARY_PATH` and standard system paths.
+
+There are examples of `testc` utility execution with defining relative path, absolute path, search within `LD_LIBRARY_PATH`, search within system paths accordingly.
 
 ```
 $ testc ./.libs/libfaux.so.1.0.0
@@ -37,12 +40,14 @@ $ testc libfaux.so
 $ LD_LIBRARY_PATH=/home/pkun/faux/.libs testc libfaux.so
 ```
 
-## Опции
 
-* '-v', '--version' - Показать версию утилиты.
-* '-h', '--help' - Показать справку по использованию утилиты.
+## Utility options
 
-## Пример отчета
+* `-v`, `--version` - Show utility version.
+* `-h`, `--help` - Show help.
+
+
+## Report example
 
 ```
 $ LD_LIBRARY_PATH=.libs/ testc libfaux.so absent.so libsecond.so
@@ -70,11 +75,12 @@ Total tests: 6
 Total errors: 5
 ```
 
-# Как писать тесты
 
-Система тестирования построена так, чтобы можно было писать тесты не линкуясь ни с какими специальными библиотеками тестирования и даже не использовать никакие специальные заголовочные файлы. Все, что требуется, это соответствие функций тестирования прототипу и объявление трех символов со специальными фиксированными именами. Это версия 'testc' API (старший байт и младший байт) и список функций тестирования.
+# How to write tests
 
-Функция тестирования должна иметь следующий прототип:
+The tests source code doesn't use any special headers and test binaries don't need to be linked to any special testing library. The only necessary thing is to define three special symbols within shared object and define testing functions accordingly to predefined prototype. These three special symbols are API version (major version byte, minor testing byte) and list of testing functions.
+
+The testing function prototype is:
 
 ```
 int testc_my_func(void) {
@@ -82,15 +88,16 @@ int testc_my_func(void) {
 }
 ```
 
-Имя функции может быть произвольным. Рекомендуется использовать префикс 'testc_', чтобы отличать функции тестирования от других.
+The function name is arbitrary. It's recommended to start name with `testc_` to differ testing functions from the other ones.
 
-Функция должна вернуть '0' в случае успеха или любое другое число при возникновении ошибки. Также функция тестирования может выводить на экран (stdout, stderr) любую отладочную информацию. Однако надо помнить, что отладочная информация появится в отчете утилиты 'testc' только в случае завершения теста с ошибкой. Для успешных тестов вывод подавляется.
+The testing function returns `0` on success or any other value on error. The function can output any debug information to stdout or stderr. Only failed function's output will appear in report. The successful function is silent.
 
-## Примеры тестов
 
-Далее приведены простейшие примеры тестов.
+## Testing functions examples
 
-Следующий тест всегда завершается успешно. Если тесту для работы нужны какие-либо внешние данные (или информация где эти данные взять), то можно передавать их тестовой функции через переменные окружения. В данном примере выводимая на экран строка никогда не появится в отчете, так как функция завершается успешно, а текстовый вывод успешных тестов подавляется.
+The following functions are simple examples of tests.
+
+The following function are always successful. If test needs any external data for processing the environment variables can help. This example prints nothing because it always returns `0` i.e. function is successful.
 
 ```
 int testc_faux_ini_good(void) {
@@ -104,7 +111,7 @@ int testc_faux_ini_good(void) {
 }
 ```
 
-Следующая функция всегда завершается с ошибкой. В отчете появится выводимая на экран строка.
+The following function is always failed. The report will contain the printed text string.
 
 ```
 int testc_faux_ini_bad(void) {
@@ -114,7 +121,7 @@ int testc_faux_ini_bad(void) {
 }
 ```
 
-Следующая функция приводит к 'Segmentation fault' и тест прерывается сигналом.
+The following function leads to `Segmentation fault` and test will be interrupted by signal.
 
 ```
 int testc_faux_ini_signal(void) {
@@ -127,22 +134,24 @@ int testc_faux_ini_signal(void) {
 
 ```
 
-Отчет о выполнении трех этих функций можно увидеть выше, в разделе 'Пример отчета'.
+The corresponding report (execution of these three example functions) you can find in `Report example` section.
+
 
 ## Версия API
 
-Если в будущем прототип тестовой функции изменится, либо изменится формат списка тестовых функций, то утилита 'testc' должна узнать об этом. Для этого тестируемый объект должен содержать следующие символы:
+The testing function prototype can be changed in future and format of functions list can be changed too. The `testc` utility must know about it. For this purpose the tested object must contain the following special symbols:
 
 ```
 const unsigned char testc_version_major = 1;
 const unsigned char testc_version_minor = 0;
 ```
 
-Таким образом тестируемый модуль объявляет версию API, которой он соответствует. Имена символов фиксированы и не могут быть другими. Сейчас существует только одна версия API '1.0'. Однако в будущем это может изменится. И хотя, строго говоря, объявление версии API является необязательным, рекомендуется всегда указывать эту версию. Если версия не указана, то утилита 'testc' считает, что модуль соответствует самой свежей версии API.
+It's API version (major and minor parts). The module declares API version that it uses. The names of symbols is fixed. Now the single API version `1.0` exists but it can be changed in future. Frankly the API version declaration is not mandatory but it's strongly recommended. If version is not specified the `testc` utility will suggest the most modern API version.
 
-## Список тестовых функций
 
-Чтобы утилита 'testc' узнала о существовании тестовой функции, имя этой функции должно быть упомянуто в списке тестовых функций модуля. Символ, ссылающийся на список тестовых функций, имеет фиксированное имя и тип. Это массив пар текстовых строк.
+## Testing functions list
+
+Each testing function must be referenced from testing functions list. It allows `testc` utility to find all the tests. The symbol that contain a list of testing functions has a special name and type. It's an array of pairs of text strings.
 
 ```
 const char *testc_module[][2] = {
@@ -153,20 +162,22 @@ const char *testc_module[][2] = {
 	};
 ```
 
-Каждая пара текстовых строк описывает одну тестовую функцию. Первая строка - имя тестовой функции. По этому имени утилита 'testc' будет искать символ внутри разделяемого объекта.
-Вторая строка - произвольное однострочное описание теста. Эта строка печатается в отчете утилиты 'testc' при выполнении соответствующего теста. Используется для информирования пользователя.
+Each text string pair describes one testing function. The first text string is a name testing function. The `testc` utility will use this name to find corresponding symbol within shared object. The second text string is a description of the test. It will be used within report to identify tests.
 
-Список тестовых функций должен оканчиваться обязательной нулевой парой '{NULL, NULL}'. Без этого утилита не узнает, где кончается список.
+The testing functions list must be terminated by mandatory NULL-pair `{NULL, NULL}`. Without it the `testc` utility doesn't know where the list ends.
 
-## Способы интеграции тестов
 
-### Отдельно от рабочего кода
+## Ways to integrate tests
 
-Все тестовые функции могут находится в отдельной разделяемой библиотеке, специально предусмотренной для тестирования. Сама библиотека может даже не входить в состав тестируемого проекта.
 
-### В отдельных файлах
+### Tests fully separated from production code
 
-Тестовые функции могут входить в состав тестируемого проекта, но находиться в отдельных файлах. Эти файлы могут компилироваться или не компилироваться в зависимости от флагов сборки.
+All the testing functions can be contained by separated shared library. This library can be separated from tested project.
+
+
+### Tests in separate files
+
+Testing function can be part of tested project but be isolated in testing-purpose files. These files can be compiled or not compiled depending on the build flags.
 
 ```
 # Makefile.am
@@ -177,9 +188,10 @@ endif
 ...
 ```
 
-### В рабочих файлах
 
-Тестовые функции могут входить в состав тестируемого проекта, и находиться непосредственно рядом с тестируемыми функциями. Эти тестовые функции могут компилироваться или не компилироваться в зависимости от флагов сборки.
+### Tests integrated into production files
+
+The production source code files can contain testing functions. These functions can be compiled or not compiled depending on the build flags.
 
 ```
 # Makefile.am
@@ -201,4 +213,4 @@ int testc_foo(void) {
 #endif
 ```
 
-Такой способ позволит тестировать не только интерфейс библиотеки, но также и локальные статические функции.
+In this case testing function can test local static functions but not library public interface only.
