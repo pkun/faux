@@ -137,7 +137,7 @@ int testc_faux_ini_signal(void) {
 The corresponding report (execution of these three example functions) you can find in `Report example` section.
 
 
-## Версия API
+## API version
 
 The testing function prototype can be changed in future and format of functions list can be changed too. The `testc` utility must know about it. For this purpose the tested object must contain the following special symbols:
 
