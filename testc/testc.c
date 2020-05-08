@@ -436,8 +436,10 @@ static faux_list_t *read_test_output(int fd, size_t limit, faux_list_t *buf_list
 
 		chunk = faux_chunk_new(CHUNK_SIZE);
 		bytes_readed = faux_read(fd, faux_chunk_pos(chunk), faux_chunk_left(chunk));
-		if (bytes_readed <= 0)
+		if (bytes_readed <= 0) {
+			faux_chunk_free(chunk);
 			break;
+		}
 		faux_chunk_inc_len(chunk, bytes_readed);
 		faux_list_add(buf_list, chunk);
 		total_len += faux_chunk_len(chunk);
