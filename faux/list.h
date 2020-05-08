@@ -9,6 +9,16 @@
 
 #include "faux.h"
 
+typedef enum {
+	FAUX_LIST_SORTED = BOOL_TRUE,
+	FAUX_LIST_UNSORTED = BOOL_FALSE
+	} faux_list_sorted_t;
+
+typedef enum {
+	FAUX_LIST_UNIQUE = BOOL_TRUE,
+	FAUX_LIST_NONUNIQUE = BOOL_FALSE
+	} faux_list_unique_t;
+
 typedef struct faux_list_node_s faux_list_node_t;
 typedef struct faux_list_s faux_list_t;
 
@@ -28,7 +38,7 @@ void *faux_list_each(faux_list_node_t **iter);
 void *faux_list_eachr(faux_list_node_t **iter);
 
 // list_t methods
-faux_list_t *faux_list_new(bool_t sorted, bool_t unique,
+faux_list_t *faux_list_new(faux_list_sorted_t sorted, faux_list_unique_t unique,
 	faux_list_cmp_fn cmpFn, faux_list_kcmp_fn kcmpFn,
 	faux_list_free_fn freeFn);
 void faux_list_free(faux_list_t *list);

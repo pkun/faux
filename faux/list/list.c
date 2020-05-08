@@ -190,14 +190,14 @@ void *faux_list_eachr(faux_list_node_t **iter) {
  * void faux_list_free_fn(void *data);
  * @endcode
  *
- * @param [in] sorted If list is sorted - BOOL_TRUE, unsorted - BOOL_FALSE.
- * @param [in] unique If list entry is unique - BOOL_TRUE, else - BOOL_FALSE.
+ * @param [in] sorted If list is sorted - FAUX_LIST_SORTED, unsorted - FAUX_LIST_UNSORTED.
+ * @param [in] unique If list entry is unique - FAUX_LIST_UNIQUE, else - FAUX_LIST_NONUNIQUE.
  * @param [in] compareFn Callback function to compare two user data instances
  * to sort list.
  * @param [in] freeFn Callback function to free user data.
  * @return Newly created bidirectional list or NULL on error.
  */
-faux_list_t *faux_list_new(bool_t sorted, bool_t unique,
+faux_list_t *faux_list_new(faux_list_sorted_t sorted, faux_list_unique_t unique,
 	faux_list_cmp_fn cmpFn, faux_list_kcmp_fn kcmpFn,
 	faux_list_free_fn freeFn) {
 

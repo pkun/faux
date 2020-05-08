@@ -318,7 +318,9 @@ int main(int argc, char *argv[]) {
 				continue;
 			}
 
-			buf_list = faux_list_new(BOOL_FALSE, BOOL_FALSE, NULL, NULL, (void (*)(void *))faux_chunk_free);
+			buf_list = faux_list_new(
+				FAUX_LIST_UNSORTED, FAUX_LIST_NONUNIQUE,
+				NULL, NULL, (void (*)(void *))faux_chunk_free);
 
 			// Execute testing function
 			wstatus = exec_test(test_sym, buf_list);
@@ -503,7 +505,7 @@ static opts_t *opts_new(void) {
 	opts->debug = BOOL_FALSE;
 
 	// Members of list are static strings from argv so don't free() it
-	opts->so_list = faux_list_new(BOOL_FALSE, BOOL_TRUE,
+	opts->so_list = faux_list_new(FAUX_LIST_UNSORTED, FAUX_LIST_UNIQUE,
 		(faux_list_cmp_fn)strcmp, NULL, NULL);
 	if (!opts->so_list) {
 		opts_free(opts);
