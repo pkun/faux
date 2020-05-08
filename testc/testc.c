@@ -182,15 +182,20 @@ ssize_t faux_chunk_left(faux_chunk_t *chunk) {
 
 int main(int argc, char *argv[]) {
 
-	opts_t *opts = NULL;
+	opts_t *opts = NULL; // Command line options
 	faux_list_node_t *iter = NULL;
-	char *so = NULL;
+	char *so = NULL; // Shared object name
+
 	// Return value will be negative on any error or failed test.
 	// It doesn't mean that any error will break the processing.
-	// The following var is error counter.
-	unsigned int total_errors = 0;
-	unsigned int total_modules = 0;
-	unsigned int total_tests = 0;
+	// The following vars are error statistics.
+	unsigned int total_modules = 0; // Number of processed shared objects
+	unsigned int total_broken_modules = 0; // Module processing errors
+	unsigned int total_tests = 0; // Total number of tests
+	unsigned int total_broken_tests = 0; // Something is wrong with test
+	unsigned int total_failed_tests = 0; // Total number of failed tests
+	unsigned int total_interrupted_tests = 0; // Number of interrupted tests
+	unsigned int total_errors = 0; // Sum of all errors
 
 #if HAVE_LOCALE_H
 	// Set current locale
@@ -204,24 +209,32 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
+	// Main loop. Iterate through the list of shared objects
 	iter = faux_list_head(opts->so_list);
 	while ((so = faux_list_each(&iter))) {
+
 		void *so_handle = NULL;
+
 		// Module symbols
 		unsigned char testc_version_major = TESTC_VERSION_MAJOR_DEFAULT;
 		unsigned char testc_version_minor = TESTC_VERSION_MINOR_DEFAULT;
 		unsigned char *testc_version = NULL;
 		const char *(*testc_module)[2] = NULL;
-		// Module counters
-		unsigned int module_tests = 0;
-		unsigned int module_errors = 0;
 
+		// Module statistics
+		unsigned int module_tests = 0;
+		unsigned int module_broken_tests = 0;
+		unsigned int module_failed_tests = 0;
+		unsigned int module_interrupted_tests = 0;
+		unsigned int module_errors = 0; // Sum of all errors
+
+		total_modules++; // Statistics
 		printf("--------------------------------------------------------------------------------\n");
 
 		so_handle = dlopen(so, RTLD_LAZY | RTLD_LOCAL);
 		if (!so_handle) {
 			fprintf(stderr, "Error: Can't open module \"%s\"... Skipped\n", so);
-			total_errors++;
+			total_broken_modules++; // Statistics
 			continue;
 		}
 
@@ -244,17 +257,17 @@ int main(int argc, char *argv[]) {
 			(testc_version_minor >TESTC_VERSION_MINOR_DEFAULT))) {
 			fprintf(stderr, "Error: Unsupported API v%u.%u for module \"%s\"... Skipped\n", 
 				testc_version_major, testc_version_minor, so);
+			total_broken_modules++; // Statistics
 			continue;
 		}
 
 		testc_module = dlsym(so_handle, SYM_TESTC_MODULE);
 		if (!testc_module) {
 			fprintf(stderr, "Error: Can't get test list for module \"%s\"... Skipped\n", so);
-			total_errors++;
+			total_broken_modules++; // Statistics
 			continue;
 		}
 
-		total_modules++;
 		printf("Processing module \"%s\" v%u.%u ...\n", so,
 			testc_version_major, testc_version_minor);
 
@@ -274,12 +287,13 @@ int main(int argc, char *argv[]) {
 			if (!test_desc)
 				test_desc = "";
 			testc_module++;
-			module_tests++;
+
+			module_tests++; // Statistics
 
 			test_sym = (int (*)(void))dlsym(so_handle, test_name);
 			if (!test_sym) {
 				fprintf(stderr, "Error: Can't find symbol \"%s\"... Skipped\n", test_name);
-				module_errors++;
+				module_broken_tests++; // Statistics
 				continue;
 			}
 
@@ -295,17 +309,17 @@ int main(int argc, char *argv[]) {
 					result_str = faux_str_sprintf("failed (%d)",
 						(int)((signed char)((unsigned char)WEXITSTATUS(wstatus))));
 					attention_str = faux_str_dup("(!) ");
-					module_errors++;
+					module_failed_tests++; // Statistics
 				}
 			} else if (WIFSIGNALED(wstatus)) {
 				result_str = faux_str_sprintf("terminated (%d)",
 					WTERMSIG(wstatus));
 				attention_str = faux_str_dup("[!] ");
-				module_errors++;
+				module_interrupted_tests++; // Statistics
 			} else {
 				result_str = faux_str_dup("unknown");
 				attention_str = faux_str_dup("[!] ");
-				module_errors++;
+				module_broken_tests++; // Statistics
 			}
 
 			printf("%sTest #%03u %s() %s: %s\n", attention_str, module_tests, test_name, test_desc, result_str);
@@ -323,24 +337,43 @@ int main(int argc, char *argv[]) {
 			faux_list_free(buf_list);
 		}
 
-
 		dlclose(so_handle);
 		so_handle = NULL;
 
+		// Report module statistics
 		printf("Module tests: %u\n", module_tests);
+		printf("Module broken tests: %u\n", module_broken_tests);
+		printf("Module failed tests: %u\n", module_failed_tests);
+		printf("Module interrupted tests: %u\n", module_interrupted_tests);
+		module_errors =
+			module_broken_tests +
+			module_failed_tests +
+			module_interrupted_tests;
 		printf("Module errors: %u\n", module_errors);
 
+		// Gather total statistics
 		total_tests += module_tests;
-		total_errors += module_errors;
+		total_broken_tests += module_broken_tests;
+		total_failed_tests += module_failed_tests;
+		total_interrupted_tests += module_interrupted_tests;
 
 	}
 
 	opts_free(opts);
 
-	// Total statistics
+	// Report total statistics
 	printf("================================================================================\n");
 	printf("Total modules: %u\n", total_modules);
+	printf("Total broken modules: %u\n", total_broken_modules);
 	printf("Total tests: %u\n", total_tests);
+	printf("Total broken_tests: %u\n", total_broken_tests);
+	printf("Total failed tests: %u\n", total_failed_tests);
+	printf("Total interrupted tests: %u\n", total_interrupted_tests);
+	total_errors =
+		total_broken_modules +
+		total_broken_tests +
+		total_failed_tests +
+		total_interrupted_tests;
 	printf("Total errors: %u\n", total_errors);
 
 	if (total_errors > 0)
