@@ -231,9 +231,12 @@ int main(int argc, char *argv[]) {
 		total_modules++; // Statistics
 		printf("--------------------------------------------------------------------------------\n");
 
+		// Open shared object
 		so_handle = dlopen(so, RTLD_LAZY | RTLD_LOCAL);
 		if (!so_handle) {
-			fprintf(stderr, "Error: Can't open module \"%s\"... Skipped\n", so);
+			fprintf(stderr, "Error: "
+				"Can't open module \"%s\"... "
+				"Skipped\n", so);
 			total_broken_modules++; // Statistics
 			continue;
 		}
@@ -241,12 +244,18 @@ int main(int argc, char *argv[]) {
 		// Get testc API version from module
 		testc_version = dlsym(so_handle, SYM_TESTC_VERSION_MAJOR);
 		if (!testc_version) {
-			fprintf(stderr, "Warning: Can't get API version for module \"%s\"... Use defaults\n", so);
+			fprintf(stderr, "Warning: "
+				"Can't get API version for module \"%s\"... "
+				"Use defaults\n", so);
 		} else {
 			testc_version_major = *testc_version;
-			testc_version = dlsym(so_handle, SYM_TESTC_VERSION_MINOR);
+			testc_version = dlsym(so_handle,
+				SYM_TESTC_VERSION_MINOR);
 			if (!testc_version) {
-				fprintf(stderr, "Warning: Can't get API minor version for module \"%s\"... Use '0'\n", so);
+				fprintf(stderr, "Warning: "
+					"Can't get API minor version"
+					" for module \"%s\"... "
+					"Use '0'\n", so);
 				testc_version_minor = 0;
 			} else {
 				testc_version_minor = *testc_version;
@@ -255,15 +264,20 @@ int main(int argc, char *argv[]) {
 		if ((testc_version_major > TESTC_VERSION_MAJOR_DEFAULT) ||
 			((testc_version_major == TESTC_VERSION_MAJOR_DEFAULT) &&
 			(testc_version_minor >TESTC_VERSION_MINOR_DEFAULT))) {
-			fprintf(stderr, "Error: Unsupported API v%u.%u for module \"%s\"... Skipped\n", 
+			fprintf(stderr, "Error: "
+				"Unsupported API v%u.%u for module \"%s\"... "
+				"Skipped\n",
 				testc_version_major, testc_version_minor, so);
 			total_broken_modules++; // Statistics
 			continue;
 		}
 
+		// Get testing functions list from module
 		testc_module = dlsym(so_handle, SYM_TESTC_MODULE);
 		if (!testc_module) {
-			fprintf(stderr, "Error: Can't get test list for module \"%s\"... Skipped\n", so);
+			fprintf(stderr, "Error: "
+				"Can't get test list for module \"%s\"... "
+				"Skipped\n", so);
 			total_broken_modules++; // Statistics
 			continue;
 		}
@@ -271,58 +285,81 @@ int main(int argc, char *argv[]) {
 		printf("Processing module \"%s\" v%u.%u ...\n", so,
 			testc_version_major, testc_version_minor);
 
+		// Iterate through testing functions list
 		while ((*testc_module)[0]) {
+
 			const char *test_name = NULL;
 			const char *test_desc = NULL;
 			int (*test_sym)(void);
-			int wstatus = 0;
+			int wstatus = 0; // Test's retval
 			char *result_str = NULL;
 			char *attention_str = NULL;
+
 			faux_list_t *buf_list = NULL;
 			faux_list_node_t *iter = NULL;
 			faux_chunk_t *chunk = NULL;
 
+			// Get name and description of testing function
 			test_name = (*testc_module)[0];
 			test_desc = (*testc_module)[1];
-			if (!test_desc)
+			if (!test_desc) // Description can be NULL
 				test_desc = "";
-			testc_module++;
+			testc_module++; // Next test
 
 			module_tests++; // Statistics
 
+			// Get address of testing function by symbol name
 			test_sym = (int (*)(void))dlsym(so_handle, test_name);
 			if (!test_sym) {
-				fprintf(stderr, "Error: Can't find symbol \"%s\"... Skipped\n", test_name);
+				fprintf(stderr, "Error: "
+					"Can't find symbol \"%s\"... "
+					"Skipped\n", test_name);
 				module_broken_tests++; // Statistics
 				continue;
 			}
 
 			buf_list = faux_list_new(BOOL_FALSE, BOOL_FALSE, NULL, NULL, (void (*)(void *))faux_chunk_free);
 
+			// Execute testing function
 			wstatus = exec_test(test_sym, buf_list);
 
+			// Analyze testing function return code
+
+			// Normal exit
 			if (WIFEXITED(wstatus)) {
+
+				// Success
 				if (WEXITSTATUS(wstatus) == 0) {
 					result_str = faux_str_dup("success");
 					attention_str = faux_str_dup("");
+
+				// Failed
 				} else {
-					result_str = faux_str_sprintf("failed (%d)",
+					result_str = faux_str_sprintf(
+						"failed (%d)",
 						(int)((signed char)((unsigned char)WEXITSTATUS(wstatus))));
 					attention_str = faux_str_dup("(!) ");
 					module_failed_tests++; // Statistics
 				}
+
+			// Terminated by signal
 			} else if (WIFSIGNALED(wstatus)) {
 				result_str = faux_str_sprintf("terminated (%d)",
 					WTERMSIG(wstatus));
 				attention_str = faux_str_dup("[!] ");
 				module_interrupted_tests++; // Statistics
+
+			// Stopped by unknown conditions
 			} else {
 				result_str = faux_str_dup("unknown");
 				attention_str = faux_str_dup("[!] ");
 				module_broken_tests++; // Statistics
 			}
 
-			printf("%sTest #%03u %s() %s: %s\n", attention_str, module_tests, test_name, test_desc, result_str);
+			// Print test execution report
+			printf("%sTest #%03u %s() %s: %s\n",
+				attention_str, module_tests,
+				test_name, test_desc, result_str);
 			faux_str_free(result_str);
 			faux_str_free(attention_str);
 
@@ -378,6 +415,7 @@ int main(int argc, char *argv[]) {
 
 	if (total_errors > 0)
 		return -1;
+
 	return 0;
 }
 
