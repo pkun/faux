@@ -424,7 +424,6 @@ int main(int argc, char *argv[]) {
 
 
 
-
 #define CHUNK_SIZE 1024
 
 static faux_list_t *read_test_output(int fd, size_t limit, faux_list_t *buf_list) {
@@ -449,6 +448,14 @@ static faux_list_t *read_test_output(int fd, size_t limit, faux_list_t *buf_list
 }
 
 
+/** Executes testing function
+ *
+ * Function fork() and executes testing function.
+ *
+ * @param [in] test_sym Testing function.
+ * @param [in] buf_list
+ * @return Testing function return value
+ */
 static int exec_test(int (*test_sym)(void), faux_list_t *buf_list) {
 
 	pid_t pid = -1;
@@ -482,6 +489,10 @@ static int exec_test(int (*test_sym)(void), faux_list_t *buf_list) {
 }
 
 
+/** @brief Frees allocated opts_t structure
+ *
+ * @param [in] opts Allocated opts_t structure.
+ */
 static void opts_free(opts_t *opts) {
 
 	assert(opts);
@@ -493,6 +504,13 @@ static void opts_free(opts_t *opts) {
 }
 
 
+/** @brief Allocates new opts_t structure
+ *
+ * Allocates structure that stores parse command line options.
+ *
+ * @return Allocated and initialized opts_t structure.
+ * @warning The returned opts_t structure must be freed later by opts_free().
+ */
 static opts_t *opts_new(void) {
 
 	opts_t *opts = NULL;
@@ -516,6 +534,16 @@ static opts_t *opts_new(void) {
 }
 
 
+/** @brief Parse command line options
+ *
+ * Function allocates opts_t structure, parses command line options and
+ * fills opts_t structure.
+ *
+ * @param [in] argc Standard argc argument.
+ * @param [in] argv Standard argv argument.
+ * @return Filled opts_t structure with parsed command line options.
+ * @warning The returned opts_t structure must be freed later by opts_free().
+ */
 static opts_t *opts_parse(int argc, char *argv[]) {
 
 	opts_t *opts = NULL;
@@ -576,6 +604,13 @@ static opts_t *opts_parse(int argc, char *argv[]) {
 }
 
 
+/** @brief Prints help
+ *
+ * @param [in] status If status is not '0' consider help printing as a reaction
+ * to error and print appropriate message. If status is '0' then print general
+ * help information.
+ * @param [in] argv0 The argv[0] argument i.e. programm name
+ */
 static void help(int status, const char *argv0) {
 
 	const char *name = NULL;
