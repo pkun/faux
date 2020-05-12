@@ -365,11 +365,15 @@ int main(int argc, char *argv[]) {
 			faux_str_free(result_str);
 			faux_str_free(attention_str);
 
-			// Print test output if error
-			if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
+			// Print test output if error or debug
+			if (!WIFEXITED(wstatus) ||
+				WEXITSTATUS(wstatus) != 0 ||
+				opts->debug) {
 				iter = faux_list_head(buf_list);
 				while ((chunk = faux_list_each(&iter))) {
-					faux_write(STDOUT_FILENO, faux_chunk_data(chunk), faux_chunk_len(chunk));
+					faux_write(STDOUT_FILENO,
+						faux_chunk_data(chunk),
+						faux_chunk_len(chunk));
 				}
 			}
 
@@ -636,6 +640,6 @@ static void help(int status, const char *argv0) {
 		printf("Options:\n");
 		printf("\t-v, --version\tPrint version.\n");
 		printf("\t-h, --help\tPrint this help.\n");
-		printf("\t-d, --debug\tDebug mode. Don't daemonize.\n");
+		printf("\t-d, --debug\tDebug mode. Show output for all tests.\n");
 	}
 }
