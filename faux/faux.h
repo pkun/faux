@@ -67,6 +67,8 @@ void *faux_zmalloc(size_t size);
 // IO
 ssize_t faux_write(int fd, const void *buf, size_t n);
 ssize_t faux_read(int fd, void *buf, size_t n);
+ssize_t faux_write_block(int fd, const void *buf, size_t n);
+size_t faux_read_block(int fd, void *buf, size_t n);
 
 C_DECL_END
 
