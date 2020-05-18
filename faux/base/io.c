@@ -84,6 +84,7 @@ ssize_t faux_write_block(int fd, const void *buf, size_t n) {
  * @param [in] buf Buffer to write.
  * @param [in] n Number of bytes to write.
  * @return Number of bytes readed or < 0 on error.
+ * 0 bytes indicates EOF
  */
 ssize_t faux_read(int fd, void *buf, size_t n) {
 
