@@ -13,4 +13,5 @@ testc_testc_SOURCES += \
 	testc/base/io.c \
 	testc/ctype/ctype.c \
 	testc/str/str.c \
-	testc/list/list.c
+	testc/list/list.c \
+	testc/list/private.h
