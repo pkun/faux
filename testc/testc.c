@@ -11,6 +11,8 @@
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/uio.h>
+#include <errno.h>
 
 #if WITH_INTERNAL_GETOPT
 #include "libc/getopt.h"
@@ -44,6 +46,8 @@
 #define SYM_TESTC_VERSION_MINOR "testc_version_minor"
 #define SYM_TESTC_MODULE "testc_module"
 
+#define CHUNK_SIZE 1024
+#define TEST_OUTPUT_LIMIT 4096
 
 // Command line options */
 struct opts_s {
@@ -56,128 +60,8 @@ typedef struct opts_s opts_t;
 static opts_t *opts_parse(int argc, char *argv[]);
 static void opts_free(opts_t *opts);
 static void help(int status, const char *argv0);
-static int exec_test(int (*test_sym)(void), faux_list_t *buf_list);
-
-struct faux_chunk_s {
-	void *data;
-	size_t size;
-	size_t len;
-};
-
-typedef struct faux_chunk_s faux_chunk_t;
-
-faux_chunk_t *faux_chunk_new(size_t size) {
-
-	faux_chunk_t *chunk = NULL;
-
-	if (0 == size) // Illegal 0 size
-		return NULL;
-
-	chunk = faux_zmalloc(sizeof(*chunk));
-	if (!chunk)
-		return NULL;
-
-	// Init
-	chunk->data = faux_zmalloc(size);
-	if (!chunk->data) {
-		faux_free(chunk);
-		return NULL;
-	}
-	chunk->size = size;
-	chunk->len = 0;
-
-	return chunk;
-}
-
-
-void faux_chunk_free(faux_chunk_t *chunk) {
-
-	// Without assert()
-	if (!chunk)
-		return;
-
-	faux_free(chunk->data);
-	faux_free(chunk);
-}
-
-
-ssize_t faux_chunk_len(faux_chunk_t *chunk) {
-
-	assert(chunk);
-	if (!chunk)
-		return -1;
-
-	return chunk->len;
-}
-
-ssize_t faux_chunk_set_len(faux_chunk_t *chunk, size_t len) {
-
-	assert(chunk);
-	if (!chunk)
-		return -1;
-
-	return (chunk->len = len);
-}
-
-ssize_t faux_chunk_inc_len(faux_chunk_t *chunk, size_t inc_len) {
-
-	assert(chunk);
-	if (!chunk)
-		return -1;
-	assert((chunk->len + inc_len) <= chunk->size);
-	if ((chunk->len + inc_len) > chunk->size)
-		return -1;
-
-	return (chunk->len += inc_len);
-}
-
-ssize_t faux_chunk_dec_len(faux_chunk_t *chunk, size_t dec_len) {
-
-	assert(chunk);
-	if (!chunk)
-		return -1;
-	assert(chunk->len >= dec_len);
-	if (chunk->len < dec_len)
-		return -1;
-
-	return (chunk->len -= dec_len);
-}
-
-ssize_t faux_chunk_size(faux_chunk_t *chunk) {
-
-	assert(chunk);
-	if (!chunk)
-		return -1;
-
-	return chunk->size;
-}
-
-void *faux_chunk_data(faux_chunk_t *chunk) {
-
-	assert(chunk);
-	if (!chunk)
-		return NULL;
-
-	return chunk->data;
-}
-
-void *faux_chunk_pos(faux_chunk_t *chunk) {
-
-	assert(chunk);
-	if (!chunk)
-		return NULL;
-
-	return (chunk->data + chunk->len);
-}
-
-ssize_t faux_chunk_left(faux_chunk_t *chunk) {
-
-	assert(chunk);
-	if (!chunk)
-		return -1;
-
-	return chunk->size - chunk->len;
-}
+static int exec_test(int (*test_sym)(void), faux_list_t **buf_list);
+static void print_test_output(faux_list_t *buf_list);
 
 
 int main(int argc, char *argv[]) {
@@ -296,8 +180,6 @@ int main(int argc, char *argv[]) {
 			char *attention_str = NULL;
 
 			faux_list_t *buf_list = NULL;
-			faux_list_node_t *iter = NULL;
-			faux_chunk_t *chunk = NULL;
 
 			// Get name and description of testing function
 			test_name = (*testc_module)[0];
@@ -318,12 +200,8 @@ int main(int argc, char *argv[]) {
 				continue;
 			}
 
-			buf_list = faux_list_new(
-				FAUX_LIST_UNSORTED, FAUX_LIST_NONUNIQUE,
-				NULL, NULL, (void (*)(void *))faux_chunk_free);
-
 			// Execute testing function
-			wstatus = exec_test(test_sym, buf_list);
+			wstatus = exec_test(test_sym, &buf_list);
 
 			// Analyze testing function return code
 
@@ -369,12 +247,7 @@ int main(int argc, char *argv[]) {
 			if (!WIFEXITED(wstatus) ||
 				WEXITSTATUS(wstatus) != 0 ||
 				opts->debug) {
-				iter = faux_list_head(buf_list);
-				while ((chunk = faux_list_each(&iter))) {
-					faux_write(STDOUT_FILENO,
-						faux_chunk_data(chunk),
-						faux_chunk_len(chunk));
-				}
+				print_test_output(buf_list);
 			}
 
 			faux_list_free(buf_list);
@@ -426,33 +299,60 @@ int main(int argc, char *argv[]) {
 }
 
 
+static void free_iov(struct iovec *iov) {
+
+	faux_free(iov->iov_base);
+	faux_free(iov);
+}
 
 
-#define CHUNK_SIZE 1024
+static faux_list_t *read_test_output(int fd, size_t limit) {
 
-static faux_list_t *read_test_output(int fd, size_t limit, faux_list_t *buf_list) {
-
-	faux_chunk_t *chunk = NULL;
+	struct iovec *iov = NULL;
 	size_t total_len = 0;
+	faux_list_t *buf_list = NULL; // Buffer list
+
+	buf_list = faux_list_new(
+		FAUX_LIST_UNSORTED, FAUX_LIST_NONUNIQUE,
+		NULL, NULL, (void (*)(void *))free_iov);
 
 	do {
 		ssize_t bytes_readed = 0;
 
-		chunk = faux_chunk_new(CHUNK_SIZE);
-		bytes_readed = faux_read(fd, faux_chunk_pos(chunk), faux_chunk_left(chunk));
-		if (bytes_readed <= 0) {
-			faux_chunk_free(chunk);
+		iov = faux_zmalloc(sizeof(*iov));
+		assert(iov);
+		iov->iov_len = CHUNK_SIZE;
+		iov->iov_base = faux_malloc(iov->iov_len);
+		assert(iov->iov_base);
+
+		do {
+			bytes_readed = readv(fd, iov, 1);
+		} while ((bytes_readed < 0) && (errno == EINTR));
+		if (bytes_readed <= 0) { /* Error or EOF */
+			free_iov(iov);
 			break;
 		}
-		faux_chunk_inc_len(chunk, bytes_readed);
-		faux_list_add(buf_list, chunk);
-		total_len += faux_chunk_len(chunk);
 
-	} while((!faux_chunk_left(chunk)) && (total_len < limit));
+		iov->iov_len = bytes_readed;
+		faux_list_add(buf_list, iov);
+		total_len += iov->iov_len;
+
+	} while (total_len < limit);
 
 	return buf_list;
 }
 
+
+static void print_test_output(faux_list_t *buf_list) {
+
+	faux_list_node_t *iter = NULL;
+	struct iovec *iov = NULL;
+
+	iter = faux_list_head(buf_list);
+	while ((iov = faux_list_each(&iter))) {
+		faux_write_block(STDOUT_FILENO, iov->iov_base, iov->iov_len);
+	}
+}
 
 /** Executes testing function
  *
@@ -462,11 +362,12 @@ static faux_list_t *read_test_output(int fd, size_t limit, faux_list_t *buf_list
  * @param [in] buf_list
  * @return Testing function return value
  */
-static int exec_test(int (*test_sym)(void), faux_list_t *buf_list) {
+static int exec_test(int (*test_sym)(void), faux_list_t **buf_list) {
 
 	pid_t pid = -1;
 	int wstatus = -1;
 	int pipefd[2];
+	faux_list_t *blist = NULL;
 
 	if (pipe(pipefd))
 		return -1;
@@ -485,10 +386,16 @@ static int exec_test(int (*test_sym)(void), faux_list_t *buf_list) {
 		_exit(test_sym());
 	}
 
-	close(pipefd[1]);
-	read_test_output(pipefd[0], 4096, buf_list);
-
 	// Parent
+	close(pipefd[1]);
+	blist = read_test_output(pipefd[0], TEST_OUTPUT_LIMIT);
+	// The pipe closing can lead to test interruption when output length
+	// limit is exceeded. But it's ok because it saves us from iternal
+	// loops. It doesn't saves from silent iternal loops.
+	close(pipefd[0]);
+	if (blist)
+		*buf_list = blist;
+
 	while (waitpid(pid, &wstatus, 0) != pid);
 
 	return wstatus;
