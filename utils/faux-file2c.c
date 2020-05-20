@@ -42,7 +42,8 @@
 
 // Command line options */
 struct opts_s {
-	int debug;
+	bool_t debug;
+	bool_t binary;
 	faux_list_t *file_list;
 };
 
@@ -156,6 +157,7 @@ static opts_t *opts_new(void) {
 		return NULL;
 
 	opts->debug = BOOL_FALSE;
+	opts->binary = BOOL_FALSE;
 
 	// Members of list are static strings from argv so don't free() it
 	opts->file_list = faux_list_new(FAUX_LIST_UNSORTED, FAUX_LIST_UNIQUE,
@@ -183,12 +185,14 @@ static opts_t *opts_parse(int argc, char *argv[]) {
 
 	opts_t *opts = NULL;
 
-	static const char *shortopts = "hvd";
+	static const char *shortopts = "hvdbt";
 #ifdef HAVE_GETOPT_LONG
 	static const struct option longopts[] = {
 		{"help",	0, NULL, 'h'},
 		{"version",	0, NULL, 'v'},
 		{"debug",	0, NULL, 'd'},
+		{"text",	0, NULL, 't'},
+		{"binary",	0, NULL, 'b'},
 		{NULL,		0, NULL, 0}
 	};
 #endif
@@ -210,6 +214,12 @@ static opts_t *opts_parse(int argc, char *argv[]) {
 		switch (opt) {
 		case 'd':
 			opts->debug = BOOL_TRUE;
+			break;
+		case 't':
+			opts->binary = BOOL_FALSE;
+			break;
+		case 'b':
+			opts->binary = BOOL_TRUE;
 			break;
 		case 'h':
 			help(0, argv[0]);
@@ -265,10 +275,12 @@ static void help(int status, const char *argv0) {
 			name);
 	} else {
 		printf("Usage: %s [options] <txt_file> [txt_file] ...\n", name);
-		printf("Converts text files to C-strings.\n");
+		printf("Converts text/binary files to C-strings.\n");
 		printf("Options:\n");
 		printf("\t-v, --version\tPrint version.\n");
 		printf("\t-h, --help\tPrint this help.\n");
 		printf("\t-d, --debug\tDebug mode.\n");
+		printf("\t-t, --text\tText mode conversion (Default).\n");
+		printf("\t-d, --debug\tBinary mode conversion.\n");
 	}
 }
