@@ -36,6 +36,7 @@ char *faux_str_charsn(const char *str, const char *chars_to_search, size_t n);
 char *faux_str_chars(const char *str, const char *chars_to_search);
 
 char *faux_str_c_esc(const char *src);
+char *faux_str_c_bin(const char *src, size_t n);
 
 
 //const char *faux_str_suffix(const char *string);

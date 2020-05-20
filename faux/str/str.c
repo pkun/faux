@@ -481,6 +481,48 @@ char *faux_str_c_esc(const char *src) {
 }
 
 
+#define BYTE_CONV_LEN 4 // Length of one byte converted to string
+
+/** Prepare binary block for embedding to C-code.
+ *
+ * @warning The returned pointer must be freed by faux_str_free().
+ * @param [in] src Binary block for conversion.
+ * @return C-string or NULL on error.
+ */
+char *faux_str_c_bin(const char *src, size_t n) {
+
+	const char *src_ptr = src;
+	char *dst = NULL;
+	char *dst_ptr = NULL;
+	size_t dst_len = 0;
+
+	assert(src);
+	if (!src)
+		return NULL;
+
+	// Calculate destination string size.
+	// Each src character will be replaced by
+	// something like '\xff'. So it's 4 dst chars for 1 src char.
+	dst_len = (n * BYTE_CONV_LEN) + 1; // one byte for '\0'
+	dst = faux_zmalloc(dst_len);
+	assert(dst);
+	if (!dst)
+		return NULL;
+	dst_ptr = dst;
+
+	while (src_ptr < (src + n)) {
+		char buf[BYTE_CONV_LEN + 1]; // longest 'char' (4 bytes) + '\0'
+
+		snprintf(buf, sizeof(buf), "\\x%02x", (unsigned char)*src_ptr);
+		memcpy(dst_ptr, buf, BYTE_CONV_LEN); // zmalloc() nullify the rest
+		dst_ptr += BYTE_CONV_LEN;
+		src_ptr++;
+	}
+
+	return dst;
+}
+
+
 /** @brief Search the n-th chars of string for one of the specified chars.
  *
  * The function search for any of specified characters within string.
