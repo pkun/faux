@@ -34,9 +34,6 @@
 /debian/faux-dev
 /debian/files
 
-# Binaries
-/testc/testc
-
 # Docs
 /docs/*.html
 /docs/*.pdf
