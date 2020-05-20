@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
 			faux_free(buf);
 			if (0 == total_bytes) // Empty file
 				printf("\t\"\"\n");
-		
+
 		// Text mode
 		} else {
 			bool_t eof = BOOL_FALSE;

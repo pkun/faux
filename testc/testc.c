@@ -47,7 +47,7 @@
 #define SYM_TESTC_MODULE "testc_module"
 
 #define CHUNK_SIZE 1024
-#define TEST_OUTPUT_LIMIT 4096
+#define TEST_OUTPUT_LIMIT 1024 * CHUNK_SIZE
 
 // Command line options */
 struct opts_s {
@@ -247,7 +247,11 @@ int main(int argc, char *argv[]) {
 			if (!WIFEXITED(wstatus) ||
 				WEXITSTATUS(wstatus) != 0 ||
 				opts->debug) {
+				if (faux_list_len(buf_list) > 0)
+					printf("~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ \n");
 				print_test_output(buf_list);
+				if (faux_list_len(buf_list) > 0)
+					printf("~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ \n");
 			}
 
 			faux_list_free(buf_list);

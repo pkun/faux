@@ -7,5 +7,6 @@ const char *testc_module[][2] = {
 	{"testc_faux_ini_good", "INI subsystem good"},
 	{"testc_faux_ini_bad", "INI bad"},
 	{"testc_faux_ini_signal", "Interrupted by signal"},
+	{"testc_faux_ini_parse", "Complex test of INI file parsing"},
 	{NULL, NULL}
 	};
