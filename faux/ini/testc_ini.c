@@ -70,18 +70,20 @@ int testc_faux_ini_parse(void) {
 	faux_ini_t *ini = NULL;
 	faux_ini_node_t *iter = NULL;
 	const faux_pair_t *pair = NULL;
-	const char *src_fn = "/tmp/src12";
+	const char *src_fn = NULL;
 	const char *dst_fn = "/tmp/dst12";
-	const char *etalon_fn = "/tmp/etalon12";
+	const char *etalon_fn = NULL;
 	unsigned num_entries = 0;
-	ssize_t r = 0;
 
 	// Prepare files
-	r = faux_testc_file_deploy(src_fn, src_file);
-	if (r < 0) {
+	src_fn = faux_testc_tmpfile_deploy(src_file);
+	if (!src_fn) {
 		fprintf(stderr, "Can't create test file %s\n", src_fn);
 	}
-	faux_testc_file_deploy(etalon_fn, etalon_file);
+	etalon_fn = faux_testc_tmpfile_deploy(etalon_file);
+	if (!src_fn) {
+		fprintf(stderr, "Can't create etalon file %s\n", etalon_fn);
+	}
 
 	ini = faux_ini_new();
 	faux_ini_parse_file(ini, src_fn);
