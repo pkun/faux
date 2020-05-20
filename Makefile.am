@@ -20,7 +20,9 @@ nobase_include_HEADERS =
 
 EXTRA_DIST = \
 	faux/Makefile.am \
+	utils/Makefile.am \
 	testc/Makefile.am
 
 include $(top_srcdir)/faux/Makefile.am
+include $(top_srcdir)/utils/Makefile.am
 include $(top_srcdir)/testc/Makefile.am

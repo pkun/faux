@@ -217,18 +217,20 @@ static char *faux_file_takeaway_rest(faux_file_t *f) {
 }
 
 
-/** @brief Service static function to get line from buf as single C-string.
+/** @brief Universal static function to get line from buf as single C-string.
  *
- * Gets line (data ends with EOL) from internal buffer as a single C-string
- * (i.e. ends with '\0'). The resulting line will not contain trailing EOL but
- * EOL will be removed from internal buffer together with line.
+ * Universal function for faux_file_takeaway(), faux_file_takeway_raw()
+ * implementation.
  *
  * @warning Returned pointer must be freed by faux_str_free() later.
  *
  * @param [in] f File object.
+ * @param [in] raw Boolean flag.
+ * BOOL_TRUE - include trailing EOL to resulting string,
+ * BOOL_FALSE - don't include
  * @return Allocated string (with trailing '\0') with line.
  */
-static char *faux_file_takeaway_line(faux_file_t *f) {
+static char *faux_file_takeaway_line_internal(faux_file_t *f, bool_t raw) {
 
 	char *find = NULL;
 	const char *eol = "\n\r";
@@ -244,8 +246,46 @@ static char *faux_file_takeaway_line(faux_file_t *f) {
 		return NULL; // End of line is not found
 	line_len = find - f->buf;
 
-	// Takeaway line without trailing EOL. So drop one last byte
-	return faux_file_takeaway(f, line_len, 1);
+	if (raw) {
+		// Takeaway line with trailing EOL.
+		return faux_file_takeaway(f, line_len + 1, 0);
+	} else {
+		// Takeaway line without trailing EOL. So drop one last byte
+		return faux_file_takeaway(f, line_len, 1);
+	}
+}
+
+
+/** @brief Service static function to get raw line from buf as single C-string.
+ *
+ * Gets line (data ends with EOL) from internal buffer as a single C-string
+ * (i.e. ends with '\0'). The resulting line will contain trailing EOL.
+ *
+ * @warning Returned pointer must be freed by faux_str_free() later.
+ *
+ * @param [in] f File object.
+ * @return Allocated string (with trailing '\0') with line.
+ */
+static char *faux_file_takeaway_line_raw(faux_file_t *f) {
+
+	return faux_file_takeaway_line_internal(f, BOOL_TRUE);
+}
+
+
+/** @brief Service static function to get line from buf as single C-string.
+ *
+ * Gets line (data ends with EOL) from internal buffer as a single C-string
+ * (i.e. ends with '\0'). The resulting line will not contain trailing EOL but
+ * EOL will be removed from internal buffer together with line.
+ *
+ * @warning Returned pointer must be freed by faux_str_free() later.
+ *
+ * @param [in] f File object.
+ * @return Allocated string (with trailing '\0') with line.
+ */
+static char *faux_file_takeaway_line(faux_file_t *f) {
+
+	return faux_file_takeaway_line_internal(f, BOOL_FALSE);
 }
 
 
@@ -280,18 +320,19 @@ static int faux_file_enlarge_buffer(faux_file_t *f) {
 }
 
 
-/** @brief Read line from file.
+/** @brief Universal static function to read line from file.
  *
- * Actually function searches for line within internal buffer. If line is not
- * found then function reads new data from file and searches for the line again.
- * The last line in file (without trailing EOL) is considered as line too.
+ * Function for implementation faux_file_getline_raw() and faux_file_getline().
  *
  * @warning Returned pointer must be freed by faux_str_free() later.
  *
  * @param [in] f File object.
+ * @param [in] raw
+ * BOOL_TRUE - raw mode (with trailing EOL)
+ * BOOL_FALSE - without trailing EOL
  * @return Line pointer or NULL on error.
  */
-char *faux_file_getline(faux_file_t *f) {
+char *faux_file_getline_internal(faux_file_t *f, bool_t raw) {
 
 	ssize_t bytes_readed = 0;
 
@@ -303,7 +344,11 @@ char *faux_file_getline(faux_file_t *f) {
 		char *find = NULL;
 
 		// May be buffer already contain line
-		find = faux_file_takeaway_line(f);
+		if (raw) { // raw mode
+			find = faux_file_takeaway_line_raw(f);
+		} else { // without trailing EOL
+			find = faux_file_takeaway_line(f);
+		}
 		if (find)
 			return find;
 
@@ -327,6 +372,41 @@ char *faux_file_getline(faux_file_t *f) {
 
 	// The last line can be without eol. Consider it as a line too
 	return faux_file_takeaway_rest(f);
+}
+
+/** @brief Read raw line from file.
+ *
+ * Raw line is a line with trailing EOL included.
+ * Actually function searches for line within internal buffer. If line is not
+ * found then function reads new data from file and searches for the line again.
+ * The last line in file (without trailing EOL) is considered as line too.
+ *
+ * @warning Returned pointer must be freed by faux_str_free() later.
+ *
+ * @param [in] f File object.
+ * @return Line pointer or NULL on error.
+ */
+char *faux_file_getline_raw(faux_file_t *f) {
+
+	return faux_file_getline_internal(f, BOOL_TRUE);
+}
+
+
+
+/** @brief Read line from file.
+ *
+ * Actually function searches for line within internal buffer. If line is not
+ * found then function reads new data from file and searches for the line again.
+ * The last line in file (without trailing EOL) is considered as line too.
+ *
+ * @warning Returned pointer must be freed by faux_str_free() later.
+ *
+ * @param [in] f File object.
+ * @return Line pointer or NULL on error.
+ */
+char *faux_file_getline(faux_file_t *f) {
+
+	return faux_file_getline_internal(f, BOOL_FALSE);
 }
 
 

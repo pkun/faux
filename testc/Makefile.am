@@ -15,3 +15,7 @@ testc_testc_SOURCES += \
 	testc/str/str.c \
 	testc/list/list.c \
 	testc/list/private.h
+
+testc_testc_LDADD = \
+	libfaux.la \
+	$(LIBOBJS)
