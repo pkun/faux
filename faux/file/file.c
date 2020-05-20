@@ -419,7 +419,7 @@ char *faux_file_getline(faux_file_t *f) {
  * @param [in] f File object.
  * @param [in] buf Buffer to write.
  * @param [in] n Number of bytes to write.
- * @return Number of bytes written or NULL on error.
+ * @return Number of bytes written or < 0 on error.
  */
 ssize_t faux_file_write(faux_file_t *f, const void *buf, size_t n) {
 
@@ -428,4 +428,65 @@ ssize_t faux_file_write(faux_file_t *f, const void *buf, size_t n) {
 		return -1;
 
 	return faux_write(f->fd, buf, n);
+}
+
+
+/** @brief Writes data block to file.
+ *
+ * See faux_write_block() for documentation.
+ *
+ * @param [in] f File object.
+ * @param [in] buf Buffer to write.
+ * @param [in] n Number of bytes to write.
+ * @return Number of bytes written or < 0 on error.
+ */
+ssize_t faux_file_write_block(faux_file_t *f, const void *buf, size_t n) {
+
+	assert(f);
+	if (!f)
+		return -1;
+
+	return faux_write_block(f->fd, buf, n);
+}
+
+
+/** @brief Read data from file.
+ *
+ * See faux_read() for documentation.
+ *
+ * @param [in] f File object.
+ * @param [in] buf Buffer.
+ * @param [in] n Number of bytes.
+ * @return Number of bytes readed or < 0 on error.
+ */
+ssize_t faux_file_read(faux_file_t *f, void *buf, size_t n) {
+
+	assert(f);
+	if (!f)
+		return -1;
+
+// TODO: Read buffer first
+
+	return faux_read(f->fd, buf, n);
+}
+
+
+/** @brief Read data block from file.
+ *
+ * See faux_read_block() for documentation.
+ *
+ * @param [in] f File object.
+ * @param [in] buf Buffer.
+ * @param [in] n Number of bytes.
+ * @return Number of bytes readed or < 0 on error.
+ */
+ssize_t faux_file_read_block(faux_file_t *f, void *buf, size_t n) {
+
+	assert(f);
+	if (!f)
+		return -1;
+
+// TODO: Read buffer first
+
+	return faux_read_block(f->fd, buf, n);
 }

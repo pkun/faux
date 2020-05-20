@@ -40,6 +40,10 @@
 #define QUOTE(t) #t
 #define version(v) printf("%s\n", v)
 
+// Binary mode: Number of binary bytes per line. We want 80 syms in row but each
+// byte occupies 4 syms within string so 80 / 4 = 20.
+#define BIN_BYTES_PER_LINE 20
+
 // Command line options */
 struct opts_s {
 	bool_t debug;
@@ -80,8 +84,7 @@ int main(int argc, char *argv[]) {
 	while ((fn = faux_list_each(&iter))) {
 		faux_file_t *f = NULL;
 		char *buf = NULL;
-		bool_t eof = BOOL_FALSE;
-		unsigned int line_num = 0;
+		char *var_name = NULL;
 
 		file_num++;
 		f = faux_file_open(fn, O_RDONLY, 0);
@@ -92,26 +95,70 @@ int main(int argc, char *argv[]) {
 		}
 		printf("\n");
 		printf("// File \"%s\"\n", fn);
-		printf("const char *txt%u =\n", file_num);
+		var_name = opts->binary ? "bin" : "txt";
+		printf("const char *%s%u =\n", var_name, file_num);
 
-		while ((buf = faux_file_getline_raw(f))) {
-			char *escaped_str = NULL;
-			line_num++;
-			escaped_str = faux_str_c_esc(buf);
-			faux_str_free(buf);
-			if (escaped_str)
-				printf("\t\"%s\"\n", escaped_str);
-			faux_str_free(escaped_str);
-		}
-		eof = faux_file_eof(f);
-		if (!eof) { // File reading was interrupted before EOF
-			fprintf(stderr, "Error: File \"%s\" reading was "
-				"interrupted before EOF\n", fn);
-			total_errors++;
-		} // Continue normal operations
+		// Binary mode
+		if (opts->binary) {
+			ssize_t bytes_readed = 0;
+			size_t total_bytes = 0;
 
-		if (0 == line_num) // Empty file is not error
+			buf = faux_malloc(BIN_BYTES_PER_LINE);
+			assert(buf);
+			if (!buf) {
+				fprintf(stderr, "Error: Memory problems\n");
+				break;
+			}
+
+			do {
+				char *escaped_str = NULL;
+
+				bytes_readed = faux_file_read_block(f, buf,
+					BIN_BYTES_PER_LINE);
+				if (bytes_readed < 0) {
+					fprintf(stderr, "Error: Can't open "
+						"file \"%s\"\n", fn);
+					total_errors++;
+					break;
+				}
+				if (0 == bytes_readed) // EOF
+					break;
+				total_bytes += bytes_readed;
+				escaped_str = faux_str_c_bin(buf, bytes_readed);
+				if (escaped_str)
+					printf("\t\"%s\"\n", escaped_str);
+				faux_str_free(escaped_str);
+			} while (BIN_BYTES_PER_LINE == bytes_readed);
+
+			faux_free(buf);
+			if (0 == total_bytes) // Empty file
 				printf("\t\"\"\n");
+		
+		// Text mode
+		} else {
+			bool_t eof = BOOL_FALSE;
+			unsigned int line_num = 0;
+
+			while ((buf = faux_file_getline_raw(f))) {
+				char *escaped_str = NULL;
+				line_num++;
+				escaped_str = faux_str_c_esc(buf);
+				faux_str_free(buf);
+				if (escaped_str)
+					printf("\t\"%s\"\n", escaped_str);
+				faux_str_free(escaped_str);
+			}
+			eof = faux_file_eof(f);
+			if (!eof) { // File reading was interrupted before EOF
+				fprintf(stderr, "Error: File \"%s\" reading was "
+					"interrupted before EOF\n", fn);
+				total_errors++;
+			} // Continue normal operations
+
+			if (0 == line_num) // Empty file is not error
+					printf("\t\"\"\n");
+		}
+
 		printf(";\n");
 		faux_file_close(f);
 	}
