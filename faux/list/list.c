@@ -24,8 +24,8 @@
  * @param [in] data User defined data to store within node.
  * @return Newly created list node instance or NULL on error.
  */
-static faux_list_node_t *faux_list_new_node(void *data) {
-
+static faux_list_node_t *faux_list_new_node(void *data)
+{
 	faux_list_node_t *node = NULL;
 
 	node = faux_zmalloc(sizeof(*node));
@@ -46,8 +46,8 @@ static faux_list_node_t *faux_list_new_node(void *data) {
  *
  * @param [in] node List node instance.
  */
-static void faux_list_free_node(faux_list_node_t *node) {
-
+static void faux_list_free_node(faux_list_node_t *node)
+{
 	assert(node);
 	faux_free(node);
 }
@@ -58,8 +58,8 @@ static void faux_list_free_node(faux_list_node_t *node) {
  * @param [in] this List node instance.
  * @return List node previous in list.
  */
-faux_list_node_t *faux_list_prev_node(const faux_list_node_t *node) {
-
+faux_list_node_t *faux_list_prev_node(const faux_list_node_t *node)
+{
 	assert(node);
 	if (!node)
 		return NULL;
@@ -73,8 +73,8 @@ faux_list_node_t *faux_list_prev_node(const faux_list_node_t *node) {
  * @param [in] this List node instance.
  * @return List node next in list.
  */
-faux_list_node_t *faux_list_next_node(const faux_list_node_t *node) {
-
+faux_list_node_t *faux_list_next_node(const faux_list_node_t *node)
+{
 	assert(node);
 	if (!node)
 		return NULL;
@@ -88,8 +88,8 @@ faux_list_node_t *faux_list_next_node(const faux_list_node_t *node) {
  * @param [in] this List node instance.
  * @return User data stored within specified list node.
  */
-void *faux_list_data(const faux_list_node_t *node) {
-
+void *faux_list_data(const faux_list_node_t *node)
+{
 	assert(node);
 	if (!node)
 		return NULL;
@@ -106,8 +106,8 @@ void *faux_list_data(const faux_list_node_t *node) {
  * @param [in,out] iter List node ptr used as an iterator.
  * @return List node or NULL if list elements are over.
  */
-faux_list_node_t *faux_list_each_node(faux_list_node_t **iter) {
-
+faux_list_node_t *faux_list_each_node(faux_list_node_t **iter)
+{
 	faux_list_node_t *current_node = *iter;
 
 	// No assert() on current_node. NULL iterator is normal
@@ -127,8 +127,8 @@ faux_list_node_t *faux_list_each_node(faux_list_node_t **iter) {
  * @param [in,out] iter List node ptr used as an iterator.
  * @return List node or NULL if list elements are over.
  */
-faux_list_node_t *faux_list_eachr_node(faux_list_node_t **iter) {
-
+faux_list_node_t *faux_list_eachr_node(faux_list_node_t **iter)
+{
 	faux_list_node_t *current_node = *iter;
 
 	// No assert() on current_node. NULL iterator is normal
@@ -148,8 +148,8 @@ faux_list_node_t *faux_list_eachr_node(faux_list_node_t **iter) {
  * @param [in,out] iter List node ptr used as an iterator.
  * @return User data or NULL if list elements are over.
  */
-void *faux_list_each(faux_list_node_t **iter) {
-
+void *faux_list_each(faux_list_node_t **iter)
+{
 	faux_list_node_t *current_node = NULL;
 
 	// No assert() on current_node. NULL iterator is normal
@@ -169,8 +169,8 @@ void *faux_list_each(faux_list_node_t **iter) {
  * @param [in,out] iter List node ptr used as an iterator.
  * @return User data or NULL if list elements are over.
  */
-void *faux_list_eachr(faux_list_node_t **iter) {
-
+void *faux_list_eachr(faux_list_node_t **iter)
+{
 	faux_list_node_t *current_node = NULL;
 
 	// No assert() on current_node. NULL iterator is normal
@@ -199,8 +199,8 @@ void *faux_list_eachr(faux_list_node_t **iter) {
  */
 faux_list_t *faux_list_new(faux_list_sorted_t sorted, faux_list_unique_t unique,
 	faux_list_cmp_fn cmpFn, faux_list_kcmp_fn kcmpFn,
-	faux_list_free_fn freeFn) {
-
+	faux_list_free_fn freeFn)
+{
 	faux_list_t *list = NULL;
 
 	// Sorted list must have cmpFn
@@ -239,8 +239,8 @@ faux_list_t *faux_list_new(faux_list_sorted_t sorted, faux_list_unique_t unique,
  *
  * @param [in] list List to free.
  */
-void faux_list_free(faux_list_t *list) {
-
+void faux_list_free(faux_list_t *list)
+{
 	faux_list_node_t *iter = NULL;
 
 	if (!list)
@@ -258,8 +258,8 @@ void faux_list_free(faux_list_t *list) {
  * @param [in] list List.
  * @return List node first in list.
  */
-faux_list_node_t *faux_list_head(const faux_list_t *list) {
-
+faux_list_node_t *faux_list_head(const faux_list_t *list)
+{
 	assert(list);
 	if (!list)
 		return NULL;
@@ -273,8 +273,8 @@ faux_list_node_t *faux_list_head(const faux_list_t *list) {
  * @param [in] list List.
  * @return List node last in list.
  */
-faux_list_node_t *faux_list_tail(const faux_list_t *list) {
-
+faux_list_node_t *faux_list_tail(const faux_list_t *list)
+{
 	assert(list);
 	if (!list)
 		return NULL;
@@ -288,8 +288,8 @@ faux_list_node_t *faux_list_tail(const faux_list_t *list) {
  * @param [in] list List.
  * @return Current length of list.
  */
-size_t faux_list_len(const faux_list_t *list) {
-
+size_t faux_list_len(const faux_list_t *list)
+{
 	assert(list);
 	if (!list)
 		return 0;
@@ -308,8 +308,8 @@ size_t faux_list_len(const faux_list_t *list) {
  * @return Newly added list node.
  */
 static faux_list_node_t *faux_list_add_generic(
-	faux_list_t *list, void *data, bool_t find) {
-
+	faux_list_t *list, void *data, bool_t find)
+{
 	faux_list_node_t *node = NULL;
 	faux_list_node_t *iter = NULL;
 
@@ -398,8 +398,8 @@ static faux_list_node_t *faux_list_add_generic(
  * @param [in] data User data.
  * @return Newly created list node or NULL on error.
  */
-faux_list_node_t *faux_list_add(faux_list_t *list, void *data) {
-
+faux_list_node_t *faux_list_add(faux_list_t *list, void *data)
+{
 	return faux_list_add_generic(list, data, BOOL_FALSE);
 }
 
@@ -414,8 +414,8 @@ faux_list_node_t *faux_list_add(faux_list_t *list, void *data) {
  * @param [in] data User data.
  * @return Newly created list node, existent equal node or NULL on error.
  */
-faux_list_node_t *faux_list_add_find(faux_list_t *list, void *data) {
-
+faux_list_node_t *faux_list_add_find(faux_list_t *list, void *data)
+{
 	assert(list);
 	if (!list)
 		return NULL;
@@ -439,8 +439,8 @@ faux_list_node_t *faux_list_add_find(faux_list_t *list, void *data) {
  * @param [in] node List node to take away.
  * @return User data from removed node or NULL on error.
  */
-void *faux_list_takeaway(faux_list_t *list, faux_list_node_t *node) {
-
+void *faux_list_takeaway(faux_list_t *list, faux_list_node_t *node)
+{
 	void *data = NULL;
 
 	assert(list);
@@ -475,8 +475,8 @@ void *faux_list_takeaway(faux_list_t *list, faux_list_node_t *node) {
  * @param [in] node List node to delete.
  * @return 0 on success, < 0 on error.
  */
-int faux_list_del(faux_list_t *list, faux_list_node_t *node) {
-
+int faux_list_del(faux_list_t *list, faux_list_node_t *node)
+{
 	void *data = NULL;
 
 	assert(list);
@@ -518,8 +518,8 @@ int faux_list_del(faux_list_t *list, faux_list_node_t *node) {
  */
 faux_list_node_t *faux_list_match_node(const faux_list_t *list,
 	faux_list_kcmp_fn matchFn, const void *userkey,
-	faux_list_node_t **saveptr) {
-
+	faux_list_node_t **saveptr)
+{
 	faux_list_node_t *iter = NULL;
 
 	assert(list);
@@ -557,8 +557,8 @@ faux_list_node_t *faux_list_match_node(const faux_list_t *list,
  * @sa faux_list_match_node()
  */
 faux_list_node_t *faux_list_kmatch_node(const faux_list_t *list,
-	const void *userkey, faux_list_node_t **saveptr) {
-
+	const void *userkey, faux_list_node_t **saveptr)
+{
 	assert(list);
 	if (!list)
 		return NULL;
@@ -574,8 +574,8 @@ faux_list_node_t *faux_list_kmatch_node(const faux_list_t *list,
  * @sa faux_list_match_node()
  */
 void *faux_list_match(const faux_list_t *list, faux_list_kcmp_fn matchFn,
-	const void *userkey, faux_list_node_t **saveptr) {
-
+	const void *userkey, faux_list_node_t **saveptr)
+{
 	faux_list_node_t *res =
 		faux_list_match_node(list, matchFn, userkey, saveptr);
 	if (!res)
@@ -593,8 +593,8 @@ void *faux_list_match(const faux_list_t *list, faux_list_kcmp_fn matchFn,
  * @sa faux_list_match_node()
  */
 void *faux_list_kmatch(const faux_list_t *list, const void *userkey,
-	faux_list_node_t **saveptr) {
-
+	faux_list_node_t **saveptr)
+{
 	assert(list);
 	if (!list)
 		return NULL;
@@ -611,8 +611,8 @@ void *faux_list_kmatch(const faux_list_t *list, const void *userkey,
  * @sa faux_list_match_node()
  */
 faux_list_node_t *faux_list_find_node(const faux_list_t *list,
-	faux_list_kcmp_fn matchFn, const void *userkey) {
-
+	faux_list_kcmp_fn matchFn, const void *userkey)
+{
 	return faux_list_match_node(list, matchFn, userkey, NULL);
 }
 
@@ -625,8 +625,8 @@ faux_list_node_t *faux_list_find_node(const faux_list_t *list,
  * @sa faux_list_match_node()
  */
 faux_list_node_t *faux_list_kfind_node(const faux_list_t *list,
-	const void *userkey) {
-
+	const void *userkey)
+{
 	return faux_list_find_node(list, list->kcmpFn, userkey);
 }
 
@@ -639,8 +639,8 @@ faux_list_node_t *faux_list_kfind_node(const faux_list_t *list,
  * @sa faux_list_match_node()
  */
 void *faux_list_find(const faux_list_t *list, faux_list_kcmp_fn matchFn,
-	const void *userkey) {
-
+	const void *userkey)
+{
 	return faux_list_match(list, matchFn, userkey, NULL);
 }
 
@@ -653,7 +653,7 @@ void *faux_list_find(const faux_list_t *list, faux_list_kcmp_fn matchFn,
  * @sa faux_list_match_node()
  */
 void *faux_list_kfind(const faux_list_t *list,
-	const void *userkey) {
-
+	const void *userkey)
+{
 	return faux_list_find(list, list->kcmpFn, userkey);
 }

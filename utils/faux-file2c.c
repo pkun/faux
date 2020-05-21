@@ -58,8 +58,8 @@ static void opts_free(opts_t *opts);
 static void help(int status, const char *argv0);
 
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
 	opts_t *opts = NULL; // Command line options
 	faux_list_node_t *iter = NULL;
 	char *fn = NULL; // Text file
@@ -176,8 +176,8 @@ int main(int argc, char *argv[]) {
  *
  * @param [in] opts Allocated opts_t structure.
  */
-static void opts_free(opts_t *opts) {
-
+static void opts_free(opts_t *opts)
+{
 	assert(opts);
 	if (!opts)
 		return;
@@ -194,8 +194,8 @@ static void opts_free(opts_t *opts) {
  * @return Allocated and initialized opts_t structure.
  * @warning The returned opts_t structure must be freed later by opts_free().
  */
-static opts_t *opts_new(void) {
-
+static opts_t *opts_new(void)
+{
 	opts_t *opts = NULL;
 
 	opts = faux_zmalloc(sizeof(*opts));
@@ -228,8 +228,8 @@ static opts_t *opts_new(void) {
  * @return Filled opts_t structure with parsed command line options.
  * @warning The returned opts_t structure must be freed later by opts_free().
  */
-static opts_t *opts_parse(int argc, char *argv[]) {
-
+static opts_t *opts_parse(int argc, char *argv[])
+{
 	opts_t *opts = NULL;
 
 	static const char *shortopts = "hvdbt";
@@ -303,8 +303,8 @@ static opts_t *opts_parse(int argc, char *argv[]) {
  * help information.
  * @param [in] argv0 The argv[0] argument i.e. programm name
  */
-static void help(int status, const char *argv0) {
-
+static void help(int status, const char *argv0)
+{
 	const char *name = NULL;
 
 	if (!argv0)

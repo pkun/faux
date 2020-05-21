@@ -20,8 +20,8 @@
  * @param [in] c Character to classify.
  * @return BOOL_TRUE if char is digit and BOOL_FALSE else.
  */
-bool_t faux_ctype_isdigit(char c) {
-
+bool_t faux_ctype_isdigit(char c)
+{
 	// isdigit() man says that argument must be unsigned char
 	return isdigit((unsigned char)c) ? BOOL_TRUE : BOOL_FALSE;
 }
@@ -35,8 +35,8 @@ bool_t faux_ctype_isdigit(char c) {
  * @param [in] c Character to classify.
  * @return BOOL_TRUE if char is space and BOOL_FALSE else.
  */
-bool_t faux_ctype_isspace(char c) {
-
+bool_t faux_ctype_isspace(char c)
+{
 	// isspace() man says that argument must be unsigned char
 	return isspace((unsigned char)c) ? BOOL_TRUE : BOOL_FALSE;
 }
@@ -50,8 +50,8 @@ bool_t faux_ctype_isspace(char c) {
  * @param [in] c Character to convert.
  * @return Converted character.
  */
-char faux_ctype_tolower(char c) {
-
+char faux_ctype_tolower(char c)
+{
 	// tolower() man says that argument must be unsigned char
 	return tolower((unsigned char)c);
 }
@@ -64,8 +64,8 @@ char faux_ctype_tolower(char c) {
  * @param [in] c Character to convert.
  * @return Converted character.
  */
-char faux_ctype_toupper(char c) {
-
+char faux_ctype_toupper(char c)
+{
 	// toupper() man says that argument must be unsigned char
 	return toupper((unsigned char)c);
 }

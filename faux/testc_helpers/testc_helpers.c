@@ -17,8 +17,8 @@
 #include "faux/testc_helpers.h"
 
 
-ssize_t faux_testc_file_deploy(const char *fn, const char *str) {
-
+ssize_t faux_testc_file_deploy(const char *fn, const char *str)
+{
 	faux_file_t *f = NULL;
 	ssize_t bytes_written = 0;
 
@@ -39,8 +39,8 @@ ssize_t faux_testc_file_deploy(const char *fn, const char *str) {
 }
 
 
-char *faux_testc_tmpfile_deploy(const char *str) {
-
+char *faux_testc_tmpfile_deploy(const char *str)
+{
 	char *template = NULL;
 	int fd = -1;
 	faux_file_t *f = NULL;
@@ -78,8 +78,8 @@ char *faux_testc_tmpfile_deploy(const char *str) {
 
 #define CHUNK_SIZE 1024
 
-int faux_testc_file_cmp(const char *first_file, const char *second_file) {
-
+int faux_testc_file_cmp(const char *first_file, const char *second_file)
+{
 	int ret = -1; // Pessimistic retval
 	faux_file_t *f = NULL;
 	faux_file_t *s = NULL;

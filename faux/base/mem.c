@@ -22,8 +22,8 @@
  * @param [in] ptr Memory pointer to free.
  * @sa free()
  */
-void faux_free(void *ptr) {
-
+void faux_free(void *ptr)
+{
 #if 0
 	if (ptr)
 #endif
@@ -42,8 +42,8 @@ void faux_free(void *ptr) {
  * @return Allocated memory or NULL on error.
  * @sa malloc()
  */
-void *faux_malloc(size_t size) {
-
+void *faux_malloc(size_t size)
+{
 	assert(size != 0);
 	if (0 == size)
 		return NULL;
@@ -61,8 +61,8 @@ void *faux_malloc(size_t size) {
  * @param [in] size Size of memory (in bytes) to zero it.
  * @sa bzero()
  */
-void faux_bzero(void *ptr, size_t size) {
-
+void faux_bzero(void *ptr, size_t size)
+{
 	memset(ptr, '\0', size);
 }
 
@@ -76,8 +76,8 @@ void faux_bzero(void *ptr, size_t size) {
  * @param [in] size Memory size to allocate.
  * @return Allocated zeroed memory or NULL on error.
  */
-void *faux_zmalloc(size_t size) {
-
+void *faux_zmalloc(size_t size)
+{
 	void *ptr = NULL;
 
 	ptr = faux_malloc(size);

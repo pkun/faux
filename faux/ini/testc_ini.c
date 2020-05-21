@@ -6,8 +6,8 @@
 #include "faux/testc_helpers.h"
 
 
-int testc_faux_ini_parse_file(void) {
-
+int testc_faux_ini_parse_file(void)
+{
 	// Source INI file
 	const char *src_file =
 		"# Comment\n"

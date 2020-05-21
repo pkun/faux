@@ -29,8 +29,8 @@
  *
  * @param [in] str String to free
  */
-void faux_str_free(char *str) {
-
+void faux_str_free(char *str)
+{
 	faux_free(str);
 }
 
@@ -45,8 +45,8 @@ void faux_str_free(char *str) {
  * @param [in] str String to duplicate.
  * @return Pointer to allocated string or NULL.
  */
-char *faux_str_dup(const char *str) {
-
+char *faux_str_dup(const char *str)
+{
 	if (!str)
 		return NULL;
 	return strdup(str);
@@ -65,8 +65,8 @@ char *faux_str_dup(const char *str) {
  * @param [in] n Number of bytes to copy.
  * @return Pointer to allocated string or NULL.
  */
-char *faux_str_dupn(const char *str, size_t n) {
-
+char *faux_str_dupn(const char *str, size_t n)
+{
 	char *res = NULL;
 	size_t len = 0;
 
@@ -93,8 +93,8 @@ char *faux_str_dupn(const char *str, size_t n) {
  * @param [in] str String to convert.
  * @return Pointer to lowercase string copy or NULL.
  */
-char *faux_str_tolower(const char *str) {
-
+char *faux_str_tolower(const char *str)
+{
 	char *res = faux_str_dup(str);
 	char *p = res;
 
@@ -119,8 +119,8 @@ char *faux_str_tolower(const char *str) {
  * @param [in] str String to convert.
  * @return Pointer to lowercase string copy or NULL.
  */
-char *faux_str_toupper(const char *str) {
-
+char *faux_str_toupper(const char *str)
+{
 	char *res = faux_str_dup(str);
 	char *p = res;
 
@@ -148,8 +148,8 @@ char *faux_str_toupper(const char *str) {
  * @param [in] n Number of bytes to add.
  * @return Pointer to resulting string or NULL.
  */
-char *faux_str_catn(char **str, const char *text, size_t n) {
-
+char *faux_str_catn(char **str, const char *text, size_t n)
+{
 	size_t str_len = 0;
 	size_t text_len = 0;
 	char *res = NULL;
@@ -185,8 +185,8 @@ char *faux_str_catn(char **str, const char *text, size_t n) {
  * @param [in] text Text to add to the first string.
  * @return Pointer to resulting string or NULL.
  */
-char *faux_str_cat(char **str, const char *text) {
-
+char *faux_str_cat(char **str, const char *text)
+{
 	size_t len = 0;
 
 	if (!text)
@@ -211,8 +211,8 @@ char *faux_str_cat(char **str, const char *text) {
  * @param [in] text Text to add to the first string.
  * @return Pointer to resulting string or NULL.
  */
-char *faux_str_vcat(char **str, ...) {
-
+char *faux_str_vcat(char **str, ...)
+{
 	va_list ap;
 	const char *arg = NULL;
 	char *retval = *str;
@@ -241,8 +241,8 @@ char *faux_str_vcat(char **str, ...) {
  * @param [in] arg Number of arguments.
  * @return Allocated resulting string or NULL on error.
  */
-char *faux_str_sprintf(const char *fmt, ...) {
-
+char *faux_str_sprintf(const char *fmt, ...)
+{
 	int size = 1;
 	char calc_buf[1] = "";
 	char *line = NULL;
@@ -290,8 +290,8 @@ char *faux_str_sprintf(const char *fmt, ...) {
  * = 0 if char1 = char2
  * > 0 if char1 > char2
  */
-static int faux_str_cmp_chars(char char1, char char2) {
-
+static int faux_str_cmp_chars(char char1, char char2)
+{
 	unsigned char ch1 = (unsigned char)char1;
 	unsigned char ch2 = (unsigned char)char2;
 
@@ -310,8 +310,8 @@ static int faux_str_cmp_chars(char char1, char char2) {
  * @param [in] n Number of characters to compare.
  * @return < 0, 0, > 0, see the strcasecmp().
  */
-int faux_str_casecmpn(const char *str1, const char *str2, size_t n) {
-
+int faux_str_casecmpn(const char *str1, const char *str2, size_t n)
+{
 	const char *p1 = str1;
 	const char *p2 = str2;
 	size_t num = n;
@@ -344,8 +344,8 @@ int faux_str_casecmpn(const char *str1, const char *str2, size_t n) {
  * @param [in] str2 Second string to compare.
  * @return < 0, 0, > 0, see the strcasecmp().
  */
-int faux_str_casecmp(const char *str1, const char *str2) {
-
+int faux_str_casecmp(const char *str1, const char *str2)
+{
 	const char *p1 = str1;
 	const char *p2 = str2;
 
@@ -373,8 +373,8 @@ int faux_str_casecmp(const char *str1, const char *str2) {
  * Pointer to first occurence of substring in the string.
  * NULL on error
  */
-char *faux_str_casestr(const char *haystack, const char *needle) {
-
+char *faux_str_casestr(const char *haystack, const char *needle)
+{
 	const char *ptr = haystack;
 	size_t ptr_len = 0;
 	size_t needle_len = 0;
@@ -405,8 +405,8 @@ char *faux_str_casestr(const char *haystack, const char *needle) {
  * @param [in] src String for escaping.
  * @return Escaped string or NULL on error.
  */
-char *faux_str_c_esc(const char *src) {
-
+char *faux_str_c_esc(const char *src)
+{
 	const char *src_ptr = src;
 	char *dst = NULL;
 	char *dst_ptr = NULL;
@@ -489,8 +489,8 @@ char *faux_str_c_esc(const char *src) {
  * @param [in] src Binary block for conversion.
  * @return C-string or NULL on error.
  */
-char *faux_str_c_bin(const char *src, size_t n) {
-
+char *faux_str_c_bin(const char *src, size_t n)
+{
 	const char *src_ptr = src;
 	char *dst = NULL;
 	char *dst_ptr = NULL;
@@ -536,8 +536,8 @@ char *faux_str_c_bin(const char *src, size_t n) {
  * @return Pointer to the first occurence of one of specified chars.
  * NULL on error.
  */
-char *faux_str_charsn(const char *str, const char *chars_to_search, size_t n) {
-
+char *faux_str_charsn(const char *str, const char *chars_to_search, size_t n)
+{
 	const char *current_char = str;
 	size_t len = n;
 
@@ -566,8 +566,8 @@ char *faux_str_charsn(const char *str, const char *chars_to_search, size_t n) {
  * @return Pointer to the first occurence of one of specified chars.
  * NULL on error.
  */
-char *faux_str_chars(const char *str, const char *chars_to_search) {
-
+char *faux_str_chars(const char *str, const char *chars_to_search)
+{
 	assert(str);
 	if (!str)
 		return NULL;

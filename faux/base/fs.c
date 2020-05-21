@@ -22,8 +22,8 @@
  * @param [in] path File/directory name.
  * @return 0 - success, < 0 on error.
  */
-int faux_rm(const char *path) {
-
+int faux_rm(const char *path)
+{
 	struct stat statbuf = {};
 	DIR *dir = NULL;
 	struct dirent *dir_entry = NULL;
@@ -64,8 +64,8 @@ int faux_rm(const char *path) {
  * @param [in] path Path to expand.
  * @return Expanded string or NULL on error.
  */
-char *faux_expand_tilde(const char *path) {
-
+char *faux_expand_tilde(const char *path)
+{
 	char *home_dir = getenv("HOME");
 	char *result = NULL;
 

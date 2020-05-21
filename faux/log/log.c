@@ -54,8 +54,8 @@ static struct log_name log_names[] = {
  * @param [out] facility Facility in digital form.
  * @returns 0 - success, < 0 - parsing error
  */
-int faux_log_facility(const char *str, int *facility) {
-
+int faux_log_facility(const char *str, int *facility)
+{
 	int i = 0;
 
 	assert(facility);

@@ -27,8 +27,8 @@
  * @return Pointer to allocated passwd structure.
  * @warning The resulting pointer (return value) must be freed by faux_free().
  */
-struct passwd *faux_sysdb_getpwnam(const char *name) {
-
+struct passwd *faux_sysdb_getpwnam(const char *name)
+{
 	long int size = 0;
 	char *buf = NULL;
 	struct passwd *pwbuf = NULL;
@@ -67,8 +67,8 @@ struct passwd *faux_sysdb_getpwnam(const char *name) {
  * @return Pointer to allocated passwd structure.
  * @warning The resulting pointer (return value) must be freed by faux_free().
  */
-struct passwd *faux_sysdb_getpwuid(uid_t uid) {
-
+struct passwd *faux_sysdb_getpwuid(uid_t uid)
+{
 	long int size = 0;
 	char *buf = NULL;
 	struct passwd *pwbuf = NULL;
@@ -107,8 +107,8 @@ struct passwd *faux_sysdb_getpwuid(uid_t uid) {
  * @return Pointer to allocated group structure.
  * @warning The resulting pointer (return value) must be freed by faux_free().
  */
-struct group *faux_sysdb_getgrnam(const char *name) {
-
+struct group *faux_sysdb_getgrnam(const char *name)
+{
 	long int size;
 	char *buf;
 	struct group *grbuf;
@@ -147,8 +147,8 @@ struct group *faux_sysdb_getgrnam(const char *name) {
  * @return Pointer to allocated group structure.
  * @warning The resulting pointer (return value) must be freed by faux_free().
  */
-struct group *faux_sysdb_getgrgid(gid_t gid) {
-
+struct group *faux_sysdb_getgrgid(gid_t gid)
+{
 	long int size;
 	char *buf;
 	struct group *grbuf;

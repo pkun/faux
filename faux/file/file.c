@@ -37,8 +37,8 @@
  * @param [in] fd Already opened file descriptor.
  * @return Allocated and initialized file object or NULL on error.
  */
-faux_file_t *faux_file_fdopen(int fd) {
-
+faux_file_t *faux_file_fdopen(int fd)
+{
 	struct stat stat_struct = {};
 	faux_file_t *f = NULL;
 
@@ -81,8 +81,8 @@ faux_file_t *faux_file_fdopen(int fd) {
  * @param [in] mode File permissions if file will be created.
  * @return File object or NULL on error.
  */
-faux_file_t *faux_file_open(const char *pathname, int flags, mode_t mode) {
-
+faux_file_t *faux_file_open(const char *pathname, int flags, mode_t mode)
+{
 	int fd = -1;
 
 	assert(pathname);
@@ -105,8 +105,8 @@ faux_file_t *faux_file_open(const char *pathname, int flags, mode_t mode) {
  * @param [in] f File object to close and free.
  * @return 0 - success, < 0 - error
  */
-int faux_file_close(faux_file_t *f) {
-
+int faux_file_close(faux_file_t *f)
+{
 	int fd = -1;
 
 	assert(f);
@@ -128,8 +128,8 @@ int faux_file_close(faux_file_t *f) {
  * @param [in] f File object.
  * @return Linked file descriptor.
  */
-int faux_file_fileno(faux_file_t *f) {
-
+int faux_file_fileno(faux_file_t *f)
+{
 	assert(f);
 	if (!f)
 		return -1;
@@ -143,8 +143,8 @@ int faux_file_fileno(faux_file_t *f) {
  * @param [in] f File object
  * @return BOOL_TRUE if it's end of file and BOOL_FALSE else.
  */
-bool_t faux_file_eof(const faux_file_t *f) {
-
+bool_t faux_file_eof(const faux_file_t *f)
+{
 	assert(f);
 	if (!f)
 		return BOOL_FALSE;
@@ -169,8 +169,8 @@ bool_t faux_file_eof(const faux_file_t *f) {
  * @return Allocated string (with trailing '\0') with data to get.
  */
 static char *faux_file_takeaway(faux_file_t *f,
-	size_t bytes_get, size_t bytes_drop) {
-
+	size_t bytes_get, size_t bytes_drop)
+{
 	size_t remove_len = 0;
 	char *line = NULL;
 
@@ -207,8 +207,8 @@ static char *faux_file_takeaway(faux_file_t *f,
  * @param [in] f File object.
  * @return Allocated string (with trailing '\0') with data to get.
  */
-static char *faux_file_takeaway_rest(faux_file_t *f) {
-
+static char *faux_file_takeaway_rest(faux_file_t *f)
+{
 	assert(f);
 	if (!f)
 		return NULL;
@@ -230,8 +230,8 @@ static char *faux_file_takeaway_rest(faux_file_t *f) {
  * BOOL_FALSE - don't include
  * @return Allocated string (with trailing '\0') with line.
  */
-static char *faux_file_takeaway_line_internal(faux_file_t *f, bool_t raw) {
-
+static char *faux_file_takeaway_line_internal(faux_file_t *f, bool_t raw)
+{
 	char *find = NULL;
 	const char *eol = "\n\r";
 	size_t line_len = 0;
@@ -266,8 +266,8 @@ static char *faux_file_takeaway_line_internal(faux_file_t *f, bool_t raw) {
  * @param [in] f File object.
  * @return Allocated string (with trailing '\0') with line.
  */
-static char *faux_file_takeaway_line_raw(faux_file_t *f) {
-
+static char *faux_file_takeaway_line_raw(faux_file_t *f)
+{
 	return faux_file_takeaway_line_internal(f, BOOL_TRUE);
 }
 
@@ -283,8 +283,8 @@ static char *faux_file_takeaway_line_raw(faux_file_t *f) {
  * @param [in] f File object.
  * @return Allocated string (with trailing '\0') with line.
  */
-static char *faux_file_takeaway_line(faux_file_t *f) {
-
+static char *faux_file_takeaway_line(faux_file_t *f)
+{
 	return faux_file_takeaway_line_internal(f, BOOL_FALSE);
 }
 
@@ -297,8 +297,8 @@ static char *faux_file_takeaway_line(faux_file_t *f) {
  * @param [in] f File objects.
  * @return 0 - success, < 0 - error
  */
-static int faux_file_enlarge_buffer(faux_file_t *f) {
-
+static int faux_file_enlarge_buffer(faux_file_t *f)
+{
 	size_t new_size = 0;
 	char *new_buf = NULL;
 
@@ -332,8 +332,8 @@ static int faux_file_enlarge_buffer(faux_file_t *f) {
  * BOOL_FALSE - without trailing EOL
  * @return Line pointer or NULL on error.
  */
-char *faux_file_getline_internal(faux_file_t *f, bool_t raw) {
-
+char *faux_file_getline_internal(faux_file_t *f, bool_t raw)
+{
 	ssize_t bytes_readed = 0;
 
 	assert(f);
@@ -386,11 +386,10 @@ char *faux_file_getline_internal(faux_file_t *f, bool_t raw) {
  * @param [in] f File object.
  * @return Line pointer or NULL on error.
  */
-char *faux_file_getline_raw(faux_file_t *f) {
-
+char *faux_file_getline_raw(faux_file_t *f)
+{
 	return faux_file_getline_internal(f, BOOL_TRUE);
 }
-
 
 
 /** @brief Read line from file.
@@ -404,8 +403,8 @@ char *faux_file_getline_raw(faux_file_t *f) {
  * @param [in] f File object.
  * @return Line pointer or NULL on error.
  */
-char *faux_file_getline(faux_file_t *f) {
-
+char *faux_file_getline(faux_file_t *f)
+{
 	return faux_file_getline_internal(f, BOOL_FALSE);
 }
 
@@ -421,8 +420,8 @@ char *faux_file_getline(faux_file_t *f) {
  * @param [in] n Number of bytes to write.
  * @return Number of bytes written or < 0 on error.
  */
-ssize_t faux_file_write(faux_file_t *f, const void *buf, size_t n) {
-
+ssize_t faux_file_write(faux_file_t *f, const void *buf, size_t n)
+{
 	assert(f);
 	if (!f)
 		return -1;
@@ -440,8 +439,8 @@ ssize_t faux_file_write(faux_file_t *f, const void *buf, size_t n) {
  * @param [in] n Number of bytes to write.
  * @return Number of bytes written or < 0 on error.
  */
-ssize_t faux_file_write_block(faux_file_t *f, const void *buf, size_t n) {
-
+ssize_t faux_file_write_block(faux_file_t *f, const void *buf, size_t n)
+{
 	assert(f);
 	if (!f)
 		return -1;
@@ -459,8 +458,8 @@ ssize_t faux_file_write_block(faux_file_t *f, const void *buf, size_t n) {
  * @param [in] n Number of bytes.
  * @return Number of bytes readed or < 0 on error.
  */
-ssize_t faux_file_read(faux_file_t *f, void *buf, size_t n) {
-
+ssize_t faux_file_read(faux_file_t *f, void *buf, size_t n)
+{
 	assert(f);
 	if (!f)
 		return -1;
@@ -480,8 +479,8 @@ ssize_t faux_file_read(faux_file_t *f, void *buf, size_t n) {
  * @param [in] n Number of bytes.
  * @return Number of bytes readed or < 0 on error.
  */
-ssize_t faux_file_read_block(faux_file_t *f, void *buf, size_t n) {
-
+ssize_t faux_file_read_block(faux_file_t *f, void *buf, size_t n)
+{
 	assert(f);
 	if (!f)
 		return -1;

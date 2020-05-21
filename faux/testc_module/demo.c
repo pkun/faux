@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int testc_faux_ini_good(void) {
-
+int testc_faux_ini_good(void)
+{
 	char *path = NULL;
 
 	path = getenv("TESTC_TMPDIR");
@@ -12,15 +12,15 @@ int testc_faux_ini_good(void) {
 }
 
 
-int testc_faux_ini_bad(void) {
-
+int testc_faux_ini_bad(void)
+{
 	printf("Some debug information here\n");
 	return -1;
 }
 
 
-int testc_faux_ini_signal(void) {
-
+int testc_faux_ini_signal(void)
+{
 	char *p = NULL;
 
 	printf("%s\n", p);

@@ -21,8 +21,8 @@
  *
  * @return Allocated and initialized INI object or NULL on error.
  */
-faux_ini_t *faux_ini_new(void) {
-
+faux_ini_t *faux_ini_new(void)
+{
 	faux_ini_t *ini;
 
 	ini = faux_zmalloc(sizeof(*ini));
@@ -42,8 +42,8 @@ faux_ini_t *faux_ini_new(void) {
  * After using the INI object must be freed. Function frees INI objecr itself
  * and all pairs 'name/value' stored within INI object.
  */
-void faux_ini_free(faux_ini_t *ini) {
-
+void faux_ini_free(faux_ini_t *ini)
+{
 	assert(ini);
 	if (!ini)
 		return;
@@ -72,8 +72,8 @@ void faux_ini_free(faux_ini_t *ini) {
  * NULL on error
  */
 const faux_pair_t *faux_ini_set(
-	faux_ini_t *ini, const char *name, const char *value) {
-
+	faux_ini_t *ini, const char *name, const char *value)
+{
 	faux_pair_t *pair = NULL;
 	faux_list_node_t *node = NULL;
 	faux_pair_t *found_pair = NULL;
@@ -123,8 +123,8 @@ const faux_pair_t *faux_ini_set(
  * @param [in] ini Allocated and initialized INI object.
  * @param [in] name Name field to search for the entry.
  */
-void faux_ini_unset(faux_ini_t *ini, const char *name) {
-
+void faux_ini_unset(faux_ini_t *ini, const char *name)
+{
 	faux_ini_set(ini, name, NULL);
 }
 
@@ -139,8 +139,8 @@ void faux_ini_unset(faux_ini_t *ini, const char *name) {
  * Found pair 'name/value'.
  * NULL on errror.
  */
-const faux_pair_t *faux_ini_find_pair(const faux_ini_t *ini, const char *name) {
-
+const faux_pair_t *faux_ini_find_pair(const faux_ini_t *ini, const char *name)
+{
 	assert(ini);
 	assert(name);
 	if (!ini || !name)
@@ -160,8 +160,8 @@ const faux_pair_t *faux_ini_find_pair(const faux_ini_t *ini, const char *name) {
  * Found value field.
  * NULL on errror.
  */
-const char *faux_ini_find(const faux_ini_t *ini, const char *name) {
-
+const char *faux_ini_find(const faux_ini_t *ini, const char *name)
+{
 	const faux_pair_t *pair = faux_ini_find_pair(ini, name);
 
 	if (!pair)
@@ -180,8 +180,8 @@ const char *faux_ini_find(const faux_ini_t *ini, const char *name) {
  * @return Initialized iterator.
  * @sa faux_ini_each()
  */
-faux_ini_node_t *faux_ini_iter(const faux_ini_t *ini) {
-
+faux_ini_node_t *faux_ini_iter(const faux_ini_t *ini)
+{
 	assert(ini);
 	if (!ini)
 		return NULL;
@@ -202,8 +202,8 @@ faux_ini_node_t *faux_ini_iter(const faux_ini_t *ini) {
  * @return Pair 'name/value'.
  * @sa faux_ini_iter()
  */
-const faux_pair_t *faux_ini_each(faux_ini_node_t **iter) {
-
+const faux_pair_t *faux_ini_each(faux_ini_node_t **iter)
+{
 	return (const faux_pair_t *)faux_list_each((faux_list_node_t **)iter);
 }
 
@@ -224,7 +224,8 @@ const faux_pair_t *faux_ini_each(faux_ini_node_t **iter) {
  * @param [in] str String to find word in it.
  * @return Purified copy of word or NULL.
  */
-static char *faux_ini_purify_word(const char *str) {
+static char *faux_ini_purify_word(const char *str)
+{
 	const char *word;
 	const char *string = str;
 	bool_t quoted = BOOL_FALSE;
@@ -289,8 +290,8 @@ static char *faux_ini_purify_word(const char *str) {
  * @param [in] string String to parse.
  * @return 0 - succes, < 0 - error
  */
-int faux_ini_parse_str(faux_ini_t *ini, const char *string) {
-
+int faux_ini_parse_str(faux_ini_t *ini, const char *string)
+{
 	char *buffer = NULL;
 	char *saveptr = NULL;
 	char *line = NULL;
@@ -368,8 +369,8 @@ int faux_ini_parse_str(faux_ini_t *ini, const char *string) {
  * @return 0 - succes, < 0 - error
  * @sa faux_ini_parse_str()
  */
-int faux_ini_parse_file(faux_ini_t *ini, const char *fn) {
-
+int faux_ini_parse_file(faux_ini_t *ini, const char *fn)
+{
 	bool_t eof = BOOL_FALSE;
 	faux_file_t *f = NULL;
 	char *buf = NULL;
@@ -410,8 +411,8 @@ int faux_ini_parse_file(faux_ini_t *ini, const char *fn) {
  * @param [in] fn File name to write to.
  * @return 0 - success, < 0 - error
  */
-int faux_ini_write_file(const faux_ini_t *ini, const char *fn) {
-
+int faux_ini_write_file(const faux_ini_t *ini, const char *fn)
+{
 	faux_file_t *f = NULL;
 	faux_ini_node_t *iter = NULL;
 	const faux_pair_t *pair = NULL;

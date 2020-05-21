@@ -16,4 +16,7 @@ opts="$opts -nlp -i8 -ci8 -ip0 -ts8 -il1"
 # Breaking long lines
 opts="$opts -nbbo -hnl -l80"
 
+# Comments
+opts="$opts"
+
 indent $opts "$@"

@@ -18,8 +18,8 @@
  * @param [in] n Number of bytes to write.
  * @return Number of bytes written or < 0 on error.
  */
-ssize_t faux_write(int fd, const void *buf, size_t n) {
-
+ssize_t faux_write(int fd, const void *buf, size_t n)
+{
 	ssize_t bytes_written = 0;
 
 	assert(fd != -1);
@@ -50,8 +50,8 @@ ssize_t faux_write(int fd, const void *buf, size_t n) {
  * < n then insufficient space or error (but some data was already written).
  * < 0 - error.
  */
-ssize_t faux_write_block(int fd, const void *buf, size_t n) {
-
+ssize_t faux_write_block(int fd, const void *buf, size_t n)
+{
 	ssize_t bytes_written = 0;
 	size_t total_written = 0;
 	size_t left = n;
@@ -86,8 +86,8 @@ ssize_t faux_write_block(int fd, const void *buf, size_t n) {
  * @return Number of bytes readed or < 0 on error.
  * 0 bytes indicates EOF
  */
-ssize_t faux_read(int fd, void *buf, size_t n) {
-
+ssize_t faux_read(int fd, void *buf, size_t n)
+{
 	ssize_t bytes_readed = 0;
 
 	assert(fd != -1);
@@ -118,8 +118,8 @@ ssize_t faux_read(int fd, void *buf, size_t n) {
  * < n EOF or error (but some data was already readed).
  * < 0 Error.
  */
-size_t faux_read_block(int fd, void *buf, size_t n) {
-
+size_t faux_read_block(int fd, void *buf, size_t n)
+{
 	ssize_t bytes_readed = 0;
 	size_t total_readed = 0;
 	size_t left = n;
