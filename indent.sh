@@ -8,7 +8,7 @@ opts="$opts -bad -bap -nsob"
 opts="$opts -br -ce -cdw -ss -ncs -npcs -saf -sai -saw -nprs -cli0 -cbi0"
 
 # Declarations
-opts="$opts -di1 -nbc -npsl -brs -brf"
+opts="$opts -di1 -nbc -npsl -brs -blf"
 
 # Indentation
 opts="$opts -nlp -i8 -ci8 -ip0 -ts8 -il1"

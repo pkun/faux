@@ -23,7 +23,7 @@ BraceWrapping:
 #  BraceWrappingAfterControlStatementStyle: Never
   AfterControlStatement: false
   AfterEnum: false
-  AfterFunction: false
+  AfterFunction: true
   AfterStruct: false
   AfterUnion: false
   AfterExternBlock: false
