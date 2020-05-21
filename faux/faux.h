@@ -64,11 +64,14 @@ void *faux_malloc(size_t size);
 void faux_bzero(void *ptr, size_t size);
 void *faux_zmalloc(size_t size);
 
-// IO
+// I/O
 ssize_t faux_write(int fd, const void *buf, size_t n);
 ssize_t faux_read(int fd, void *buf, size_t n);
 ssize_t faux_write_block(int fd, const void *buf, size_t n);
 size_t faux_read_block(int fd, void *buf, size_t n);
+
+// Filesystem
+int faux_rm(const char *path);
 
 C_DECL_END
 
