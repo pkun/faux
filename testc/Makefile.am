@@ -11,6 +11,7 @@ testc_testc_SOURCES = \
 testc_testc_SOURCES += \
 	testc/base/mem.c \
 	testc/base/io.c \
+	testc/base/fs.c \
 	testc/ctype/ctype.c \
 	testc/str/str.c \
 	testc/list/list.c \
