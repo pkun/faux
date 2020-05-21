@@ -242,13 +242,13 @@ int main(int argc, char *argv[]) {
 
 				// Success
 				if (WEXITSTATUS(wstatus) == 0) {
-					result_str = faux_str_dup("success");
+					result_str = faux_str_dup("OK");
 					attention_str = faux_str_dup("");
 
 				// Failed
 				} else {
 					result_str = faux_str_sprintf(
-						"failed (%d)",
+						"FAIL (%d)",
 						(int)((signed char)((unsigned char)WEXITSTATUS(wstatus))));
 					attention_str = faux_str_dup("(!) ");
 					module_failed_tests++; // Statistics
@@ -256,14 +256,14 @@ int main(int argc, char *argv[]) {
 
 			// Terminated by signal
 			} else if (WIFSIGNALED(wstatus)) {
-				result_str = faux_str_sprintf("terminated (%d)",
+				result_str = faux_str_sprintf("SIGNAL (%d)",
 					WTERMSIG(wstatus));
 				attention_str = faux_str_dup("[!] ");
 				module_interrupted_tests++; // Statistics
 
 			// Stopped by unknown conditions
 			} else {
-				result_str = faux_str_dup("unknown");
+				result_str = faux_str_dup("UNKNOWN");
 				attention_str = faux_str_dup("[!] ");
 				module_broken_tests++; // Statistics
 			}
@@ -285,10 +285,10 @@ int main(int argc, char *argv[]) {
 						tmpdir);
 				}
 				if (faux_list_len(buf_list) > 0)
-					printf("~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ \n");
+					printf(">>>\n");
 				print_test_output(buf_list);
 				if (faux_list_len(buf_list) > 0)
-					printf("~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ \n");
+					printf("<<<\n");
 			}
 			faux_list_free(buf_list);
 
@@ -306,6 +306,7 @@ int main(int argc, char *argv[]) {
 			faux_rm(testc_tmpdir);
 
 		// Report module statistics
+		printf("\n");
 		printf("Module tests: %u\n", module_tests);
 		printf("Module broken tests: %u\n", module_broken_tests);
 		printf("Module failed tests: %u\n", module_failed_tests);

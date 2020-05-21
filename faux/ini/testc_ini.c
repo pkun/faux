@@ -5,34 +5,8 @@
 #include "faux/ini.h"
 #include "faux/testc_helpers.h"
 
-int testc_faux_ini_good(void) {
 
-	char *path = NULL;
-
-	path = getenv("TESTC_TMPDIR");
-	if (path)
-		printf("Env var is [%s]\n", path);
-	return 0;
-}
-
-
-int testc_faux_ini_bad(void) {
-
-	printf("Some debug information here\n");
-	return -1;
-}
-
-
-int testc_faux_ini_signal(void) {
-
-	char *p = NULL;
-
-	printf("%s\n", p);
-	return -1;
-}
-
-
-int testc_faux_ini_parse(void) {
+int testc_faux_ini_parse_file(void) {
 
 	// Source INI file
 	const char *src_file =
@@ -55,7 +29,7 @@ int testc_faux_ini_parse(void) {
 		"VAR_WITHOUT_EOL=zxcvbnm"
 	;
 
-// Etalon file
+	// Etalon file
 	const char *etalon_file =
 		"ANOTHER_VAR6=\"Normal var\"\n"
 		"COMPLEX_VAR=\"  Ubuntu\t\t1818 \"\n"
