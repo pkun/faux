@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "faux/str.h"
 #include "faux/ini.h"
 #include "faux/testc_helpers.h"
 
@@ -8,7 +9,7 @@ int testc_faux_ini_good(void) {
 
 	char *path = NULL;
 
-	path = getenv("FAUX_INI_PATH");
+	path = getenv("TESTC_TMPDIR");
 	if (path)
 		printf("Env var is [%s]\n", path);
 	return 0;
@@ -67,26 +68,26 @@ int testc_faux_ini_parse(void) {
 		"\"test space\"=\"lk lk lk \"\n"
 	;
 
+	int ret = -1; // Pessimistic return value
 	faux_ini_t *ini = NULL;
 	faux_ini_node_t *iter = NULL;
 	const faux_pair_t *pair = NULL;
-	const char *src_fn = NULL;
-	const char *dst_fn = "/tmp/dst12";
-	const char *etalon_fn = NULL;
+	char *src_fn = NULL;
+	char *dst_fn = NULL;
+	char *etalon_fn = NULL;
 	unsigned num_entries = 0;
 
 	// Prepare files
 	src_fn = faux_testc_tmpfile_deploy(src_file);
-	if (!src_fn) {
-		fprintf(stderr, "Can't create test file %s\n", src_fn);
-	}
 	etalon_fn = faux_testc_tmpfile_deploy(etalon_file);
-	if (!src_fn) {
-		fprintf(stderr, "Can't create etalon file %s\n", etalon_fn);
-	}
+	dst_fn = faux_str_sprintf("%s/dst", getenv(FAUX_TESTC_TMPDIR_ENV));
 
 	ini = faux_ini_new();
-	faux_ini_parse_file(ini, src_fn);
+	if (faux_ini_parse_file(ini, src_fn) < 0) {
+		fprintf(stderr, "Can't parse INI file %s\n", src_fn);
+		goto parse_error;
+	}
+
 	iter = faux_ini_iter(ini);
 	while ((pair = faux_ini_each(&iter))) {
 		num_entries++;
@@ -94,15 +95,22 @@ int testc_faux_ini_parse(void) {
 	}
 	if (10 != num_entries) {
 		fprintf(stderr, "Wrong number of entries %u\n", num_entries);
-		faux_ini_free(ini);
-		return -1;
+		goto parse_error;
 	}
 
 	faux_ini_set(ini, "test space", "lk lk lk ");
-	faux_ini_write_file(ini, dst_fn);
+	if (faux_ini_write_file(ini, dst_fn) < 0) {
+		fprintf(stderr, "Can't write INI file %s\n", dst_fn);
+		goto parse_error;
+	}
 
+	ret = 0; // success
+
+parse_error:
 	faux_ini_free(ini);
+	faux_str_free(dst_fn);
+	faux_str_free(src_fn);
+	faux_str_free(etalon_fn);
 
-	return 0;
-
+	return ret;
 }

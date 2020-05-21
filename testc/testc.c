@@ -13,6 +13,8 @@
 #include <sys/wait.h>
 #include <sys/uio.h>
 #include <errno.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 #if WITH_INTERNAL_GETOPT
 #include "libc/getopt.h"
@@ -32,6 +34,7 @@
 #include "faux/faux.h"
 #include "faux/str.h"
 #include "faux/list.h"
+#include "faux/testc_helpers.h"
 
 #ifndef VERSION
 #define VERSION 1.0.0
@@ -51,7 +54,8 @@
 
 // Command line options */
 struct opts_s {
-	int debug;
+	bool_t debug;
+	bool_t preserve_tmp;
 	faux_list_t *so_list;
 };
 
@@ -98,6 +102,7 @@ int main(int argc, char *argv[]) {
 	while ((so = faux_list_each(&iter))) {
 
 		void *so_handle = NULL;
+		char testc_tmpdir[] = "/tmp/testc-XXXXXX";
 
 		// Module symbols
 		unsigned char testc_version_major = TESTC_VERSION_MAJOR_DEFAULT;
@@ -169,6 +174,18 @@ int main(int argc, char *argv[]) {
 		printf("Processing module \"%s\" v%u.%u ...\n", so,
 			testc_version_major, testc_version_minor);
 
+		// Create tmpdir for current shared object
+		if (!mkdtemp(testc_tmpdir)) {
+			fprintf(stderr, "Warning: "
+				"Can't create tmp dir for module \"%s\"... "
+				"Ignored\n", so);
+		}
+		if (opts->preserve_tmp) {
+			fprintf(stderr, "Warning: "
+				"Temp dir \"%s\" will be preserved\n",
+				testc_tmpdir);
+		}
+
 		// Iterate through testing functions list
 		while ((*testc_module)[0]) {
 
@@ -178,8 +195,8 @@ int main(int argc, char *argv[]) {
 			int wstatus = 0; // Test's retval
 			char *result_str = NULL;
 			char *attention_str = NULL;
-
 			faux_list_t *buf_list = NULL;
+			char *tmpdir = NULL; // tmp dir for current test
 
 			// Get name and description of testing function
 			test_name = (*testc_module)[0];
@@ -198,6 +215,21 @@ int main(int argc, char *argv[]) {
 					"Skipped\n", test_name);
 				module_broken_tests++; // Statistics
 				continue;
+			}
+
+			// Create tmp dir for current test and set TESTC_TMPDIR
+			tmpdir = faux_str_sprintf("%s/test%03u",
+				testc_tmpdir, module_tests);
+			if (tmpdir) {
+				if (mkdir(tmpdir, 0755) < 0) {
+					fprintf(stderr, "Warning: "
+						"Can't create temp dir \"%s\": %s\n",
+						tmpdir, strerror(errno));
+				}
+				setenv(FAUX_TESTC_TMPDIR_ENV, tmpdir, 1);
+			} else {
+				fprintf(stderr, "Warning: "
+					"Can't generate name for temp dir\n");
 			}
 
 			// Execute testing function
@@ -247,18 +279,31 @@ int main(int argc, char *argv[]) {
 			if (!WIFEXITED(wstatus) ||
 				WEXITSTATUS(wstatus) != 0 ||
 				opts->debug) {
+				if (opts->preserve_tmp) {
+					fprintf(stderr, "Info: "
+						"Test's temp dir is \"%s\"\n",
+						tmpdir);
+				}
 				if (faux_list_len(buf_list) > 0)
 					printf("~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ \n");
 				print_test_output(buf_list);
 				if (faux_list_len(buf_list) > 0)
 					printf("~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ \n");
 			}
-
 			faux_list_free(buf_list);
+
+			// Remove test's tmp dir
+			if (!opts->preserve_tmp)
+				faux_rm(tmpdir);
+			faux_str_free(tmpdir);
 		}
 
 		dlclose(so_handle);
 		so_handle = NULL;
+
+		// Remove module's tmp dir
+		if (!opts->preserve_tmp)
+			faux_rm(testc_tmpdir);
 
 		// Report module statistics
 		printf("Module tests: %u\n", module_tests);
@@ -438,6 +483,7 @@ static opts_t *opts_new(void) {
 		return NULL;
 
 	opts->debug = BOOL_FALSE;
+	opts->preserve_tmp = BOOL_FALSE;
 
 	// Members of list are static strings from argv so don't free() it
 	opts->so_list = faux_list_new(FAUX_LIST_UNSORTED, FAUX_LIST_UNIQUE,
@@ -465,13 +511,14 @@ static opts_t *opts_parse(int argc, char *argv[]) {
 
 	opts_t *opts = NULL;
 
-	static const char *shortopts = "hvd";
+	static const char *shortopts = "hvdt";
 #ifdef HAVE_GETOPT_LONG
 	static const struct option longopts[] = {
-		{"help",	0, NULL, 'h'},
-		{"version",	0, NULL, 'v'},
-		{"debug",	0, NULL, 'd'},
-		{NULL,		0, NULL, 0}
+		{"help",		0, NULL, 'h'},
+		{"version",		0, NULL, 'v'},
+		{"debug",		0, NULL, 'd'},
+		{"preserve-tmp",	0, NULL, 't'},
+		{NULL,			0, NULL, 0}
 	};
 #endif
 
@@ -492,6 +539,9 @@ static opts_t *opts_parse(int argc, char *argv[]) {
 		switch (opt) {
 		case 'd':
 			opts->debug = BOOL_TRUE;
+			break;
+		case 't':
+			opts->preserve_tmp = BOOL_TRUE;
 			break;
 		case 'h':
 			help(0, argv[0]);
@@ -552,5 +602,6 @@ static void help(int status, const char *argv0) {
 		printf("\t-v, --version\tPrint version.\n");
 		printf("\t-h, --help\tPrint this help.\n");
 		printf("\t-d, --debug\tDebug mode. Show output for all tests.\n");
+		printf("\t-t, --preserve-tmp\tPreserve test's tmp files.\n");
 	}
 }

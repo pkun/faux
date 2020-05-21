@@ -14,6 +14,7 @@
 #include "faux/ctype.h"
 #include "faux/str.h"
 #include "faux/file.h"
+#include "faux/testc_helpers.h"
 
 
 ssize_t faux_testc_file_deploy(const char *fn, const char *str) {
@@ -37,15 +38,26 @@ ssize_t faux_testc_file_deploy(const char *fn, const char *str) {
 	return bytes_written;
 }
 
+
 char *faux_testc_tmpfile_deploy(const char *str) {
 
-	char template[] = "/tmp/testc_tmpfile_XXXXXX";
+	char *template = NULL;
 	int fd = -1;
 	faux_file_t *f = NULL;
 	ssize_t bytes_written = 0;
+	char *env_tmpdir = NULL;
 
 	assert(str);
 	if (!str)
+		return NULL;
+
+	env_tmpdir = getenv(FAUX_TESTC_TMPDIR_ENV);
+	if (env_tmpdir)
+		template = faux_str_sprintf("%s/tmpfile-XXXXXX", env_tmpdir);
+	else
+		template = faux_str_sprintf("/tmp/testc-tmpfile-XXXXXX");
+	assert(template);
+	if (!template)
 		return NULL;
 
 	fd = mkstemp(template);
@@ -61,5 +73,5 @@ char *faux_testc_tmpfile_deploy(const char *str) {
 	if (bytes_written < 0)
 		return NULL;
 
-	return faux_str_dup(template);
+	return template;
 }

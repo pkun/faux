@@ -9,6 +9,8 @@
 
 #include "faux/faux.h"
 
+#define FAUX_TESTC_TMPDIR_ENV "TESTC_TMPDIR"
+
 C_DECL_BEGIN
 
 ssize_t faux_testc_file_deploy(const char *fn, const char *str);
