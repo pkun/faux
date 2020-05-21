@@ -13,6 +13,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "faux/str.h"
+
 /** @brief Removes filesystem objects recursively.
  *
  * Function can remove file or directory (recursively).
@@ -49,4 +51,33 @@ int faux_rm(const char *path) {
 	closedir(dir);
 
 	return rmdir(path);
+}
+
+/** @brief Expand tilde within path due to HOME env var.
+ *
+ * If first character of path is tilde then expand it to value of
+ * environment variable HOME. If tilde is not the first character or
+ * HOME is not defined then return copy of original path.
+ *
+ * @warning The resulting string must be freed by faux_str_free() later.
+ *
+ * @param [in] path Path to expand.
+ * @return Expanded string or NULL on error.
+ */
+char *faux_expand_tilde(const char *path) {
+
+	char *home_dir = getenv("HOME");
+	char *result = NULL;
+
+	assert(path);
+	if (!path)
+		return NULL;
+
+	// Tilde can be the first character only to be expanded
+	if (home_dir && (path[0] == '~'))
+		result = faux_str_sprintf("%s%s", home_dir, &path[1]);
+	else
+		result = faux_str_dup(path);
+
+	return result;
 }

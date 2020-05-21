@@ -72,6 +72,7 @@ size_t faux_read_block(int fd, void *buf, size_t n);
 
 // Filesystem
 int faux_rm(const char *path);
+char *faux_expand_tilde(const char *path);
 
 C_DECL_END
 
