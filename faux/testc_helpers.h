@@ -15,6 +15,7 @@ C_DECL_BEGIN
 
 ssize_t faux_testc_file_deploy(const char *fn, const char *str);
 char *faux_testc_tmpfile_deploy(const char *str);
+int faux_testc_file_cmp(const char *first_file, const char *second_file);
 
 C_DECL_END
 

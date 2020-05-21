@@ -75,3 +75,47 @@ char *faux_testc_tmpfile_deploy(const char *str) {
 
 	return template;
 }
+
+#define CHUNK_SIZE 1024
+
+int faux_testc_file_cmp(const char *first_file, const char *second_file) {
+
+	int ret = -1; // Pessimistic retval
+	faux_file_t *f = NULL;
+	faux_file_t *s = NULL;
+	char buf_f[CHUNK_SIZE];
+	char buf_s[CHUNK_SIZE];
+	ssize_t readed_f = 0;
+	ssize_t readed_s = 0;
+
+	assert(first_file);
+	assert(second_file);
+	if (!first_file || !second_file)
+		return -1;
+
+	f = faux_file_open(first_file, O_RDONLY, 0);
+	s = faux_file_open(second_file, O_RDONLY, 0);
+	if (!f || !s)
+		goto cmp_error;
+
+	do {
+		readed_f = faux_file_read_block(f, buf_f, CHUNK_SIZE);
+		readed_s = faux_file_read_block(s, buf_s, CHUNK_SIZE);
+		if (readed_f != readed_s)
+			goto cmp_error;
+		if (readed_f < 0)
+			goto cmp_error;
+		if (0 == readed_f)
+			break; // EOF
+		if (memcmp(buf_f, buf_s, readed_f) != 0)
+			goto cmp_error;
+	} while (CHUNK_SIZE == readed_f); // Not full chunk so EOF is near
+
+	ret = 0; // Equal
+
+cmp_error:
+	faux_file_close(f);
+	faux_file_close(s);
+
+	return ret;
+}

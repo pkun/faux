@@ -22,6 +22,7 @@ int testc_faux_ini_bad(void) {
 	return -1;
 }
 
+
 int testc_faux_ini_signal(void) {
 
 	char *p = NULL;
@@ -29,6 +30,7 @@ int testc_faux_ini_signal(void) {
 	printf("%s\n", p);
 	return -1;
 }
+
 
 int testc_faux_ini_parse(void) {
 
@@ -75,7 +77,6 @@ int testc_faux_ini_parse(void) {
 	char *src_fn = NULL;
 	char *dst_fn = NULL;
 	char *etalon_fn = NULL;
-	unsigned num_entries = 0;
 
 	// Prepare files
 	src_fn = faux_testc_tmpfile_deploy(src_file);
@@ -90,17 +91,18 @@ int testc_faux_ini_parse(void) {
 
 	iter = faux_ini_iter(ini);
 	while ((pair = faux_ini_each(&iter))) {
-		num_entries++;
 		printf("[%s] = [%s]\n", faux_pair_name(pair), faux_pair_value(pair));
-	}
-	if (10 != num_entries) {
-		fprintf(stderr, "Wrong number of entries %u\n", num_entries);
-		goto parse_error;
 	}
 
 	faux_ini_set(ini, "test space", "lk lk lk ");
 	if (faux_ini_write_file(ini, dst_fn) < 0) {
 		fprintf(stderr, "Can't write INI file %s\n", dst_fn);
+		goto parse_error;
+	}
+
+	if (faux_testc_file_cmp(dst_fn, etalon_fn) != 0) {
+		fprintf(stderr, "Generated file %s is not equal to etalon %s\n",
+		dst_fn, etalon_fn);
 		goto parse_error;
 	}
 
