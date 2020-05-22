@@ -45,6 +45,9 @@ $ LD_LIBRARY_PATH=/home/pkun/faux/.libs testc libfaux.so
 
 * `-v`, `--version` - Show utility version.
 * `-h`, `--help` - Show help.
+* `-d`, `--debug` - Show output for all tests. Not for failed tests only.
+* `-t`, `--preserve-tmp` - Preserve test's temporary files. It's useful for debug purposes. Since version `faux-1.1.0`.
+
 
 
 ## Report example
@@ -214,3 +217,13 @@ int testc_foo(void) {
 ```
 
 In this case testing function can test local static functions but not library public interface only.
+
+## Temporary files
+
+Some complex tests need files to work with. Such feature is available since `faux-1.1.0`. The `testc` utility creates temporary directory for each test, sets environment variable `TESTC_TMPDIR` to the name of this temporary directory. The testing function can get environment variable to find out its temporary directory. The test can use this directory in any way. The temporary dir is individual for each test so nobody creates file within this directory excluding test itself. The test doesn't need to care about duplicate file names. After test execution the `testc` utility removes temporary dir with all content. So the cleaning of temporary files is not mandatory task for test. To get temporary directory path use the following command:
+
+```
+const char *tmpdir = getenv("TESTC_TMPDIR");
+```
+
+Sometimes temporary files are needed for debugging purposes. Use `--preserve-tmp` flag while `testc` utility execution to preserve all temporary files. The names of temporary directories you can find out from test report. Temporary files can be removed manually later.

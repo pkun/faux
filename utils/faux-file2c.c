@@ -328,6 +328,6 @@ static void help(int status, const char *argv0)
 		printf("\t-h, --help\tPrint this help.\n");
 		printf("\t-d, --debug\tDebug mode.\n");
 		printf("\t-t, --text\tText mode conversion (Default).\n");
-		printf("\t-d, --debug\tBinary mode conversion.\n");
+		printf("\t-b, --binary\tBinary mode conversion.\n");
 	}
 }
