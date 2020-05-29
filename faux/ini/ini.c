@@ -23,7 +23,7 @@
  */
 faux_ini_t *faux_ini_new(void)
 {
-	faux_ini_t *ini;
+	faux_ini_t *ini = NULL;
 
 	ini = faux_zmalloc(sizeof(*ini));
 	if (!ini)
@@ -39,7 +39,7 @@ faux_ini_t *faux_ini_new(void)
 
 /** @brief Frees the INI object.
  *
- * After using the INI object must be freed. Function frees INI objecr itself
+ * After using the INI object must be freed. Function frees INI object itself
  * and all pairs 'name/value' stored within INI object.
  */
 void faux_ini_free(faux_ini_t *ini)
@@ -195,7 +195,7 @@ faux_ini_node_t *faux_ini_iter(const faux_ini_t *ini)
  * Before iteration the iterator must be initialized by faux_ini_iter()
  * function. Doesn't use faux_ini_each() with uninitialized iterator.
  *
- * On each call function returns pair 'name/value' and modify iterator.
+ * On each call function returns pair 'name/value' and modifies iterator.
  * Stop iteration when function returns NULL.
  *
  * @param [in,out] iter Iterator.
@@ -226,7 +226,7 @@ const faux_pair_t *faux_ini_each(faux_ini_node_t **iter)
  */
 static char *faux_ini_purify_word(const char *str)
 {
-	const char *word;
+	const char *word = NULL;
 	const char *string = str;
 	bool_t quoted = BOOL_FALSE;
 	size_t len = 0;
