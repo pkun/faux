@@ -106,7 +106,7 @@ void faux_argv_quotes(faux_argv_t *fargv, const char *quotes)
 	fargv->quotes = faux_str_dup(quotes);
 }
 
-
+/*
 ssize_t faux_argv_parse_str(faux_argv_t *fargv, const char *str)
 {
 	assert(fargv);
@@ -116,4 +116,4 @@ ssize_t faux_argv_parse_str(faux_argv_t *fargv, const char *str)
 
 	return 0;
 }
-
+*/

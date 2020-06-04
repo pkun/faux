@@ -38,6 +38,9 @@ char *faux_str_chars(const char *str, const char *chars_to_search);
 char *faux_str_c_esc(const char *src);
 char *faux_str_c_bin(const char *src, size_t n);
 
+char *faux_str_nextword(const char *str, const char **saveptr,
+	const char *alt_quotes);
+
 
 //const char *faux_str_suffix(const char *string);
 /*
@@ -57,9 +60,6 @@ char *faux_str_c_bin(const char *src, size_t n);
 //char *faux_str_encode(const char *string, const char *escape_chars);
 //unsigned int faux_str_equal_part(const char *str1, const char *str2,
 //	bool_t utf8);
-//const char *faux_str_nextword(const char *string,
-//	size_t *len, size_t *offset, size_t *quoted);
-//unsigned int faux_str_wordcount(const char *line);
 
 C_DECL_END
 
