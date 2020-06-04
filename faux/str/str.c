@@ -575,97 +575,194 @@ char *faux_str_chars(const char *str, const char *chars_to_search)
 	return faux_str_charsn(str, chars_to_search, strlen(str));
 }
 
-/* TODO: If it nedeed?
-const char *faux_str_nextword(const char *string,
-	size_t *len, size_t *offset, size_t *quoted)
-{
-	const char *word;
 
-	*quoted = 0;
-
-	// Find the start of a word (not including an opening quote)
-	while (*string && isspace(*string)) {
-		string++;
-		(*offset)++;
-	}
-	// Is this the start of a quoted string ?
-	if (*string == '"') {
-		*quoted = 1;
-		string++;
-	}
-	word = string;
-	*len = 0;
-
-	// Find the end of the word
-	while (*string) {
-		if (*string == '\\') {
-			string++;
-			(*len)++;
-			if (*string) {
-				(*len)++;
-				string++;
-			}
-			continue;
-		}
-		// End of word
-		if (!*quoted && isspace(*string))
-			break;
-		if (*string == '"') {
-			// End of a quoted string
-			*quoted = 2;
-			break;
-		}
-		(*len)++;
-		string++;
-	}
-
-	return word;
-}
-*/
-
-// TODO: Is it needed?
-/*
-char *lub_string_ndecode(const char *string, unsigned int len)
+static char *faux_str_deesc(const char *string, size_t len)
 {
 	const char *s = string;
-	char *res, *p;
-	int esc = 0;
+	char *res = NULL;
+	char *p = NULL;
+	bool_t escaped = BOOL_FALSE;
 
+	assert(string);
 	if (!string)
 		return NULL;
+	if (0 == len)
+		return NULL;
 
-	p = res = faux_zmalloc(len + 1);
+	res = faux_zmalloc(len + 1);
+	assert(res);
+	if (!res)
+		return NULL;
+	p = res;
 
-	while (*s && (s < (string +len))) {
-		if (!esc) {
-			if ('\\' == *s)
-				esc = 1;
-			else
-				*p = *s;
-		} else {
-//			switch (*s) {
-//			case 'r':
-//			case 'n':
-//				*p = '\n';
-//				break;
-//			case 't':
-//				*p = '\t';
-//				break;
-//			default:
-//				*p = *s;
-//				break;
-//			}
-//			*p = *s;
-			esc = 0;
+	while ((*s != '\0') && (s < (string +len))) {
+		if (('\\' == *s) && !escaped) {
+			escaped = BOOL_TRUE;
+			s++;
+			continue;
 		}
-		if (!esc)
-			p++;
+		escaped = BOOL_FALSE;
+		*p = *s;
 		s++;
+		p++;
 	}
 	*p = '\0';
 
 	return res;
 }
+
+
+/*--------------------------------------------------------- */
+/** @brief Find next word or quoted substring within string
+ *
+ *
+ * @param [in] str String to parse.
+ * @param [out] offset Pointer to first symbol after found substring.
+ * @return Allocated buffer with found substring (without quotes).
+ * @warning Returned alocated buffer must be freed later by faux_str_free()
+ */
+char *faux_str_nextword(const char *str, const char **saveptr,
+	const char *alt_quotes)
+{
+	const char *string = str;
+	const char *word = NULL;
+	size_t len = 0;
+	const char dbl_quote = '"';
+	bool_t dbl_quoted = BOOL_FALSE;
+	char alt_quote = '\0';
+	unsigned int alt_quote_num = 0; // Number of opening alt quotes
+	bool_t alt_quoted = BOOL_FALSE;
+	char *result = NULL;
+
+	// Find the start of a word (not including an opening quote)
+	while (*string && isspace(*string))
+		string++;
+
+	word = string; // Suppose not quoted string
+
+	while (*string != '\0') {
+
+		// Standard double quotation
+		if (dbl_quoted) {
+			// End of word
+			if (*string == dbl_quote) {
+				if (len > 0) {
+					char *s = faux_str_deesc(word, len);
+					faux_str_cat(&result, s);
+					faux_str_free(s);
+				}
+				dbl_quoted = BOOL_FALSE;
+				string++;
+				word = string;
+				len = 0;
+			// Escaping
+			} else if (*string == '\\') {
+				// Skip escaping
+				string++;
+				len++;
+				// Skip escaped symbol
+				if (*string) {
+					string++;
+					len++;
+				}
+			} else {
+				string++;
+				len++;
+			}
+
+		// Alternative multi quotation
+		} else if (alt_quoted) {
+			unsigned int qnum = alt_quote_num;
+			while (string && (*string == alt_quote) && qnum) {
+				string++;
+				len++;
+				qnum--;
+			}
+			if (0 == qnum) { // End of word was found
+				// Quotes themselfs are not a part of a word
+				len -= alt_quote_num;
+				if (len > 0)
+					faux_str_catn(&result, word, len);
+				alt_quoted = BOOL_FALSE;
+				word = string;
+				len = 0;
+			} else if (qnum == alt_quote_num) { // No quote syms
+				string++;
+				len++;
+			}
+
+		// Not quoted
+		} else {
+			char *p = NULL;
+			// Start of a double quoted string
+			if (*string == dbl_quote) {
+				if (len > 0) {
+					char *s = faux_str_deesc(word, len);
+					faux_str_cat(&result, s);
+					faux_str_free(s);
+				}
+				dbl_quoted = BOOL_TRUE;
+				string++;
+				word = string;
+				len = 0;
+			// Start of alt quoted string
+			} else if ((p = strchr(alt_quotes, *string))) {
+				if (len > 0) {
+					char *s = faux_str_deesc(word, len);
+					faux_str_cat(&result, s);
+					faux_str_free(s);
+				}
+				alt_quoted = BOOL_TRUE;
+				alt_quote = *string;
+				alt_quote_num = 0;
+				while (string && (*string == alt_quote)) {
+					string++;
+					alt_quote_num++; // Count starting quotes
+				}
+				word = string;
+				len = 0;
+			// End of word
+			} else if (isspace(*string)) {
+				if (len > 0) {
+					char *s = faux_str_deesc(word, len);
+					faux_str_cat(&result, s);
+					faux_str_free(s);
+				}
+				break;
+			// Escaping
+			} else if (*string == '\\') {
+				// Skip escaping
+				string++;
+				len++;
+				// Skip escaped symbol
+				if (*string) {
+					string++;
+					len++;
+				}
+			} else {
+				string++;
+				len++;
+			}
+		}
+	}
+
+	if (len > 0) {
+		if (alt_quoted) {
+			faux_str_catn(&result, word, len);
+		} else {
+			char *s = faux_str_deesc(word, len);
+			faux_str_cat(&result, s);
+			faux_str_free(s);
+		}
+	}
+
+	if (saveptr)
+		*saveptr = string;
+
+	return result;
+}
+
+/* TODO: If it nedeed?
 */
 
 // TODO: Is it needed?
@@ -754,28 +851,5 @@ const char *lub_string_suffix(const char *string)
 		p1++;
 	}
 	return p2;
-}
-*/
-
-
-// TODO: Is it needed?
-/*--------------------------------------------------------- */
-/*
-unsigned int lub_string_wordcount(const char *line)
-{
-	const char *word;
-	unsigned int result = 0;
-	size_t len = 0, offset = 0;
-	size_t quoted;
-
-	for (word = lub_string_nextword(line, &len, &offset, &quoted);
-		*word || quoted;
-		word = lub_string_nextword(word + len, &len, &offset, &quoted)) {
-		// account for the terminating quotation mark
-		len += quoted ? quoted - 1 : 0;
-		result++;
-	}
-
-	return result;
 }
 */
