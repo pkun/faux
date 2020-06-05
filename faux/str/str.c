@@ -728,6 +728,8 @@ char *faux_str_nextword(const char *str, const char **saveptr,
 					faux_str_cat(&result, s);
 					faux_str_free(s);
 				}
+				word = string;
+				len = 0;
 				break;
 			// Escaping
 			} else if (*string == '\\') {
