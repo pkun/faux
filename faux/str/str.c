@@ -622,7 +622,7 @@ static char *faux_str_deesc(const char *string, size_t len)
  * @warning Returned alocated buffer must be freed later by faux_str_free()
  */
 char *faux_str_nextword(const char *str, const char **saveptr,
-	const char *alt_quotes)
+	const char *alt_quotes, bool_t *qclosed)
 {
 	const char *string = str;
 	const char *word = NULL;
@@ -760,6 +760,8 @@ char *faux_str_nextword(const char *str, const char **saveptr,
 
 	if (saveptr)
 		*saveptr = string;
+	if (qclosed)
+		*qclosed = ! (dbl_quoted || alt_quoted);
 
 	return result;
 }

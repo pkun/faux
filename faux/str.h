@@ -39,7 +39,7 @@ char *faux_str_c_esc(const char *src);
 char *faux_str_c_bin(const char *src, size_t n);
 
 char *faux_str_nextword(const char *str, const char **saveptr,
-	const char *alt_quotes);
+	const char *alt_quotes, bool_t *qclosed);
 
 
 //const char *faux_str_suffix(const char *string);
