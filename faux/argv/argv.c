@@ -34,6 +34,7 @@ faux_argv_t *faux_argv_new(void)
 	fargv->list = faux_list_new(FAUX_LIST_UNSORTED, FAUX_LIST_NONUNIQUE,
 		NULL, NULL, (void (*)(void *))faux_str_free);
 	fargv->quotes = NULL;
+	fargv->continuable = BOOL_FALSE;
 
 	return fargv;
 }
@@ -106,14 +107,37 @@ void faux_argv_quotes(faux_argv_t *fargv, const char *quotes)
 	fargv->quotes = faux_str_dup(quotes);
 }
 
-/*
+
 ssize_t faux_argv_parse_str(faux_argv_t *fargv, const char *str)
 {
+	const char *saveptr = str;
+	char *word = NULL;
+	bool_t closed_quotes = BOOL_FALSE;
+
 	assert(fargv);
 	if (!fargv)
 		return -1;
+	if (!str)
+		return -1;
 
+	while ((word = faux_str_nextword(saveptr, &saveptr, fargv->quotes, &closed_quotes))) {
+		faux_list_add(fargv->list, word);
+	}
+
+	// Check if last argument can be continued
+	// It's true if last argument has unclosed quotes.
+	// It's true if last argument doesn't terminated by space.
+	fargv->continuable = !closed_quotes || ((saveptr != str) && (!isspace(*(saveptr - 1))));
 
 	return 0;
 }
-*/
+
+
+bool_t faux_argv_is_continuable(faux_argv_t *fargv)
+{
+	assert(fargv);
+	if (!fargv)
+		return BOOL_FALSE;
+
+	return fargv->continuable;
+}

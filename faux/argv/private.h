@@ -5,4 +5,5 @@
 struct faux_argv_s {
 	faux_list_t *list;
 	char *quotes; // List of possible quotes chars
+	bool_t continuable; // Is last argument continuable
 };
