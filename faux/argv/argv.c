@@ -93,6 +93,13 @@ const char *faux_argv_each(faux_argv_node_t **iter)
 }
 
 
+/** @brief Sets alternative quotes list.
+ *
+ * Any character from specified string becomes alternative quote.
+ *
+ * @param [in] fargv Allocated fargv object.
+ * @param [in] quotes String with symbols to consider as a quote.
+ */
 void faux_argv_quotes(faux_argv_t *fargv, const char *quotes)
 {
 	assert(fargv);
@@ -108,6 +115,16 @@ void faux_argv_quotes(faux_argv_t *fargv, const char *quotes)
 }
 
 
+/** @brief Parse string to words and quoted substrings.
+ *
+ * Parse string to words and quoted substrings. Additionally function sets
+ * continuable flag. It shows if last word is reliable ended i.e. it can't be
+ * continued.
+ *
+ * @param [in] fargv Allocated fargv object.
+ * @param [in] str String to parse.
+ * @return Number of resulting words and substrings or < 0 on error.
+ */
 ssize_t faux_argv_parse(faux_argv_t *fargv, const char *str)
 {
 	const char *saveptr = str;
@@ -120,19 +137,26 @@ ssize_t faux_argv_parse(faux_argv_t *fargv, const char *str)
 	if (!str)
 		return -1;
 
-	while ((word = faux_str_nextword(saveptr, &saveptr, fargv->quotes, &closed_quotes))) {
+	while ((word = faux_str_nextword(saveptr, &saveptr, fargv->quotes, &closed_quotes)))
 		faux_list_add(fargv->list, word);
-	}
 
 	// Check if last argument can be continued
 	// It's true if last argument has unclosed quotes.
 	// It's true if last argument doesn't terminated by space.
 	fargv->continuable = !closed_quotes || ((saveptr != str) && (!isspace(*(saveptr - 1))));
 
-	return 0;
+	return faux_list_len(fargv->list);
 }
 
 
+/** @brief Returns continuable flag.
+ *
+ * Can be used after faux_argv_parse() only.
+ *
+ * @sa faux_argv_parse()
+ * @param [in] fargv Allocated fargv object.
+ * @return Boolean continuable flag.
+ */
 bool_t faux_argv_is_continuable(faux_argv_t *fargv)
 {
 	assert(fargv);
