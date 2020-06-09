@@ -18,6 +18,7 @@ const char *testc_module[][2] = {
 
 	// argv
 	{"testc_faux_argv_parse", "Parse string to arguments"},
+	{"testc_faux_argv_is_continuable", "Is line continuable"},
 
 	// End of list
 	{NULL, NULL}
