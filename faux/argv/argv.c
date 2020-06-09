@@ -108,7 +108,7 @@ void faux_argv_quotes(faux_argv_t *fargv, const char *quotes)
 }
 
 
-ssize_t faux_argv_parse_str(faux_argv_t *fargv, const char *str)
+ssize_t faux_argv_parse(faux_argv_t *fargv, const char *str)
 {
 	const char *saveptr = str;
 	char *word = NULL;

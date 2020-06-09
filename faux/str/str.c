@@ -15,12 +15,6 @@
 #include "faux/ctype.h"
 #include "faux/str.h"
 
-/* TODO: Are that vars really needed? */
-//const char *lub_string_esc_default = "`|$<>&()#;\\\"!";
-//const char *lub_string_esc_regex = "^$.*+[](){}";
-//const char *lub_string_esc_quoted = "\\\"";
-
-
 /** @brief Free the memory allocated for the string.
  *
  * Safely free the memory allocated for the string. You can use NULL
@@ -576,6 +570,16 @@ char *faux_str_chars(const char *str, const char *chars_to_search)
 }
 
 
+/** @brief Remove escaping. Convert string to internal view.
+ *
+ * Find backslashes (before escaped symbols) and remove it. Escaped symbol
+ * will not be analyzed so `\\` will lead to `\`.
+ *
+ * @param [in] string Escaped string.
+ * @param [in] len Length of string to de-escape.
+ * @return Allocated de-escaped string
+ * @warning Returned value must be freed by faux_str_free() later.
+ */
 static char *faux_str_deesc(const char *string, size_t len)
 {
 	const char *s = string;
@@ -615,9 +619,33 @@ static char *faux_str_deesc(const char *string, size_t len)
 /*--------------------------------------------------------- */
 /** @brief Find next word or quoted substring within string
  *
+ * The quotation can be of several different kinds.
+ *
+ * The first kind is standard double quoting. In this case the internal (within
+ * quotation) `"` and `\` symbols must be escaped. But symbols will be deescaped
+ * before writing to internal buffers.
+ *
+ * The second kind of quotation is alternative quotation. Any symbol can become
+ * quote sign. For example "`" and "'" can be considered as a quotes. To use
+ * some symbols as a quote them must be specified by `alt_quotes` function
+ * parameter. The single symbol can be considered as a start of quotation or
+ * a sequence of the same symbols can be considered as a start of quotation. In
+ * this case the end of quotation is a sequence of the same symbols. The same
+ * symbol can appear inside quotation but number of symbols (sequence) must be
+ * less than opening quote sequence. The example of alternatively quoted string
+ * is ```some text``and anothe`r```. The backslash has no special meaning inside
+ * quoted string.
+ *
+ * The substring can be unquoted string without spaces. The space, backslash and
+ * quote can be escaped by backslash.
+ *
+ * Parts of text with different quotes can be glued together to get single
+ * substring like this: aaa"inside dbl quote"bbb``alt quote"`here``ccc.
  *
  * @param [in] str String to parse.
- * @param [out] offset Pointer to first symbol after found substring.
+ * @param [out] saveptr Pointer to first symbol after found substring.
+ * @param [in] alt_quotes Possible alternative quotes.
+ * @param [out] qclosed Flag is quote closed.
  * @return Allocated buffer with found substring (without quotes).
  * @warning Returned alocated buffer must be freed later by faux_str_free()
  */
@@ -765,95 +793,3 @@ char *faux_str_nextword(const char *str, const char **saveptr,
 
 	return result;
 }
-
-/* TODO: If it nedeed?
-*/
-
-// TODO: Is it needed?
-/*
-inline char *lub_string_decode(const char *string)
-{
-	return lub_string_ndecode(string, strlen(string));
-}
-*/
-
-// TODO: Is it needed?
-/*----------------------------------------------------------- */
-/*
- * This needs to escape any dangerous characters within the command line
- * to prevent gaining access to the underlying system shell.
- */
-/*
-char *lub_string_encode(const char *string, const char *escape_chars)
-{
-	char *result = NULL;
-	const char *p;
-
-	if (!escape_chars)
-		return lub_string_dup(string);
-	if (string && !(*string)) // Empty string
-		return lub_string_dup(string);
-
-	for (p = string; p && *p; p++) {
-		// find any special characters and prefix them with '\'
-		size_t len = strcspn(p, escape_chars);
-		lub_string_catn(&result, p, len);
-		p += len;
-		if (*p) {
-			lub_string_catn(&result, "\\", 1);
-			lub_string_catn(&result, p, 1);
-		} else {
-			break;
-		}
-	}
-	return result;
-}
-*/
-
-
-// TODO: Is it needed?
-/*--------------------------------------------------------- */
-/*
-unsigned int lub_string_equal_part(const char *str1, const char *str2,
-	bool_t utf8)
-{
-	unsigned int cnt = 0;
-
-	if (!str1 || !str2)
-		return cnt;
-	while (*str1 && *str2) {
-		if (*str1 != *str2)
-			break;
-		cnt++;
-		str1++;
-		str2++;
-	}
-	if (!utf8)
-		return cnt;
-
-	// UTF8 features
-	if (cnt && (UTF8_11 == (*(str1 - 1) & UTF8_MASK)))
-		cnt--;
-
-	return cnt;
-}
-*/
-
-// TODO: Is it needed?
-
-/*--------------------------------------------------------- */
-/*
-const char *lub_string_suffix(const char *string)
-{
-	const char *p1, *p2;
-	p1 = p2 = string;
-	while (*p1) {
-		if (faux_ctype_isspace(*p1)) {
-			p2 = p1;
-			p2++;
-		}
-		p1++;
-	}
-	return p2;
-}
-*/

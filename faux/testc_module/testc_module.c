@@ -16,6 +16,9 @@ const char *testc_module[][2] = {
 	// INI
 	{"testc_faux_ini_parse_file", "Complex test of INI file parsing"},
 
+	// argv
+	{"testc_faux_argv_parse", "Parse string to arguments"},
+
 	// End of list
 	{NULL, NULL}
 	};

@@ -20,7 +20,7 @@ void faux_argv_quotes(faux_argv_t *fargv, const char *quotes);
 faux_argv_node_t *faux_argv_iter(const faux_argv_t *fargv);
 const char *faux_argv_each(faux_argv_node_t **iter);
 
-ssize_t faux_argv_parse_str(faux_argv_t *fargv, const char *str);
+ssize_t faux_argv_parse(faux_argv_t *fargv, const char *str);
 
 bool_t faux_argv_is_continuable(faux_argv_t *fargv);
 

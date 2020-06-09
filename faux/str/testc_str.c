@@ -7,13 +7,15 @@
 
 int testc_faux_str_nextword(void)
 {
-	const char* line = "asd\"\\\"\"mmm \"``\" `ll\"l\\p\\\\m```j`j`` ```kk``pp``` ll\\ l  \"aaa\"bbb`ccc```ddd``eee ``lk\\\"";
+	const char* line = "asd\"\\\"\"mmm \"``\" `ll\"l\\p\\\\m```j`j`` ```kk``pp``` ll\\ l jj\\\"kk ll\\\\nn  \"aaa\"bbb`ccc```ddd``eee ``lk\\\"";
 	const char* etalon[] = {
 		"asd\"mmm",
 		"``",
 		"ll\"l\\p\\\\mj`j",
 		"kk``pp",
 		"ll l",
+		"jj\"kk",
+		"ll\\nn",
 		"aaabbbcccdddeee",
 		"lk\\\"", // Unclosed quotes
 		NULL
