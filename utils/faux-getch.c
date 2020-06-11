@@ -17,7 +17,7 @@ int main(void)
 		tcsetattr( STDIN_FILENO, TCSANOW, &newt);
 
 		c = getchar();
-		printf("%u 0x%x\n", (unsigned char)c, (unsigned char)c);
+		printf(" %u 0x%x\n", (unsigned char)c, (unsigned char)c);
 
 		// Restore terminal
 		tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
