@@ -1,0 +1,138 @@
+/** @brief Some usefull function to work with time structs.
+ */
+
+#include <sys/time.h>
+#include <time.h>
+#include <errno.h>
+#include <stdint.h>
+#include <assert.h>
+
+#include "faux/time.h"
+
+
+/** @brief Compares two time (struct timespec) values.
+ *
+ * @param [in] val1 First timespec struct value.
+ * @param [in] val2 Second timespec struct value.
+ * @return 0 if val1==val2, 1 if val1>val2, -1 if val1<val2.
+*/
+int faux_timespec_cmp(const struct timespec *val1, const struct timespec *val2)
+{
+	assert(val1);
+	assert(val2);
+	if (!val1 && !val2)
+		return 0;
+	if (val1 && !val2)
+		return 1;
+	if (!val1 && val2)
+		return -1;
+
+	if (val1->tv_sec > val2->tv_sec)
+		return 1;
+	if (val1->tv_sec < val2->tv_sec)
+		return -1;
+	// Seconds are equal
+
+	if (val1->tv_nsec > val2->tv_nsec)
+		return 1;
+	if (val1->tv_nsec < val2->tv_nsec)
+		return -1;
+	// Nanoseconds are equal too
+
+	return 0;
+}
+
+
+/** @brief Calculates difference between two time (struct timespec) values.
+ *
+ * It implements "res = val1 - val2" function.
+ *
+ * @param [out] res Result of operation.
+ * @param [in] val1 First struct timespec value.
+ * @param [in] val2 Second struct timespec value.
+ * @return 0 - success or -1 on error.
+ * @exception EINVAL Invalid arguments value.
+ * @exception EOVERFLOW If val2>val1.
+ */
+int faux_timespec_diff(struct timespec *res,
+	const struct timespec *val1, const struct timespec *val2)
+{
+	assert(res);
+	assert(val1);
+	assert(val2);
+	if (!res || !val1 || !val2) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (faux_timespec_cmp(val1, val2) < 0) {
+		errno = EOVERFLOW;
+		return -1;
+	}
+
+	res->tv_sec = val1->tv_sec - val2->tv_sec;
+	if (val1->tv_nsec < val2->tv_nsec) {
+		res->tv_sec -= 1;
+		res->tv_nsec = 1000000000l - val2->tv_nsec + val1->tv_nsec;
+	} else {
+		res->tv_nsec = val1->tv_nsec - val2->tv_nsec;
+	}
+
+	return 0;
+}
+
+/** @brief Sum of two time (struct timespec) values.
+ *
+ * Function implements "res = val1 + val2" operation.
+ *
+ * @param [out] res Result of operation.
+ * @param [in] val1 First time value.
+ * @param [in] val2 Second time value.
+ * @return 0 - success or -1 on error.
+ * @exception EINVAL Invalid arguments value.
+ */
+int faux_timespec_sum(struct timespec *res,
+	const struct timespec *val1, const struct timespec *val2)
+{
+	assert(res);
+	assert(val1);
+	assert(val2);
+	if (!res || !val1 || !val2) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	res->tv_sec = val1->tv_sec + val2->tv_sec + ((val1->tv_nsec + val2->tv_nsec) / 1000000000l);
+	res->tv_nsec = (val1->tv_nsec + val2->tv_nsec) % 1000000000l;
+
+	return 0;
+}
+
+/** @brief Converts struct timespec value to nanoseconds.
+ *
+ * @param [in] ts Struct timespec to convert.
+ * @return Number of nanoseconds or 0 if argument is invalid.
+ */
+uint64_t faux_timespec_to_nsec(const struct timespec *ts)
+{
+	assert(ts);
+	if (!ts)
+		return 0;
+
+	return ((uint64_t)ts->tv_sec * 1000000000l) + (uint64_t)ts->tv_nsec;
+}
+
+/** @brief Converts nanoseconds to struct timespec value.
+ *
+ * @param [out] ts Struct timespec pointer to save result of conversion.
+ * @param [in] nsec Time in nanoseconds to convert.
+ */
+void faux_nsec_to_timespec(struct timespec *ts, uint64_t nsec)
+{
+	assert(ts);
+	if (!ts)
+		return;
+
+	ts->tv_sec = (time_t)(nsec / 1000000000l);
+	ts->tv_nsec = (long)(nsec % 1000000000l);
+}

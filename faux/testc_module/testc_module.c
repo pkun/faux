@@ -20,6 +20,11 @@ const char *testc_module[][2] = {
 	{"testc_faux_argv_parse", "Parse string to arguments"},
 	{"testc_faux_argv_is_continuable", "Is line continuable"},
 
+	// time
+	{"testc_faux_nsec_timespec_conversion", "Converts nsec from/to struct timespec"},
+	{"testc_faux_timespec_diff", "Diff beetween timespec structures"},
+	{"testc_faux_timespec_sum", "Sum of timespec structures"},
+
 	// End of list
 	{NULL, NULL}
 	};
