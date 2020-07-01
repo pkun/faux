@@ -10,10 +10,10 @@ const char *testc_module[][2] = {
 //	{"testc_faux_ini_signal", "Interrupted by signal"}, // demo
 //	{"testc_faux_ini_good", "INI subsystem good"}, // demo
 
-	// Str
+	// str
 	{"testc_faux_str_nextword", "Find next word (quotation)"},
 
-	// INI
+	// ini
 	{"testc_faux_ini_parse_file", "Complex test of INI file parsing"},
 
 	// argv
@@ -24,6 +24,10 @@ const char *testc_module[][2] = {
 	{"testc_faux_nsec_timespec_conversion", "Converts nsec from/to struct timespec"},
 	{"testc_faux_timespec_diff", "Diff beetween timespec structures"},
 	{"testc_faux_timespec_sum", "Sum of timespec structures"},
+
+	// log
+	{"testc_faux_log_facility_id", "Converts syslog facility string to id"},
+	{"testc_faux_log_facility_str", "Converts syslog facility id to string"},
 
 	// End of list
 	{NULL, NULL}
