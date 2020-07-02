@@ -156,6 +156,26 @@ int faux_ev_reschedule_interval(faux_ev_t *ev)
 }
 
 
+int faux_ev_time_left(faux_ev_t *ev, struct timespec *left)
+{
+	struct timespec now = {};
+
+	assert(ev);
+	assert(left);
+	if (!ev || !left)
+		return -1;
+
+	clock_gettime(FAUX_SCHEV_CLOCK_SOURCE, &now);
+	if (faux_timespec_cmp(&now, &ev->time) > 0) { // Already happend
+		faux_nsec_to_timespec(left, 0l);
+		return 0;
+	}
+	faux_timespec_diff(left, &ev->time, &now);
+
+	return 0;
+}
+
+
 int faux_ev_id(const faux_ev_t *ev)
 {
 	assert(ev);
