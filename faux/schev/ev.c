@@ -47,18 +47,12 @@ faux_ev_t *faux_ev_new(const struct timespec *time, int ev_id, void *data)
 		return NULL;
 
 	// Initialize
-	if (time) {
-		ev->time = *time;
-	} else {
-		struct timespec t = {};
-		clock_gettime(FAUX_SCHEV_CLOCK_SOURCE, &t);
-		ev->time = t;
-	}
 	ev->id = ev_id;
 	ev->data = data;
 	ev->periodic = FAUX_SCHEV_ONCE; // Not periodic by default
 	ev->cycles_num = 0;
 	faux_nsec_to_timespec(&ev->interval, 0l);
+	faux_ev_reschedule(ev, time);
 
 	return ev;
 }
@@ -74,48 +68,93 @@ void faux_ev_free(void *ptr)
 }
 
 
-int faux_ev_periodic(faux_ev_t *schev,
-	struct timespec *interval, int cycles_num)
+int faux_ev_periodic(faux_ev_t *ev,
+	const struct timespec *interval, int cycles_num)
 {
-	assert(schev);
+	assert(ev);
 	assert(interval);
 	// When cycles_num == 0 then periodic has no meaning
-	if (!schev || !interval || cycles_num == 0)
+	if (!ev || !interval || cycles_num == 0)
 		return -1;
 
-	schev->periodic = FAUX_SCHEV_PERIODIC;
-	schev->cycles_num = cycles_num;
-	schev->interval = *interval;
+	ev->periodic = FAUX_SCHEV_PERIODIC;
+	ev->cycles_num = cycles_num;
+	ev->interval = *interval;
 
 	return 0;
 }
 
 
-faux_schev_periodic_t faux_ev_is_periodic(faux_ev_t *schev)
+faux_schev_periodic_t faux_ev_is_periodic(faux_ev_t *ev)
 {
-	assert(schev);
-	if (!schev)
+	assert(ev);
+	if (!ev)
 		return FAUX_SCHEV_ONCE;
 
-	return schev->periodic;
+	return ev->periodic;
 }
 
-int faux_ev_dec_cycles(faux_ev_t *schev, int *new_cycles_num)
+
+int faux_ev_dec_cycles(faux_ev_t *ev, int *new_cycles_num)
 {
-	assert(schev);
-	if (!schev)
+	assert(ev);
+	if (!ev)
 		return -1;
-	if (schev->periodic != FAUX_SCHEV_PERIODIC)
+	if (ev->periodic != FAUX_SCHEV_PERIODIC)
 		return -1; // Non-periodic event
-	if ((schev->cycles_num != FAUX_SCHEV_CYCLES_INFINITE) &&
-		(schev->cycles_num > 0))
-		schev->cycles_num--;
+	if ((ev->cycles_num != FAUX_SCHEV_CYCLES_INFINITE) &&
+		(ev->cycles_num > 0))
+		ev->cycles_num--;
 
 	if (new_cycles_num)
-		*new_cycles_num = schev->cycles_num;
+		*new_cycles_num = ev->cycles_num;
 
 	return 0;
 }
+
+/**
+ *
+ * Note: faux_ev_new() use it. Be carefull.
+ */
+int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
+{
+	assert(ev);
+	if (!ev)
+		return -1;
+
+	if (new_time) {
+		ev->time = *new_time;
+	} else { // Time isn't given so use "NOW"
+		struct timespec t = {};
+		clock_gettime(FAUX_SCHEV_CLOCK_SOURCE, &t);
+		ev->time = t;
+	}
+
+	return 0;
+}
+
+
+int faux_ev_reschedule_interval(faux_ev_t *ev)
+{
+	struct timespec new_time = {};
+
+	assert(ev);
+	if (!ev)
+		return -1;
+	if (ev->periodic != FAUX_SCHEV_PERIODIC)
+		return -1;
+	if (0 == ev->cycles_num)
+		return -1;
+
+	faux_timespec_sum(&new_time, &ev->time, &ev->interval);
+	faux_ev_reschedule(ev, &new_time);
+
+	if (ev->cycles_num != FAUX_SCHEV_CYCLES_INFINITE)
+		faux_ev_dec_cycles(ev, NULL);
+
+	return 0;
+}
+
 
 int faux_ev_id(const faux_ev_t *ev)
 {

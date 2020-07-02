@@ -52,16 +52,20 @@ void faux_schev_free(faux_schev_t *schev)
 }
 
 
-/** @brief Adds event to scheduling list using absolute time.
+/** @brief Internal function to add event to scheduling list.
  *
  * @param [in] sched Allocated and initialized sched object.
  * @param [in] time Absolute time of future event.
  * @param [in] Event ID.
  * @param [in] Pointer to arbitrary data linked to event.
+ * @param [in] Periodic flag.
+ * @param [in] Number of cycles (FAUX_SCHEV_CYCLES_INFINITE for infinite).
+ * @param [in] Periodic interval.
  * @return 0 - success, < 0 on error.
  */
-int faux_schev_schedule(
-	faux_schev_t *schev, const struct timespec *time, int ev_id, void *data)
+static int _schev_schedule(faux_schev_t *schev, const struct timespec *time,
+	int ev_id, void *data, faux_schev_periodic_t periodic,
+	const struct timespec *interval, int cycles_num)
 {
 	faux_ev_t *ev = NULL;
 	faux_list_node_t *node = NULL;
@@ -74,6 +78,8 @@ int faux_schev_schedule(
 	assert(ev);
 	if (!ev)
 		return -1;
+	if (FAUX_SCHEV_PERIODIC == periodic)
+		faux_ev_periodic(ev, interval, cycles_num);
 
 	node = faux_list_add(schev->list, ev);
 	if (!node) { // Something went wrong
@@ -82,6 +88,22 @@ int faux_schev_schedule(
 	}
 
 	return 0;
+}
+
+
+/** @brief Adds non-periodic event to scheduling list using absolute time.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [in] time Absolute time of future event.
+ * @param [in] Event ID.
+ * @param [in] Pointer to arbitrary data linked to event.
+ * @return 0 - success, < 0 on error.
+ */
+int faux_schev_schedule(
+	faux_schev_t *schev, const struct timespec *time, int ev_id, void *data)
+{
+	return _schev_schedule(schev, time, ev_id, data,
+		FAUX_SCHEV_ONCE, NULL, 0);
 }
 
 

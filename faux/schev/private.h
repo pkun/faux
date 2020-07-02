@@ -29,8 +29,15 @@ int faux_ev_compare_data(const void *key, const void *list_item);
 faux_ev_t *faux_ev_new(const struct timespec *time, int ev_id, void *data);
 void faux_ev_free(void *ptr);
 
+int faux_ev_periodic(faux_ev_t *ev,
+	const struct timespec *interval, int cycles_num);
+int faux_ev_dec_cycles(faux_ev_t *ev, int *new_cycles_num);
+int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time);
+int faux_ev_reschedule_interval(faux_ev_t *ev);
+
 int faux_ev_id(const faux_ev_t *ev);
 void *faux_ev_data(const faux_ev_t *ev);
 const struct timespec *faux_ev_time(const faux_ev_t *ev);
+faux_schev_periodic_t faux_ev_is_periodic(faux_ev_t *ev);
 
 C_DECL_END
