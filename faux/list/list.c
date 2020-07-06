@@ -230,6 +230,25 @@ faux_list_t *faux_list_new(faux_list_sorted_t sorted, faux_list_unique_t unique,
 }
 
 
+/** @brief Empty list
+ *
+ * Removes and frees all list entries.
+ *
+ * @param [in] list List to empty.
+ */
+void faux_list_empty(faux_list_t *list)
+{
+	faux_list_node_t *iter = NULL;
+
+	if (!list)
+		return;
+
+	while ((iter = faux_list_head(list))) {
+		faux_list_del(list, iter);
+	}
+}
+
+
 /** @brief Free bidirectional list
  *
  * Free all nodes and user data from list and finally
@@ -241,14 +260,7 @@ faux_list_t *faux_list_new(faux_list_sorted_t sorted, faux_list_unique_t unique,
  */
 void faux_list_free(faux_list_t *list)
 {
-	faux_list_node_t *iter = NULL;
-
-	if (!list)
-		return;
-
-	while ((iter = faux_list_head(list))) {
-		faux_list_del(list, iter);
-	}
+	faux_list_empty(list);
 	faux_free(list);
 }
 
