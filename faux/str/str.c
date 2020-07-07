@@ -721,7 +721,6 @@ char *faux_str_nextword(const char *str, const char **saveptr,
 
 		// Not quoted
 		} else {
-			char *p = NULL;
 			// Start of a double quoted string
 			if (*string == dbl_quote) {
 				if (len > 0) {
@@ -734,7 +733,7 @@ char *faux_str_nextword(const char *str, const char **saveptr,
 				word = string;
 				len = 0;
 			// Start of alt quoted string
-			} else if (alt_quotes && (p = strchr(alt_quotes, *string))) {
+			} else if (alt_quotes && strchr(alt_quotes, *string)) {
 				if (len > 0) {
 					char *s = faux_str_deesc(word, len);
 					faux_str_cat(&result, s);
