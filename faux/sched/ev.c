@@ -71,6 +71,13 @@ int faux_ev_compare_data(const void *key, const void *list_item)
 }
 
 
+/** @brief Allocates and initialize ev object.
+ *
+ * @param [in] time Time of event.
+ * @param [in] ev_id ID of event.
+ * @param [in] data Pointer to arbitrary linked data.
+ * @return Allocated and initialized ev object.
+ */
 faux_ev_t *faux_ev_new(const struct timespec *time, int ev_id, void *data)
 {
 	faux_ev_t *ev = NULL;
@@ -85,13 +92,17 @@ faux_ev_t *faux_ev_new(const struct timespec *time, int ev_id, void *data)
 	ev->data = data;
 	ev->periodic = FAUX_SCHED_ONCE; // Not periodic by default
 	ev->cycles_num = 0;
-	faux_nsec_to_timespec(&ev->interval, 0l);
+	faux_nsec_to_timespec(&ev->period, 0l);
 	faux_ev_reschedule(ev, time);
 
 	return ev;
 }
 
 
+/** @brief Frees ev object.
+ *
+ * @param [in] ptr Pointer to ev object.
+ */
 void faux_ev_free(void *ptr)
 {
 	faux_ev_t *ev = (faux_ev_t *)ptr;
@@ -102,23 +113,37 @@ void faux_ev_free(void *ptr)
 }
 
 
+/** @brief Makes event periodic.
+ *
+ * By default new events are not periodic.
+ *
+ * @param [in] ev Allocated and initialized ev object.
+ * @param [in] period Period of periodic event.
+ * @param [in] cycles_num Number of cycles. FAUX_SHED_CYCLES_INFINITE - infinite.
+ * @return 0 - success, < 0 on error.
+ */
 int faux_ev_periodic(faux_ev_t *ev,
-	const struct timespec *interval, int cycles_num)
+	const struct timespec *period, int cycles_num)
 {
 	assert(ev);
-	assert(interval);
+	assert(period);
 	// When cycles_num == 0 then periodic has no meaning
-	if (!ev || !interval || cycles_num == 0)
+	if (!ev || !period || cycles_num == 0)
 		return -1;
 
 	ev->periodic = FAUX_SCHED_PERIODIC;
 	ev->cycles_num = cycles_num;
-	ev->interval = *interval;
+	ev->period = *period;
 
 	return 0;
 }
 
 
+/** @brief Checks is event periodic.
+ *
+ * @param [in] ev Allocated and initialized ev object.
+ * @return FAUX_SCHED_PERIODIC - periodic, FAUX_SCHED_ONCE - non-periodic.
+ */
 faux_sched_periodic_t faux_ev_is_periodic(faux_ev_t *ev)
 {
 	assert(ev);
@@ -129,6 +154,14 @@ faux_sched_periodic_t faux_ev_is_periodic(faux_ev_t *ev)
 }
 
 
+/** @brief Decrements number of periodic cycles.
+ *
+ * On every completed cycle the internal cycles counter must be decremented.
+ *
+ * @param [in] ev Allocated and initialized ev object.
+ * @param [out] new_cycles_num Returns new number of cycles. Can be NULL.
+ * @return FAUX_SCHED_PERIODIC - periodic, FAUX_SCHED_ONCE - non-periodic.
+ */
 int faux_ev_dec_cycles(faux_ev_t *ev, int *new_cycles_num)
 {
 	assert(ev);
@@ -146,9 +179,13 @@ int faux_ev_dec_cycles(faux_ev_t *ev, int *new_cycles_num)
 	return 0;
 }
 
-/**
+/** Reschedules existent event to newly specified time.
  *
  * Note: faux_ev_new() use it. Be carefull.
+ *
+ * @param [in] ev Allocated and initialized ev object.
+ * @param [in] new_time New time of event (FAUX_SCHED_NOW for now).
+ * @return 0 - success, < 0 on error.
  */
 int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
 {
@@ -166,7 +203,16 @@ int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
 }
 
 
-int faux_ev_reschedule_interval(faux_ev_t *ev)
+/** Reschedules existent event using period.
+ *
+ * New scheduled time is calculated as "now" + "period".
+ * Function decrements number of cycles. If number of cycles is
+ * FAUX_SCHED_CYCLES_INFINITE then number of cycles will not be decremented.
+ *
+ * @param [in] ev Allocated and initialized ev object.
+ * @return 0 - success, < 0 on error.
+ */
+int faux_ev_reschedule_period(faux_ev_t *ev)
 {
 	struct timespec new_time = {};
 
@@ -178,7 +224,7 @@ int faux_ev_reschedule_interval(faux_ev_t *ev)
 	if (0 == ev->cycles_num)
 		return -1;
 
-	faux_timespec_sum(&new_time, &ev->time, &ev->interval);
+	faux_timespec_sum(&new_time, &ev->time, &ev->period);
 	faux_ev_reschedule(ev, &new_time);
 
 	if (ev->cycles_num != FAUX_SCHED_CYCLES_INFINITE)
@@ -188,6 +234,12 @@ int faux_ev_reschedule_interval(faux_ev_t *ev)
 }
 
 
+/** @brief Calculates time left from now to the event.
+ *
+ * @param [in] ev Allocated and initialized ev object.
+ * @param [out] left Calculated time left.
+ * @return 0 - success, < 0 on error.
+ */
 int faux_ev_time_left(faux_ev_t *ev, struct timespec *left)
 {
 	struct timespec now = {};
@@ -208,6 +260,11 @@ int faux_ev_time_left(faux_ev_t *ev, struct timespec *left)
 }
 
 
+/** Returns ID of event object.
+ *
+ * @param [in] ev Allocated and initialized ev object.
+ * @return Event's ID.
+ */
 int faux_ev_id(const faux_ev_t *ev)
 {
 	assert(ev);
@@ -218,6 +275,11 @@ int faux_ev_id(const faux_ev_t *ev)
 }
 
 
+/** Returns data pointer of event object.
+ *
+ * @param [in] ev Allocated and initialized ev object.
+ * @return Data pointer.
+ */
 void *faux_ev_data(const faux_ev_t *ev)
 {
 	assert(ev);
@@ -228,6 +290,11 @@ void *faux_ev_data(const faux_ev_t *ev)
 }
 
 
+/** Returns time of event object.
+ *
+ * @param [in] ev Allocated and initialized ev object.
+ * @return Pointer to static timespec.
+ */
 const struct timespec *faux_ev_time(const faux_ev_t *ev)
 {
 	assert(ev);

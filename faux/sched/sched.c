@@ -288,7 +288,7 @@ int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
 	if (data)
 		*data = faux_ev_data(ev);
 
-	if (faux_ev_reschedule_interval(ev) < 0) {
+	if (faux_ev_reschedule_period(ev) < 0) {
 		faux_ev_free(ev);
 	} else {
 		_sched_ev(sched, ev);

@@ -6,7 +6,7 @@
 
 struct faux_ev_s {
 	struct timespec time; // Planned time of event
-	struct timespec interval; // Time interval for periodic event
+	struct timespec period; // Period for periodic event
 	int cycles_num; // Number of cycles for periodic event
 	faux_sched_periodic_t periodic; // Periodic flag
 	int id; // Type of event
@@ -31,7 +31,7 @@ int faux_ev_periodic(faux_ev_t *ev,
 	const struct timespec *interval, int cycles_num);
 int faux_ev_dec_cycles(faux_ev_t *ev, int *new_cycles_num);
 int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time);
-int faux_ev_reschedule_interval(faux_ev_t *ev);
+int faux_ev_reschedule_period(faux_ev_t *ev);
 int faux_ev_time_left(faux_ev_t *ev, struct timespec *left);
 
 int faux_ev_id(const faux_ev_t *ev);
