@@ -10,6 +10,18 @@
 #include "faux/str.h"
 #include "faux/sched.h"
 
+
+/** @brief Callback function to compare two events by time.
+ *
+ * It's used for ordering within schedule list.
+ *
+ * @param [in] first First event to compare.
+ * @param [in] second Second event to compare.
+ * @return
+ * > 0 if first > second,
+ * 0 - equal,
+ * < 0 if first < second
+ */
 int faux_ev_compare(const void *first, const void *second)
 {
 	const faux_ev_t *f = (const faux_ev_t *)first;
@@ -19,6 +31,17 @@ int faux_ev_compare(const void *first, const void *second)
 }
 
 
+/** @brief Callback function to compare key and list item by ID.
+ *
+ * It's used to search for specified ID within schedule list.
+ *
+ * @param [in] key Pointer to key value
+ * @param [in] list_item Pointer to list item.
+ * @return
+ * > 0 if key > list_item,
+ * 0 - equal,
+ * < 0 if key < list_item
+ */
 int faux_ev_compare_id(const void *key, const void *list_item)
 {
 	int *f = (int *)key;
@@ -28,6 +51,17 @@ int faux_ev_compare_id(const void *key, const void *list_item)
 }
 
 
+/** @brief Callback function to compare key and list item by data pointer.
+ *
+ * It's used to search for specified data pointer within schedule list.
+ *
+ * @param [in] key Pointer to key value
+ * @param [in] list_item Pointer to list item.
+ * @return
+ * > 0 if key > list_item,
+ * 0 - equal,
+ * < 0 if key < list_item
+ */
 int faux_ev_compare_data(const void *key, const void *list_item)
 {
 	void *f = (void *)key;

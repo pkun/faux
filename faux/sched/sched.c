@@ -1,4 +1,18 @@
 /** @brief Mechanism to shedule events.
+ *
+ * It's an ordered list of events. Events are ordered by the time. The earlier
+ * events are closer to list head. The events can be one-time ("once") and
+ * periodic. Periodic events have period and number of cycles (can be infinite).
+ * User can schedule events specifying absolute time of future event or interval
+ * from now to the moment of event. Periodic events will be rescheduled
+ * automatically using specified period.
+ *
+ * User can get interval from now to next event time. User can get upcoming
+ * events one-by-one.
+ *
+ * Each scheduled event can has arbitrary ID and pointer to arbitrary data
+ * linked to this event. The ID can be used for type of event for
+ * example or something else. The linked data can be a service structure.
  */
 
 #include <sys/time.h>
@@ -14,7 +28,7 @@
 #include "faux/sched.h"
 
 
-/** @brief Allocates new sched (SCHedule EVent) object.
+/** @brief Allocates new sched object.
  *
  * Before working with sched object it must be allocated and initialized.
  *
@@ -52,6 +66,12 @@ void faux_sched_free(faux_sched_t *sched)
 }
 
 
+/** @brief Internal function to add existent event to scheduling list.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [in] ev Existent ev object.
+ * @return 0 - success, < 0 on error.
+ */
 static int _sched_ev(faux_sched_t *sched, faux_ev_t *ev)
 {
 	faux_list_node_t *node = NULL;
@@ -68,7 +88,7 @@ static int _sched_ev(faux_sched_t *sched, faux_ev_t *ev)
 	return 0;
 }
 
-/** @brief Internal function to add event to scheduling list.
+/** @brief Internal function to add constructed event to scheduling list.
  *
  * @param [in] sched Allocated and initialized sched object.
  * @param [in] time Absolute time of future event.
@@ -104,7 +124,7 @@ static int _sched(faux_sched_t *sched, const struct timespec *time,
 /** @brief Adds non-periodic event to scheduling list using absolute time.
  *
  * @param [in] sched Allocated and initialized sched object.
- * @param [in] time Absolute time of future event.
+ * @param [in] time Absolute time of future event (FAUX_SCHED_NOW for now).
  * @param [in] ev_id Event ID.
  * @param [in] data Pointer to arbitrary data linked to event.
  * @return 0 - success, < 0 on error.
@@ -198,6 +218,10 @@ int faux_sched_periodic_delayed(
  *
  * If event is in the past then return null interval.
  * If no events was scheduled then return -1.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [out] interval Calculated interval.
+ * @return 0 - success, < 0 on error or when there is no scheduled events.
  */
 int faux_sched_next_interval(faux_sched_t *sched, struct timespec *interval)
 {
@@ -220,7 +244,7 @@ int faux_sched_next_interval(faux_sched_t *sched, struct timespec *interval)
 
 /** @brief Remove all entries from the list.
  *
- *
+ * @param [in] sched Allocated and initialized sched object.
  */
 void faux_sched_empty(faux_sched_t *sched)
 {
@@ -236,6 +260,11 @@ void faux_sched_empty(faux_sched_t *sched)
  *
  * Pop (get and remove from list) timestamp if it's in the past.
  * If the timestamp is in the future then do nothing.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [out] ev_id ID of upcoming event.
+ * @param [out] data Data of upcoming event.
+ * @return 0 - success, < 0 on error.
  */
 int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
 {
@@ -268,7 +297,12 @@ int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
 	return 0;
 }
 
-
+/** @brief Removes all events with specified ID from list.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [in] id ID to remove.
+ * @return Number of removed entries.
+ */
 int faux_sched_remove_by_id(faux_sched_t *sched, int id)
 {
 	faux_list_node_t *node = NULL;
@@ -289,6 +323,12 @@ int faux_sched_remove_by_id(faux_sched_t *sched, int id)
 }
 
 
+/** @brief Removes all events with specified data pointer from list.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [in] data Data to search entries to remove.
+ * @return Number of removed entries.
+ */
 int faux_sched_remove_by_data(faux_sched_t *sched, void *data)
 {
 	faux_list_node_t *node = NULL;
