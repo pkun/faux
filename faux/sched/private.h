@@ -1,22 +1,22 @@
 #include "faux/faux.h"
 #include "faux/list.h"
 #include "faux/time.h"
-#include "faux/schev.h"
+#include "faux/sched.h"
 
-#define FAUX_SCHEV_CLOCK_SOURCE CLOCK_MONOTONIC
+#define FAUX_SCHED_CLOCK_SOURCE CLOCK_MONOTONIC
 
-#define FAUX_SCHEV_CYCLES_INFINITE (-1)
+#define FAUX_SCHED_CYCLES_INFINITE (-1)
 
 struct faux_ev_s {
 	struct timespec time; // Planned time of event
 	struct timespec interval; // Time interval for periodic event
 	int cycles_num; // Number of cycles for periodic event
-	faux_schev_periodic_t periodic; // Periodic flag
+	faux_sched_periodic_t periodic; // Periodic flag
 	int id; // Type of event
 	void *data; // Arbitrary data linked to event
 };
 
-struct faux_schev_s {
+struct faux_sched_s {
 	faux_list_t *list;
 };
 
@@ -39,6 +39,6 @@ int faux_ev_time_left(faux_ev_t *ev, struct timespec *left);
 int faux_ev_id(const faux_ev_t *ev);
 void *faux_ev_data(const faux_ev_t *ev);
 const struct timespec *faux_ev_time(const faux_ev_t *ev);
-faux_schev_periodic_t faux_ev_is_periodic(faux_ev_t *ev);
+faux_sched_periodic_t faux_ev_is_periodic(faux_ev_t *ev);
 
 C_DECL_END

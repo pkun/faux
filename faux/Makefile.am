@@ -18,7 +18,7 @@ nobase_include_HEADERS += \
 	faux/file.h \
 	faux/argv.h \
 	faux/time.h \
-	faux/schev.h \
+	faux/sched.h \
 	faux/testc_helpers.h
 
 EXTRA_DIST += \
@@ -33,7 +33,7 @@ EXTRA_DIST += \
 	faux/file/Makefile.am \
 	faux/argv/Makefile.am \
 	faux/time/Makefile.am \
-	faux/schev/Makefile.am \
+	faux/sched/Makefile.am \
 	faux/testc_helpers/Makefile.am
 
 include $(top_srcdir)/faux/base/Makefile.am
@@ -47,7 +47,7 @@ include $(top_srcdir)/faux/ini/Makefile.am
 include $(top_srcdir)/faux/file/Makefile.am
 include $(top_srcdir)/faux/argv/Makefile.am
 include $(top_srcdir)/faux/time/Makefile.am
-include $(top_srcdir)/faux/schev/Makefile.am
+include $(top_srcdir)/faux/sched/Makefile.am
 include $(top_srcdir)/faux/testc_helpers/Makefile.am
 
 if TESTC

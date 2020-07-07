@@ -1,6 +1,6 @@
 libfaux_la_SOURCES += \
-	faux/schev/ev.c \
-	faux/schev/schev.c
+	faux/sched/ev.c \
+	faux/sched/sched.c
 
 #if TESTC
 #libfaux_la_SOURCES += faux/event/testc_event.c

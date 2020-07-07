@@ -11,57 +11,57 @@
 #include "faux/faux.h"
 #include "faux/time.h"
 #include "faux/list.h"
-#include "faux/schev.h"
+#include "faux/sched.h"
 
 
-/** @brief Allocates new schev (SCHedule EVent) object.
+/** @brief Allocates new sched (SCHedule EVent) object.
  *
- * Before working with schev object it must be allocated and initialized.
+ * Before working with sched object it must be allocated and initialized.
  *
- * @return Allocated and initialized schev object or NULL on error.
+ * @return Allocated and initialized sched object or NULL on error.
  */
-faux_schev_t *faux_schev_new(void)
+faux_sched_t *faux_sched_new(void)
 {
-	faux_schev_t *schev = NULL;
+	faux_sched_t *sched = NULL;
 
-	schev = faux_zmalloc(sizeof(*schev));
-	if (!schev)
+	sched = faux_zmalloc(sizeof(*sched));
+	if (!sched)
 		return NULL;
 
 	// Init
-	schev->list = faux_list_new(FAUX_LIST_SORTED, FAUX_LIST_NONUNIQUE,
+	sched->list = faux_list_new(FAUX_LIST_SORTED, FAUX_LIST_NONUNIQUE,
 		faux_ev_compare, NULL, faux_ev_free);
 
-	return schev;
+	return sched;
 }
 
 
-/** @brief Frees the schev object.
+/** @brief Frees the sched object.
  *
- * After using the schev object must be freed. Function frees object itself
- * and all events stored within schev object.
+ * After using the sched object must be freed. Function frees object itself
+ * and all events stored within sched object.
  */
-void faux_schev_free(faux_schev_t *schev)
+void faux_sched_free(faux_sched_t *sched)
 {
-	assert(schev);
-	if (!schev)
+	assert(sched);
+	if (!sched)
 		return;
 
-	faux_list_free(schev->list);
-	faux_free(schev);
+	faux_list_free(sched->list);
+	faux_free(sched);
 }
 
 
-static int _schev_schedule_ev(faux_schev_t *schev, faux_ev_t *ev)
+static int _sched_ev(faux_sched_t *sched, faux_ev_t *ev)
 {
 	faux_list_node_t *node = NULL;
 
-	assert(schev);
+	assert(sched);
 	assert(ev);
-	if (!schev || !ev)
+	if (!sched || !ev)
 		return -1;
 
-	node = faux_list_add(schev->list, ev);
+	node = faux_list_add(sched->list, ev);
 	if (!node) // Something went wrong
 		return -1;
 
@@ -76,11 +76,11 @@ static int _schev_schedule_ev(faux_schev_t *schev, faux_ev_t *ev)
  * @param [in] data Pointer to arbitrary data linked to event.
  * @param [in] periodic Periodic flag.
  * @param [in] period Periodic interval.
- * @param [in] cycles_num Number of cycles (FAUX_SCHEV_CYCLES_INFINITE for infinite).
+ * @param [in] cycles_num Number of cycles (FAUX_SCHED_CYCLES_INFINITE for infinite).
  * @return 0 - success, < 0 on error.
  */
-static int _schev_schedule(faux_schev_t *schev, const struct timespec *time,
-	int ev_id, void *data, faux_schev_periodic_t periodic,
+static int _sched(faux_sched_t *sched, const struct timespec *time,
+	int ev_id, void *data, faux_sched_periodic_t periodic,
 	const struct timespec *period, int cycles_num)
 {
 	faux_ev_t *ev = NULL;
@@ -89,10 +89,10 @@ static int _schev_schedule(faux_schev_t *schev, const struct timespec *time,
 	assert(ev);
 	if (!ev)
 		return -1;
-	if (FAUX_SCHEV_PERIODIC == periodic)
+	if (FAUX_SCHED_PERIODIC == periodic)
 		faux_ev_periodic(ev, period, cycles_num);
 
-	if (_schev_schedule_ev(schev, ev) < 0) { // Something went wrong
+	if (_sched_ev(sched, ev) < 0) { // Something went wrong
 		faux_ev_free(ev);
 		return -1;
 	}
@@ -109,11 +109,11 @@ static int _schev_schedule(faux_schev_t *schev, const struct timespec *time,
  * @param [in] data Pointer to arbitrary data linked to event.
  * @return 0 - success, < 0 on error.
  */
-int faux_schev_schedule(
-	faux_schev_t *schev, const struct timespec *time, int ev_id, void *data)
+int faux_sched_once(
+	faux_sched_t *sched, const struct timespec *time, int ev_id, void *data)
 {
-	return _schev_schedule(schev, time, ev_id, data,
-		FAUX_SCHEV_ONCE, NULL, 0);
+	return _sched(sched, time, ev_id, data,
+		FAUX_SCHED_ONCE, NULL, 0);
 }
 
 
@@ -128,22 +128,22 @@ int faux_schev_schedule(
  * @param [in] data Pointer to arbitrary data linked to event.
  * @return 0 - success, < 0 on error.
  */
-int faux_schev_schedule_interval(faux_schev_t *schev,
+int faux_sched_once_delayed(faux_sched_t *sched,
 	const struct timespec *interval, int ev_id, void *data)
 {
 	struct timespec t = {};
 	struct timespec plan = {};
 
-	assert(schev);
-	if (!schev)
+	assert(sched);
+	if (!sched)
 		return -1;
 
 	if (!interval)
-		return faux_schev_schedule(schev, FAUX_SCHEV_NOW, ev_id, data);
-	clock_gettime(FAUX_SCHEV_CLOCK_SOURCE, &t);
+		return faux_sched_once(sched, FAUX_SCHED_NOW, ev_id, data);
+	clock_gettime(FAUX_SCHED_CLOCK_SOURCE, &t);
 	faux_timespec_sum(&plan, &t, interval);
 
-	return faux_schev_schedule(schev, &plan, ev_id, data);
+	return faux_sched_once(sched, &plan, ev_id, data);
 }
 
 
@@ -157,12 +157,12 @@ int faux_schev_schedule_interval(faux_schev_t *schev,
  * @param [in] cycle_num Number of cycles.
  * @return 0 - success, < 0 on error.
  */
-int faux_schev_periodic(
-	faux_schev_t *schev, const struct timespec *time, int ev_id, void *data,
+int faux_sched_periodic(
+	faux_sched_t *sched, const struct timespec *time, int ev_id, void *data,
 	const struct timespec *period, int cycle_num)
 {
-	return _schev_schedule(schev, time, ev_id, data,
-		FAUX_SCHEV_ONCE, period, cycle_num);
+	return _sched(sched, time, ev_id, data,
+		FAUX_SCHED_ONCE, period, cycle_num);
 }
 
 
@@ -175,21 +175,21 @@ int faux_schev_periodic(
  * @param [in] cycle_num Number of cycles.
  * @return 0 - success, < 0 on error.
  */
-int faux_schev_periodic_delayed(
-	faux_schev_t *schev, int ev_id, void *data,
+int faux_sched_periodic_delayed(
+	faux_sched_t *sched, int ev_id, void *data,
 	const struct timespec *period, int cycle_num)
 {
 	struct timespec t = {};
 	struct timespec plan = {};
 
-	assert(schev);
+	assert(sched);
 	assert(period);
-	if (!schev || !period)
+	if (!sched || !period)
 		return -1;
 
-	clock_gettime(FAUX_SCHEV_CLOCK_SOURCE, &t);
+	clock_gettime(FAUX_SCHED_CLOCK_SOURCE, &t);
 	faux_timespec_sum(&plan, &t, period);
-	return faux_schev_periodic(schev, &plan, ev_id, data,
+	return faux_sched_periodic(sched, &plan, ev_id, data,
 		period, cycle_num);
 }
 
@@ -199,17 +199,17 @@ int faux_schev_periodic_delayed(
  * If event is in the past then return null interval.
  * If no events was scheduled then return -1.
  */
-int faux_schev_next_interval(faux_schev_t *schev, struct timespec *interval)
+int faux_sched_next_interval(faux_sched_t *sched, struct timespec *interval)
 {
 	faux_ev_t *ev = NULL;
 	faux_list_node_t *iter = NULL;
 
-	assert(schev);
+	assert(sched);
 	assert(interval);
-	if (!schev || !interval)
+	if (!sched || !interval)
 		return -1;
 
-	iter = faux_list_head(schev->list);
+	iter = faux_list_head(sched->list);
 	if (!iter)
 		return -1;
 	ev = (faux_ev_t *)faux_list_data(iter);
@@ -221,13 +221,13 @@ int faux_schev_next_interval(faux_schev_t *schev, struct timespec *interval)
  *
  *
  */
-void faux_schev_empty(faux_schev_t *schev)
+void faux_sched_empty(faux_sched_t *sched)
 {
-	assert(schev);
-	if (!schev)
+	assert(sched);
+	if (!sched)
 		return;
 
-	faux_list_empty(schev->list);
+	faux_list_empty(sched->list);
 }
 
 /** @brief Pop already coming events from list.
@@ -235,24 +235,24 @@ void faux_schev_empty(faux_schev_t *schev)
  * Pop (get and remove from list) timestamp if it's in the past.
  * If the timestamp is in the future then do nothing.
  */
-int faux_schev_pop(faux_schev_t *schev, int *ev_id, void **data)
+int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
 {
 	struct timespec now = {};
 	faux_list_node_t *iter = NULL;
 	faux_ev_t *ev = NULL;
 
-	assert(schev);
-	if (!schev)
+	assert(sched);
+	if (!sched)
 		return -1;
 
-	iter = faux_list_head(schev->list);
+	iter = faux_list_head(sched->list);
 	if (!iter)
 		return -1;
 	ev = (faux_ev_t *)faux_list_data(iter);
-	clock_gettime(FAUX_SCHEV_CLOCK_SOURCE, &now);
+	clock_gettime(FAUX_SCHED_CLOCK_SOURCE, &now);
 	if (faux_timespec_cmp(faux_ev_time(ev), &now) > 0)
 		return -1; // No events for this time
-	faux_list_takeaway(schev->list, iter); // Remove entry from list
+	faux_list_takeaway(sched->list, iter); // Remove entry from list
 
 	if (ev_id)
 		*ev_id = faux_ev_id(ev);
@@ -262,7 +262,7 @@ int faux_schev_pop(faux_schev_t *schev, int *ev_id, void **data)
 	if (faux_ev_reschedule_interval(ev) < 0) {
 		faux_ev_free(ev);
 	} else {
-		_schev_schedule_ev(schev, ev);
+		_sched_ev(sched, ev);
 	}
 
 	return 0;
@@ -277,7 +277,7 @@ void remove_ev(lub_list_t *list, int id)
 		return;
 	while (iter) {
 		lub_list_node_t *node = iter;
-		schev_t *tmp = (schev_t *)lub_list_node__get_data(node);
+		sched_t *tmp = (sched_t *)lub_list_node__get_data(node);
 		iter = lub_list_iterator_next(node);
 		if (tmp->id == id) {
 			lub_list_del(list, node);
