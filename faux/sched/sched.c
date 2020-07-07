@@ -217,6 +217,7 @@ int faux_sched_next_interval(faux_sched_t *sched, struct timespec *interval)
 	return faux_ev_time_left(ev, interval);
 }
 
+
 /** @brief Remove all entries from the list.
  *
  *
@@ -229,6 +230,7 @@ void faux_sched_empty(faux_sched_t *sched)
 
 	faux_list_empty(sched->list);
 }
+
 
 /** @brief Pop already coming events from list.
  *
@@ -268,23 +270,42 @@ int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
 	return 0;
 }
 
-#if 0
-/* Remove all timestamps with specified ID from the list. */
-void remove_ev(lub_list_t *list, int id)
+
+int faux_sched_remove_by_id(faux_sched_t *sched, int id)
 {
-	lub_list_node_t *iter = lub_list__get_head(list);
-	if (!iter)
-		return;
-	while (iter) {
-		lub_list_node_t *node = iter;
-		sched_t *tmp = (sched_t *)lub_list_node__get_data(node);
-		iter = lub_list_iterator_next(node);
-		if (tmp->id == id) {
-			lub_list_del(list, node);
-			lub_list_node_free(node);
-			free(tmp);
-		}
+	faux_list_node_t *node = NULL;
+	faux_list_node_t *saved = NULL;
+	int nodes_deleted = 0;
+
+	assert(sched);
+	if (!sched)
+		return -1;
+
+	while ((node = faux_list_match_node(sched->list,
+		faux_ev_compare_id, &id, &saved))) {
+		faux_list_del(sched->list, node);
+		nodes_deleted++;
 	}
+
+	return nodes_deleted;
 }
 
-#endif
+
+int faux_sched_remove_by_data(faux_sched_t *sched, void *data)
+{
+	faux_list_node_t *node = NULL;
+	faux_list_node_t *saved = NULL;
+	int nodes_deleted = 0;
+
+	assert(sched);
+	if (!sched)
+		return -1;
+
+	while ((node = faux_list_match_node(sched->list,
+		faux_ev_compare_id, data, &saved))) {
+		faux_list_del(sched->list, node);
+		nodes_deleted++;
+	}
+
+	return nodes_deleted;
+}
