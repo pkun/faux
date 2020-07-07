@@ -3,9 +3,6 @@
 #include "faux/time.h"
 #include "faux/sched.h"
 
-#define FAUX_SCHED_CLOCK_SOURCE CLOCK_MONOTONIC
-
-#define FAUX_SCHED_CYCLES_INFINITE (-1)
 
 struct faux_ev_s {
 	struct timespec time; // Planned time of event
@@ -19,6 +16,7 @@ struct faux_ev_s {
 struct faux_sched_s {
 	faux_list_t *list;
 };
+
 
 C_DECL_BEGIN
 

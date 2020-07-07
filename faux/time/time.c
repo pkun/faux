@@ -136,3 +136,44 @@ void faux_nsec_to_timespec(struct timespec *ts, uint64_t nsec)
 	ts->tv_sec = (time_t)(nsec / 1000000000l);
 	ts->tv_nsec = (long)(nsec % 1000000000l);
 }
+
+
+/** @brief Returns current time (now).
+ *
+ * @param [out] now The struct timespec to save current time.
+ * @return 0 - success, < 0 on error.
+ */
+int faux_timespec_now(struct timespec *now)
+{
+	assert(now);
+	if (!now)
+		return -1;
+
+	clock_gettime(FAUX_CLOCK_SOURCE, now);
+
+	return 0;
+}
+
+
+/** @brief Indicates if specified struct timespec is before now.
+ *
+ * The equality to current time (now) is considered as already
+ * coming time.
+ *
+ * @param [in] ts The struct timespec to compare.
+ * @return BOOL_TRUE if timespec is before now else BOOL_FALSE.
+ */
+bool_t faux_timespec_before_now(const struct timespec *ts)
+{
+	struct timespec now = {};
+
+	assert(ts);
+	if (!ts)
+		return BOOL_FALSE;
+
+	faux_timespec_now(&now);
+	if (faux_timespec_cmp(&now, ts) >= 0) // Already happend
+		return BOOL_TRUE;
+
+	return BOOL_FALSE;
+}

@@ -131,7 +131,7 @@ int faux_sched_once(
 int faux_sched_once_delayed(faux_sched_t *sched,
 	const struct timespec *interval, int ev_id, void *data)
 {
-	struct timespec t = {};
+	struct timespec now = {};
 	struct timespec plan = {};
 
 	assert(sched);
@@ -140,8 +140,8 @@ int faux_sched_once_delayed(faux_sched_t *sched,
 
 	if (!interval)
 		return faux_sched_once(sched, FAUX_SCHED_NOW, ev_id, data);
-	clock_gettime(FAUX_SCHED_CLOCK_SOURCE, &t);
-	faux_timespec_sum(&plan, &t, interval);
+	faux_timespec_now(&now);
+	faux_timespec_sum(&plan, &now, interval);
 
 	return faux_sched_once(sched, &plan, ev_id, data);
 }
@@ -179,7 +179,7 @@ int faux_sched_periodic_delayed(
 	faux_sched_t *sched, int ev_id, void *data,
 	const struct timespec *period, int cycle_num)
 {
-	struct timespec t = {};
+	struct timespec now = {};
 	struct timespec plan = {};
 
 	assert(sched);
@@ -187,8 +187,8 @@ int faux_sched_periodic_delayed(
 	if (!sched || !period)
 		return -1;
 
-	clock_gettime(FAUX_SCHED_CLOCK_SOURCE, &t);
-	faux_timespec_sum(&plan, &t, period);
+	faux_timespec_now(&now);
+	faux_timespec_sum(&plan, &now, period);
 	return faux_sched_periodic(sched, &plan, ev_id, data,
 		period, cycle_num);
 }
@@ -239,7 +239,6 @@ void faux_sched_empty(faux_sched_t *sched)
  */
 int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
 {
-	struct timespec now = {};
 	faux_list_node_t *iter = NULL;
 	faux_ev_t *ev = NULL;
 
@@ -251,8 +250,7 @@ int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
 	if (!iter)
 		return -1;
 	ev = (faux_ev_t *)faux_list_data(iter);
-	clock_gettime(FAUX_SCHED_CLOCK_SOURCE, &now);
-	if (faux_timespec_cmp(faux_ev_time(ev), &now) > 0)
+	if (!faux_timespec_before_now(faux_ev_time(ev)))
 		return -1; // No events for this time
 	faux_list_takeaway(sched->list, iter); // Remove entry from list
 

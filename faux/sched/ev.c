@@ -125,9 +125,7 @@ int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
 	if (new_time) {
 		ev->time = *new_time;
 	} else { // Time isn't given so use "NOW"
-		struct timespec t = {};
-		clock_gettime(FAUX_SCHED_CLOCK_SOURCE, &t);
-		ev->time = t;
+		faux_timespec_now(&ev->time);
 	}
 
 	return 0;
@@ -165,7 +163,7 @@ int faux_ev_time_left(faux_ev_t *ev, struct timespec *left)
 	if (!ev || !left)
 		return -1;
 
-	clock_gettime(FAUX_SCHED_CLOCK_SOURCE, &now);
+	faux_timespec_now(&now);
 	if (faux_timespec_cmp(&now, &ev->time) > 0) { // Already happend
 		faux_nsec_to_timespec(left, 0l);
 		return 0;
