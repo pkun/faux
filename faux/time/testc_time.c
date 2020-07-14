@@ -6,6 +6,7 @@
 
 #include "faux/time.h"
 
+
 #define TNUM1 3
 int testc_faux_nsec_timespec_conversion(void)
 {
@@ -104,6 +105,7 @@ int testc_faux_timespec_diff(void)
 	return ret;
 }
 
+
 #define TNUM3 2
 int testc_faux_timespec_sum(void)
 {
@@ -141,6 +143,30 @@ int testc_faux_timespec_sum(void)
 			ret = -1;
 		}
 	}
+
+	return ret;
+}
+
+
+int testc_faux_timespec_now(void)
+{
+	int ret = 0;
+	struct timespec before = {};
+	struct timespec now = {};
+	struct timespec after = {};
+	struct timespec interval = {};
+
+	faux_nsec_to_timespec(&interval, 1000000l);
+	faux_timespec_now(&now);
+	faux_timespec_diff(&before, &now, &interval);
+	faux_timespec_sum(&after, &now, &interval);
+
+	if (!faux_timespec_before_now(&before))
+		ret = -1;
+	if (!faux_timespec_before_now(&now)) // Formally now is before now
+		ret = -1;
+	if (faux_timespec_before_now(&after))
+		ret = -1;
 
 	return ret;
 }

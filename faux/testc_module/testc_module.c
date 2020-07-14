@@ -24,6 +24,7 @@ const char *testc_module[][2] = {
 	{"testc_faux_nsec_timespec_conversion", "Converts nsec from/to struct timespec"},
 	{"testc_faux_timespec_diff", "Diff beetween timespec structures"},
 	{"testc_faux_timespec_sum", "Sum of timespec structures"},
+	{"testc_faux_timespec_now", "Timespec now and before now functions"},
 
 	// log
 	{"testc_faux_log_facility_id", "Converts syslog facility string to id"},
