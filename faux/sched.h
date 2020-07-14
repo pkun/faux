@@ -5,6 +5,7 @@
 #ifndef _faux_sched_h
 #define _faux_sched_h
 
+#include <faux/list.h>
 #include <faux/faux.h>
 #include <faux/time.h>
 
