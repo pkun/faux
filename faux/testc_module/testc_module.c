@@ -27,7 +27,9 @@ const char *testc_module[][2] = {
 	{"testc_faux_timespec_now", "Timespec now and before now functions"},
 
 	// sched
-	{"testc_faux_sched", "Scheduling of events"},
+	{"testc_faux_sched_once", "Schedule once event. Simple and delayed ones."},
+	{"testc_faux_sched_periodic", "Schedule periodic event."},
+	{"testc_faux_sched_infinite", "Schedule infinite number of events."},
 
 	// log
 	{"testc_faux_log_facility_id", "Converts syslog facility string to id"},

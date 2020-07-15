@@ -10,7 +10,7 @@
 #include <faux/time.h>
 
 #define FAUX_SCHED_NOW NULL
-#define FAUX_SCHED_CYCLES_INFINITE (-1)
+#define FAUX_SCHED_INFINITE (unsigned int)(-1l)
 
 typedef enum {
 	FAUX_SCHED_PERIODIC = BOOL_TRUE,
@@ -33,10 +33,10 @@ int faux_sched_once_delayed(faux_sched_t *sched,
 	const struct timespec *interval, int ev_id, void *data);
 int faux_sched_periodic(
 	faux_sched_t *sched, const struct timespec *time, int ev_id, void *data,
-	const struct timespec *period, int cycle_num);
+	const struct timespec *period, unsigned int cycle_num);
 int faux_sched_periodic_delayed(
 	faux_sched_t *sched, int ev_id, void *data,
-	const struct timespec *period, int cycle_num);
+	const struct timespec *period, unsigned int cycle_num);
 int faux_sched_next_interval(faux_sched_t *sched, struct timespec *interval);
 void faux_sched_empty(faux_sched_t *sched);
 int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data);

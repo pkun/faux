@@ -3,6 +3,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
@@ -91,7 +92,7 @@ faux_ev_t *faux_ev_new(const struct timespec *time, int ev_id, void *data)
 	ev->id = ev_id;
 	ev->data = data;
 	ev->periodic = FAUX_SCHED_ONCE; // Not periodic by default
-	ev->cycles_num = 0;
+	ev->cycle_num = 0;
 	faux_nsec_to_timespec(&ev->period, 0l);
 	faux_ev_reschedule(ev, time);
 
@@ -119,20 +120,20 @@ void faux_ev_free(void *ptr)
  *
  * @param [in] ev Allocated and initialized ev object.
  * @param [in] period Period of periodic event.
- * @param [in] cycles_num Number of cycles. FAUX_SHED_CYCLES_INFINITE - infinite.
+ * @param [in] cycle_num Number of cycles. FAUX_SHED_INFINITE - infinite.
  * @return 0 - success, < 0 on error.
  */
 int faux_ev_periodic(faux_ev_t *ev,
-	const struct timespec *period, int cycles_num)
+	const struct timespec *period, unsigned int cycle_num)
 {
 	assert(ev);
 	assert(period);
-	// When cycles_num == 0 then periodic has no meaning
-	if (!ev || !period || cycles_num == 0)
+	// When cycle_num == 0 then periodic has no meaning
+	if (!ev || !period || cycle_num == 0)
 		return -1;
 
 	ev->periodic = FAUX_SCHED_PERIODIC;
-	ev->cycles_num = cycles_num;
+	ev->cycle_num = cycle_num;
 	ev->period = *period;
 
 	return 0;
@@ -159,22 +160,22 @@ faux_sched_periodic_t faux_ev_is_periodic(faux_ev_t *ev)
  * On every completed cycle the internal cycles counter must be decremented.
  *
  * @param [in] ev Allocated and initialized ev object.
- * @param [out] new_cycles_num Returns new number of cycles. Can be NULL.
+ * @param [out] new_cycle_num Returns new number of cycles. Can be NULL.
  * @return FAUX_SCHED_PERIODIC - periodic, FAUX_SCHED_ONCE - non-periodic.
  */
-int faux_ev_dec_cycles(faux_ev_t *ev, int *new_cycles_num)
+int faux_ev_dec_cycles(faux_ev_t *ev, unsigned int *new_cycle_num)
 {
 	assert(ev);
 	if (!ev)
 		return -1;
-	if (ev->periodic != FAUX_SCHED_PERIODIC)
+	if (!faux_ev_is_periodic(ev))
 		return -1; // Non-periodic event
-	if ((ev->cycles_num != FAUX_SCHED_CYCLES_INFINITE) &&
-		(ev->cycles_num > 0))
-		ev->cycles_num--;
+	if ((ev->cycle_num != FAUX_SCHED_INFINITE) &&
+		(ev->cycle_num > 0))
+		ev->cycle_num--;
 
-	if (new_cycles_num)
-		*new_cycles_num = ev->cycles_num;
+	if (new_cycle_num)
+		*new_cycle_num = ev->cycle_num;
 
 	return 0;
 }
@@ -207,7 +208,7 @@ int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
  *
  * New scheduled time is calculated as "now" + "period".
  * Function decrements number of cycles. If number of cycles is
- * FAUX_SCHED_CYCLES_INFINITE then number of cycles will not be decremented.
+ * FAUX_SCHED_INFINITE then number of cycles will not be decremented.
  *
  * @param [in] ev Allocated and initialized ev object.
  * @return 0 - success, < 0 on error.
@@ -219,15 +220,15 @@ int faux_ev_reschedule_period(faux_ev_t *ev)
 	assert(ev);
 	if (!ev)
 		return -1;
-	if (ev->periodic != FAUX_SCHED_PERIODIC)
+	if (!faux_ev_is_periodic(ev))
 		return -1;
-	if (0 == ev->cycles_num)
-		return -1;
+	if (ev->cycle_num <= 1)
+		return -1; // We don't need to reschedule if last cycle left
 
 	faux_timespec_sum(&new_time, &ev->time, &ev->period);
 	faux_ev_reschedule(ev, &new_time);
 
-	if (ev->cycles_num != FAUX_SCHED_CYCLES_INFINITE)
+	if (ev->cycle_num != FAUX_SCHED_INFINITE)
 		faux_ev_dec_cycles(ev, NULL);
 
 	return 0;

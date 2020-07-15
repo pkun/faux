@@ -96,12 +96,12 @@ static int _sched_ev(faux_sched_t *sched, faux_ev_t *ev)
  * @param [in] data Pointer to arbitrary data linked to event.
  * @param [in] periodic Periodic flag.
  * @param [in] period Periodic interval.
- * @param [in] cycles_num Number of cycles (FAUX_SCHED_CYCLES_INFINITE for infinite).
+ * @param [in] cycle_num Number of cycles (FAUX_SCHED_INFINITE for infinite).
  * @return 0 - success, < 0 on error.
  */
 static int _sched(faux_sched_t *sched, const struct timespec *time,
 	int ev_id, void *data, faux_sched_periodic_t periodic,
-	const struct timespec *period, int cycles_num)
+	const struct timespec *period, unsigned int cycle_num)
 {
 	faux_ev_t *ev = NULL;
 
@@ -110,7 +110,7 @@ static int _sched(faux_sched_t *sched, const struct timespec *time,
 	if (!ev)
 		return -1;
 	if (FAUX_SCHED_PERIODIC == periodic)
-		faux_ev_periodic(ev, period, cycles_num);
+		faux_ev_periodic(ev, period, cycle_num);
 
 	if (_sched_ev(sched, ev) < 0) { // Something went wrong
 		faux_ev_free(ev);
@@ -179,10 +179,10 @@ int faux_sched_once_delayed(faux_sched_t *sched,
  */
 int faux_sched_periodic(
 	faux_sched_t *sched, const struct timespec *time, int ev_id, void *data,
-	const struct timespec *period, int cycle_num)
+	const struct timespec *period, unsigned int cycle_num)
 {
 	return _sched(sched, time, ev_id, data,
-		FAUX_SCHED_ONCE, period, cycle_num);
+		FAUX_SCHED_PERIODIC, period, cycle_num);
 }
 
 
@@ -197,7 +197,7 @@ int faux_sched_periodic(
  */
 int faux_sched_periodic_delayed(
 	faux_sched_t *sched, int ev_id, void *data,
-	const struct timespec *period, int cycle_num)
+	const struct timespec *period, unsigned int cycle_num)
 {
 	struct timespec now = {};
 	struct timespec plan = {};
