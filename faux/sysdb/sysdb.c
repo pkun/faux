@@ -13,11 +13,14 @@
 #include <pwd.h>
 #include <grp.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "faux/faux.h"
+#include "faux/str.h"
 #include "faux/sysdb.h"
 
 #define DEFAULT_GETPW_R_SIZE_MAX 1024
+
 
 /** @brief Wrapper for ugly getpwnam_r() function.
  *
@@ -59,6 +62,7 @@ struct passwd *faux_sysdb_getpwnam(const char *name)
 	return pwbuf;
 }
 
+
 /** @brief Wrapper for ugly getpwuid_r() function.
  *
  * Gets passwd structure by UID. Easy to use.
@@ -98,6 +102,53 @@ struct passwd *faux_sysdb_getpwuid(uid_t uid)
 
 	return pwbuf;
 }
+
+
+/** @brief Get UID by user name.
+ *
+ * @param [in] name User name.
+ * @param [out] uid UID.
+ * @return 0 - success, < 0 on error.
+ */
+int faux_sysdb_uid_by_name(const char *name, uid_t *uid)
+{
+	struct passwd *pw = NULL;
+
+	assert(name);
+	if (!name)
+		return -1;
+
+	pw = faux_sysdb_getpwnam(name);
+	if (!pw)
+		return -1; // Unknown user
+	if (uid)
+		*uid = pw->pw_uid;
+	faux_free(pw);
+
+	return 0;
+}
+
+
+/** @brief Get user name by UID.
+ *
+ * @param [in] uid UID.
+ * @return Allocated user name string, NULL on error.
+ * @warning The resulting pointer (return value) must be freed by faux_str_free().
+ */
+char *faux_sysdb_name_by_uid(uid_t uid)
+{
+	struct passwd *pw = NULL;
+	char *name = NULL;
+
+	pw = faux_sysdb_getpwuid(uid);
+	if (!pw)
+		return NULL; // Unknown user
+	name = faux_str_dup(pw->pw_name);
+	faux_free(pw);
+
+	return name;
+}
+
 
 /** @brief Wrapper for ugly getgrnam_r() function.
  *
@@ -139,6 +190,7 @@ struct group *faux_sysdb_getgrnam(const char *name)
 	return grbuf;
 }
 
+
 /** @brief Wrapper for ugly getgrgid_r() function.
  *
  * Gets group structure by GID. Easy to use.
@@ -177,4 +229,50 @@ struct group *faux_sysdb_getgrgid(gid_t gid)
 	}
 
 	return grbuf;
+}
+
+
+/** @brief Get GID by name.
+ *
+ * @param [in] name Group name.
+ * @param [out] gid GID.
+ * @return 0 - success, < 0 on error.
+ */
+int faux_sysdb_gid_by_name(const char *name, gid_t *gid)
+{
+	struct group *gr = NULL;
+
+	assert(name);
+	if (!name)
+		return -1;
+
+	gr = faux_sysdb_getgrnam(name);
+	if (!gr)
+		return -1; // Unknown group
+	if (gid)
+		*gid = gr->gr_gid;
+	faux_free(gr);
+
+	return 0;
+}
+
+
+/** @brief Get group name by GID.
+ *
+ * @param [in] gid GID.
+ * @return Allocated group name string, NULL on error.
+ * @warning The resulting pointer (return value) must be freed by faux_str_free().
+ */
+char *faux_sysdb_name_by_gid(gid_t gid)
+{
+	struct group *gr = NULL;
+	char *name = NULL;
+
+	gr = faux_sysdb_getgrgid(gid);
+	if (!gr)
+		return NULL; // Unknown group
+	name = faux_str_dup(gr->gr_name);
+	faux_free(gr);
+
+	return name;
 }
