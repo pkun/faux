@@ -44,7 +44,6 @@ faux_ini_t *faux_ini_new(void)
  */
 void faux_ini_free(faux_ini_t *ini)
 {
-	assert(ini);
 	if (!ini)
 		return;
 

@@ -46,7 +46,6 @@ faux_argv_t *faux_argv_new(void)
  */
 void faux_argv_free(faux_argv_t *fargv)
 {
-	assert(fargv);
 	if (!fargv)
 		return;
 

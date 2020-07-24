@@ -48,7 +48,6 @@ static faux_list_node_t *faux_list_new_node(void *data)
  */
 static void faux_list_free_node(faux_list_node_t *node)
 {
-	assert(node);
 	faux_free(node);
 }
 

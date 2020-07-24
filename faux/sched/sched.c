@@ -57,7 +57,6 @@ faux_sched_t *faux_sched_new(void)
  */
 void faux_sched_free(faux_sched_t *sched)
 {
-	assert(sched);
 	if (!sched)
 		return;
 

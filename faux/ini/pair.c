@@ -49,7 +49,6 @@ void faux_pair_free(void *ptr)
 {
 	faux_pair_t *pair = (faux_pair_t *)ptr;
 
-	assert(pair);
 	if (!pair)
 		return;
 	faux_str_free(pair->name);
