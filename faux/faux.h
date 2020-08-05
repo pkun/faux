@@ -6,6 +6,9 @@
 #define _faux_types_h
 
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
 
 /**
  * A standard boolean type. The possible values are
@@ -69,6 +72,10 @@ ssize_t faux_write(int fd, const void *buf, size_t n);
 ssize_t faux_read(int fd, void *buf, size_t n);
 ssize_t faux_write_block(int fd, const void *buf, size_t n);
 size_t faux_read_block(int fd, void *buf, size_t n);
+
+ssize_t faux_send(int fd, const void *buf, size_t n, int flags);
+ssize_t faux_send_block(int fd, const void *buf, size_t n, int flags);
+ssize_t faux_sendv_block(int fd, const struct iovec *iov, int iovcnt, int flags);
 
 // Filesystem
 int faux_rm(const char *path);
