@@ -256,3 +256,73 @@ ssize_t faux_sendv_block(int fd, const struct iovec *iov, int iovcnt, int flags)
 
 	return total_written;
 }
+
+
+/** @brief Receive data from socket.
+ *
+ * The system recv() can be interrupted by signal. This function will retry to
+ * receive if it was interrupted by signal.
+ *
+ * @param [in] fd Socket.
+ * @param [in] buf Buffer to write.
+ * @param [in] n Number of bytes to write.
+ * @param [in] flags Flags.
+ * @return Number of bytes readed or < 0 on error.
+ * 0 bytes indicates EOF
+ */
+ssize_t faux_recv(int fd, void *buf, size_t n, int flags)
+{
+	ssize_t bytes_readed = 0;
+
+	assert(fd != -1);
+	assert(buf);
+	if ((-1 == fd) || !buf)
+		return -1;
+	if (0 == n)
+		return 0;
+
+	do {
+		bytes_readed = recv(fd, buf, n, flags);
+	} while ((bytes_readed < 0) && (EINTR == errno));
+
+	return bytes_readed;
+}
+
+
+/** @brief Receive data block from socket.
+ *
+ * The system recv() can be interrupted by signal or can read less bytes
+ * than specified. This function will continue to read data until all data
+ * will be readed or error occured.
+ *
+ * @param [in] fd Socket.
+ * @param [in] buf Buffer to write.
+ * @param [in] n Number of bytes to write.
+ * @param [in] flags Flags.
+ * @return Number of bytes readed.
+ * < n EOF or error (but some data was already readed).
+ * < 0 Error.
+ */
+size_t faux_recv_block(int fd, void *buf, size_t n, int flags)
+{
+	ssize_t bytes_readed = 0;
+	size_t total_readed = 0;
+	size_t left = n;
+	void *data = buf;
+
+	do {
+		bytes_readed = recv(fd, data, left, flags);
+		if (bytes_readed < 0) {
+			if (total_readed != 0)
+				return total_readed;
+			return -1;
+		}
+		if (0 == bytes_readed) // EOF
+			return total_readed;
+		data += bytes_readed;
+		left = left - bytes_readed;
+		total_readed += bytes_readed;
+	} while (left > 0);
+
+	return total_readed;
+}
