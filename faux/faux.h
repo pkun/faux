@@ -73,12 +73,6 @@ ssize_t faux_read(int fd, void *buf, size_t n);
 ssize_t faux_write_block(int fd, const void *buf, size_t n);
 size_t faux_read_block(int fd, void *buf, size_t n);
 
-ssize_t faux_send(int fd, const void *buf, size_t n, int flags);
-ssize_t faux_send_block(int fd, const void *buf, size_t n, int flags);
-ssize_t faux_sendv_block(int fd, const struct iovec *iov, int iovcnt, int flags);
-ssize_t faux_recv(int fd, void *buf, size_t n, int flags);
-size_t faux_recv_block(int fd, void *buf, size_t n, int flags);
-
 // Filesystem
 int faux_rm(const char *path);
 char *faux_expand_tilde(const char *path);
