@@ -156,5 +156,11 @@ AC_CHECK_HEADERS(dlfcn.h, [
           AC_MSG_ERROR([dlfcn.h not found: the dl operations is not supported])
     ])
 
+################################
+# Check for pthread
+################################
+AX_PTHREAD
+
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

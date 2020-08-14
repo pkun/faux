@@ -2,6 +2,9 @@
  * @brief Network related functions.
  */
 
+// For ppol()
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
@@ -11,18 +14,29 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <signal.h>
+#include <poll.h>
 
 #include "faux/faux.h"
 #include "faux/time.h"
 #include "faux/net.h"
 
+
+/** @brief Sends data to socket. Uses timeout and signal mask.
+ *
+ * The function acts like a pselect(). It gets timeout interval to interrupt
+ * too long sending. It gets signal mask to atomically set it while blocking
+ * within select() like function. But it doesn't blocks signals before it.
+ * User code must do it. The function can be interrupted by unblocked signal or
+ * by timeout. Else it will send() all data given.
+ *
+ * @param [in] fd Socket.
+ * @param [in] buf Buffer to write.
+ * @param [in] n Number of bytes to write.
+ * @return Number of bytes written or < 0 on error.
+ */
 ssize_t faux_send(int fd, const void *buf, size_t n,
 	const struct timespec *timeout, const sigset_t *sigmask)
 {
-	sigset_t all_sigmask = {}; // All signals mask
-	sigset_t orig_sigmask = {}; // Saved signal mask
-	fd_set fdset = {};
-	ssize_t bytes_written = 0;
 	size_t total_written = 0;
 	size_t left = n;
 	const void *data = buf;
@@ -36,16 +50,6 @@ ssize_t faux_send(int fd, const void *buf, size_t n,
 	if (0 == n)
 		return 0;
 
-	// Block signals to prevent race conditions right before pselect()
-	// Catch signals while pselect() only
-	// Now blocks all signals
-	sigfillset(&all_sigmask);
-	sigprocmask(SIG_SETMASK, &all_sigmask, &orig_sigmask);
-
-	// Handlers for pselect()
-	FD_ZERO(&fdset);
-	FD_SET(fd, &fdset);
-
 	// Calculate deadline - the time when timeout must occur.
 	if (timeout) {
 		faux_timespec_now(&now);
@@ -53,7 +57,9 @@ ssize_t faux_send(int fd, const void *buf, size_t n,
 	}
 
 	do {
-		struct timespec *select_timeout = NULL;
+		ssize_t bytes_written = 0;
+		struct pollfd fds = {};
+		struct timespec *poll_timeout = NULL;
 		struct timespec to = {};
 		int sn = 0;
 
@@ -62,25 +68,38 @@ ssize_t faux_send(int fd, const void *buf, size_t n,
 				break; // Timeout already occured
 			faux_timespec_now(&now);
 			faux_timespec_diff(&to, &deadline, &now);
-			select_timeout = &to;
+			poll_timeout = &to;
 		}
 
-		sn = pselect(fd + 1, 0, &fdset, 0, select_timeout, sigmask);
+		// Handlers for poll()
+		faux_bzero(&fds, sizeof(fds));
+		fds.fd = fd;
+		fds.events = POLLOUT;
+
+		sn = ppoll(&fds, 1, poll_timeout, sigmask);
+		// When kernel can't allocate some internal structures it can
+		// return EAGAIN so retry.
+		if ((sn < 0) && (EAGAIN == errno))
+			continue;
 		// All unneded signals are masked so don't process EINTR
 		// in special way. Just break the loop
 		if (sn < 0)
 			break;
-
 		// Timeout: break the loop. User don't want to wait any more
 		if (0 == sn)
 			break;
+		// Some unknown event (not POLLOUT). So retry polling
+		if (!(fds.revents & POLLOUT))
+			continue;
 
-		bytes_written = send(fd, data, left, 0);
-		// The send() call can't be interrupted because all signals are
-		// blocked now. So any "-1" result is a really error.
+		// The send() call is non-blocking but it's not obvious that
+		// it can't return EINTR. Probably it can. Due to the fact the
+		// call is non-blocking re-send() on any signal i.e. any EINTR.
+		do {
+			bytes_written = send(fd, data, left, MSG_DONTWAIT | MSG_NOSIGNAL);
+		} while ((bytes_written < 0) && (EINTR == errno));
 		if (bytes_written < 0)
 			break;
-
 		// Insufficient space
 		if (0 == bytes_written)
 			break;
@@ -91,27 +110,16 @@ ssize_t faux_send(int fd, const void *buf, size_t n,
 
 	} while (left > 0);
 
-	sigprocmask(SIG_SETMASK, &orig_sigmask, NULL);
-
 	return total_written;
 }
 
-
-/** @brief Sends data to socket.
- *
- * The system send() can be interrupted by signal. This function will retry to
- * send in a case of interrupted call.
- *
- * @param [in] fd Socket.
- * @param [in] buf Buffer to write.
- * @param [in] n Number of bytes to write.
- * @param [in] flags Flags.
- * @return Number of bytes written or < 0 on error.
- */
-#if 0
-ssize_t faux_send(int fd, const void *buf, size_t n, int flags)
+ssize_t faux_send_block(int fd, const void *buf, size_t n,
+	const struct timespec *timeout, const sigset_t *sigmask,
+	int (*isbreak_func)(void))
 {
-	ssize_t bytes_written = 0;
+	sigset_t all_sigmask = {}; // All signals mask
+	sigset_t orig_sigmask = {}; // Saved signal mask
+	ssize_t bytes_num = 0;
 
 	assert(fd != -1);
 	assert(buf);
@@ -120,88 +128,81 @@ ssize_t faux_send(int fd, const void *buf, size_t n, int flags)
 	if (0 == n)
 		return 0;
 
-	do {
-		bytes_written = send(fd, buf, n, flags);
-	} while ((bytes_written < 0) && (EINTR == errno));
+	// Block signals to prevent race conditions right before pselect()
+	// Catch signals while pselect() only
+	// Now blocks all signals
+	sigfillset(&all_sigmask);
+	pthread_sigmask(SIG_SETMASK, &all_sigmask, &orig_sigmask);
 
-	return bytes_written;
-}
+	// Signal handler can set var to interrupt exchange.
+	// Get value of this var by special callback function.
+	if (isbreak_func && isbreak_func())
+		return -1;
 
+	bytes_num = faux_send(fd, buf, n, timeout, sigmask);
 
-/** @brief Sends data block to socket.
- *
- * The system send() can be interrupted by signal or can write less bytes
- * than specified. This function will continue to send data until all data
- * will be sent or error occured.
- *
- * @param [in] fd Socket.
- * @param [in] buf Buffer to write.
- * @param [in] n Number of bytes to write.
- * @param [in] flags Flags.
- * @return Number of bytes written.
- * < n then insufficient space or error (but some data was already written).
- * < 0 - error.
- */
-ssize_t faux_send_block(int fd, const void *buf, size_t n, int flags)
-{
-	ssize_t bytes_written = 0;
-	size_t total_written = 0;
-	size_t left = n;
-	const void *data = buf;
+	pthread_sigmask(SIG_SETMASK, &orig_sigmask, NULL);
 
-	do {
-		bytes_written = faux_send(fd, data, left, flags);
-		if (bytes_written < 0) { // Error
-			if (total_written != 0)
-				return total_written;
-			return -1;
-		}
-		if (0 == bytes_written) // Insufficient space
-			return total_written;
-		data += bytes_written;
-		left = left - bytes_written;
-		total_written += bytes_written;
-	} while (left > 0);
-
-	return total_written;
+	return bytes_num;
 }
 
 
 /** @brief Sends struct iovec data blocks to socket.
  *
- * This function is like a faux_send_block() function but uses scatter/gather.
+ * This function is like a faux_send() function but uses scatter/gather.
  *
- * @see faux_send_block().
+ * @see faux_send().
  * @param [in] fd Socket.
  * @param [in] buf Buffer to write.
  * @param [in] n Number of bytes to write.
  * @param [in] flags Flags.
  * @return Number of bytes written.
- * < n then insufficient space or error (but some data was already written).
+ * < total_length then insufficient space, timeout or
+ * error (but some data were already sent).
  * < 0 - error.
  */
-ssize_t faux_sendv_block(int fd, const struct iovec *iov, int iovcnt, int flags)
+ssize_t faux_sendv(int fd, const struct iovec *iov, int iovcnt,
+	const struct timespec *timeout, const sigset_t *sigmask)
 {
-	ssize_t bytes_written = 0;
 	size_t total_written = 0;
 	int i = 0;
+	struct timespec now = {};
+	struct timespec deadline = {};
 
 	if (!iov)
 		return -1;
 	if (iovcnt == 0)
 		return 0;
 
+	// Calculate deadline - the time when timeout must occur.
+	if (timeout) {
+		faux_timespec_now(&now);
+		faux_timespec_sum(&deadline, &now, timeout);
+	}
+
 	for (i = 0; i < iovcnt; i++) {
+		ssize_t bytes_written = 0;
+		struct timespec *send_timeout = NULL;
+		struct timespec to = {};
+
+		if (timeout) {
+			if (faux_timespec_before_now(&deadline))
+				break; // Timeout already occured
+			faux_timespec_now(&now);
+			faux_timespec_diff(&to, &deadline, &now);
+			send_timeout = &to;
+		}
 		if (iov[i].iov_len == 0)
 			continue;
-		bytes_written = faux_send_block(fd, iov[i].iov_base, iov[i].iov_len, flags);
+		bytes_written = faux_send(fd, iov[i].iov_base, iov[i].iov_len,
+			send_timeout, sigmask);
 		if (bytes_written < 0) { // Error
 			if (total_written != 0)
-				return total_written;
+				break;
 			return -1;
 		}
-		if (0 == bytes_written) // Insufficient space
-			return total_written;
+		if (0 == bytes_written) // Insufficient space or timeout
+			break;
 		total_written += bytes_written;
 	}
 
@@ -209,21 +210,49 @@ ssize_t faux_sendv_block(int fd, const struct iovec *iov, int iovcnt, int flags)
 }
 
 
-/** @brief Receive data from socket.
- *
- * The system recv() can be interrupted by signal. This function will retry to
- * receive if it was interrupted by signal.
- *
- * @param [in] fd Socket.
- * @param [in] buf Buffer to write.
- * @param [in] n Number of bytes to write.
- * @param [in] flags Flags.
- * @return Number of bytes readed or < 0 on error.
- * 0 bytes indicates EOF
- */
-ssize_t faux_recv(int fd, void *buf, size_t n, int flags)
+ssize_t faux_sendv_block(int fd, const struct iovec *iov, int iovcnt,
+	const struct timespec *timeout, const sigset_t *sigmask,
+	int (*isbreak_func)(void))
 {
-	ssize_t bytes_readed = 0;
+	sigset_t all_sigmask = {}; // All signals mask
+	sigset_t orig_sigmask = {}; // Saved signal mask
+	ssize_t bytes_num = 0;
+
+	assert(fd != -1);
+	if ((-1 == fd))
+		return -1;
+	if (!iov)
+		return -1;
+	if (iovcnt == 0)
+		return 0;
+
+	// Block signals to prevent race conditions right before pselect()
+	// Catch signals while pselect() only
+	// Now blocks all signals
+	sigfillset(&all_sigmask);
+	pthread_sigmask(SIG_SETMASK, &all_sigmask, &orig_sigmask);
+
+	// Signal handler can set var to interrupt exchange.
+	// Get value of this var by special callback function.
+	if (isbreak_func && isbreak_func())
+		return -1;
+
+	bytes_num = faux_sendv(fd, iov, iovcnt, timeout, sigmask);
+
+	pthread_sigmask(SIG_SETMASK, &orig_sigmask, NULL);
+
+	return bytes_num;
+}
+
+
+ssize_t faux_recv(int fd, void *buf, size_t n,
+	const struct timespec *timeout, const sigset_t *sigmask)
+{
+	size_t total_readed = 0;
+	size_t left = n;
+	void *data = buf;
+	struct timespec now = {};
+	struct timespec deadline = {};
 
 	assert(fd != -1);
 	assert(buf);
@@ -232,50 +261,114 @@ ssize_t faux_recv(int fd, void *buf, size_t n, int flags)
 	if (0 == n)
 		return 0;
 
-	do {
-		bytes_readed = recv(fd, buf, n, flags);
-	} while ((bytes_readed < 0) && (EINTR == errno));
-
-	return bytes_readed;
-}
-
-
-/** @brief Receive data block from socket.
- *
- * The system recv() can be interrupted by signal or can read less bytes
- * than specified. This function will continue to read data until all data
- * will be readed or error occured.
- *
- * @param [in] fd Socket.
- * @param [in] buf Buffer to write.
- * @param [in] n Number of bytes to write.
- * @param [in] flags Flags.
- * @return Number of bytes readed.
- * < n EOF or error (but some data was already readed).
- * < 0 Error.
- */
-size_t faux_recv_block(int fd, void *buf, size_t n, int flags)
-{
-	ssize_t bytes_readed = 0;
-	size_t total_readed = 0;
-	size_t left = n;
-	void *data = buf;
+	// Calculate deadline - the time when timeout must occur.
+	if (timeout) {
+		faux_timespec_now(&now);
+		faux_timespec_sum(&deadline, &now, timeout);
+	}
 
 	do {
-		bytes_readed = recv(fd, data, left, flags);
-		if (bytes_readed < 0) {
-			if (total_readed != 0)
-				return total_readed;
-			return -1;
+		ssize_t bytes_readed = 0;
+		struct pollfd fds = {};
+		struct timespec *poll_timeout = NULL;
+		struct timespec to = {};
+		int sn = 0;
+
+		if (timeout) {
+			if (faux_timespec_before_now(&deadline))
+				break; // Timeout already occured
+			faux_timespec_now(&now);
+			faux_timespec_diff(&to, &deadline, &now);
+			poll_timeout = &to;
 		}
-		if (0 == bytes_readed) // EOF
-			return total_readed;
+
+		// Handlers for poll()
+		faux_bzero(&fds, sizeof(fds));
+		fds.fd = fd;
+		fds.events = POLLIN;
+
+		sn = ppoll(&fds, 1, poll_timeout, sigmask);
+		// When kernel can't allocate some internal structures it can
+		// return EAGAIN so retry.
+		if ((sn < 0) && (EAGAIN == errno))
+			continue;
+		// All unneded signals are masked so don't process EINTR
+		// in special way. Just break the loop
+		if (sn < 0)
+			break;
+		// Timeout: break the loop. User don't want to wait any more
+		if (0 == sn)
+			break;
+		// Some unknown event (not POLLIN). So retry polling
+		if (!(fds.revents & POLLIN))
+			continue;
+
+		// The send() call is non-blocking but it's not obvious that
+		// it can't return EINTR. Probably it can. Due to the fact the
+		// call is non-blocking re-send() on any signal i.e. any EINTR.
+		do {
+			bytes_readed = recv(fd, data, left, MSG_DONTWAIT | MSG_NOSIGNAL);
+		} while ((bytes_readed < 0) && (EINTR == errno));
+		if (bytes_readed < 0)
+			break;
+		// EOF
+		if (0 == bytes_readed)
+			break;
+
 		data += bytes_readed;
 		left = left - bytes_readed;
 		total_readed += bytes_readed;
+
 	} while (left > 0);
 
 	return total_readed;
 }
 
-#endif
+
+ssize_t faux_recvv(int fd, struct iovec *iov, int iovcnt,
+	const struct timespec *timeout, const sigset_t *sigmask)
+{
+	size_t total_readed = 0;
+	int i = 0;
+	struct timespec now = {};
+	struct timespec deadline = {};
+
+	if (!iov)
+		return -1;
+	if (iovcnt == 0)
+		return 0;
+
+	// Calculate deadline - the time when timeout must occur.
+	if (timeout) {
+		faux_timespec_now(&now);
+		faux_timespec_sum(&deadline, &now, timeout);
+	}
+
+	for (i = 0; i < iovcnt; i++) {
+		ssize_t bytes_readed = 0;
+		struct timespec *recv_timeout = NULL;
+		struct timespec to = {};
+
+		if (timeout) {
+			if (faux_timespec_before_now(&deadline))
+				break; // Timeout already occured
+			faux_timespec_now(&now);
+			faux_timespec_diff(&to, &deadline, &now);
+			recv_timeout = &to;
+		}
+		if (iov[i].iov_len == 0)
+			continue;
+		bytes_readed = faux_recv(fd, iov[i].iov_base, iov[i].iov_len,
+			recv_timeout, sigmask);
+		if (bytes_readed < 0) { // Error
+			if (total_readed != 0)
+				break;
+			return -1;
+		}
+		if (0 == bytes_readed) // EOF or timeout
+			break;
+		total_readed += bytes_readed;
+	}
+
+	return total_readed;
+}

@@ -1,9 +1,10 @@
 lib_LTLIBRARIES += libfaux.la
 libfaux_la_SOURCES =
-libfaux_la_LIBADD =
+libfaux_la_LIBADD = $(PTHREAD_LIBS)
+libfaux_la_CFLAGS = $(PTHREAD_CFLAGS)
 
 if TESTC
-libfaux_la_CFLAGS = -DTESTC
+libfaux_la_CFLAGS += -DTESTC
 endif
 
 nobase_include_HEADERS += \
