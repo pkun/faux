@@ -1,3 +1,4 @@
 libfaux_la_SOURCES += \
 	faux/net/net_io.c \
-	faux/net/net.c
+	faux/net/net.c \
+	faux/net/private.h

@@ -7,6 +7,9 @@
 
 #include <faux/faux.h>
 
+typedef struct faux_net_s faux_net_t;
+
+
 C_DECL_BEGIN
 
 // Network base I/O functions
@@ -30,6 +33,18 @@ ssize_t faux_recvv(int fd, struct iovec *iov, int iovcnt,
 ssize_t faux_recvv_block(int fd, struct iovec *iov, int iovcnt,
 	const struct timespec *timeout, const sigset_t *sigmask,
 	int (*isbreak_func)(void));
+
+// Network class
+faux_net_t *faux_net_new_by_fd(int fd);
+void faux_net_free(faux_net_t *faux_net);
+void faux_net_set_send_timeout(faux_net_t *faux_net, struct timespec *send_timeout);
+void faux_net_set_recv_timeout(faux_net_t *faux_net, struct timespec *recv_timeout);
+void faux_net_set_timeout(faux_net_t *faux_net, struct timespec *timeout);
+void faux_net_set_isbreak_func(faux_net_t *faux_net, int (*isbreak_func)(void));
+void faux_net_sigmask_empty(faux_net_t *faux_net);
+void faux_net_sigmask_fill(faux_net_t *faux_net);
+void faux_net_sigmask_add(faux_net_t *faux_net, int signum);
+void faux_net_sigmask_del(faux_net_t *faux_net, int signum);
 
 C_DECL_END
 
