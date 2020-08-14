@@ -325,6 +325,39 @@ ssize_t faux_recv(int fd, void *buf, size_t n,
 }
 
 
+ssize_t faux_recv_block(int fd, void *buf, size_t n,
+	const struct timespec *timeout, const sigset_t *sigmask,
+	int (*isbreak_func)(void))
+{
+	sigset_t all_sigmask = {}; // All signals mask
+	sigset_t orig_sigmask = {}; // Saved signal mask
+	ssize_t bytes_num = 0;
+
+	assert(fd != -1);
+	assert(buf);
+	if ((-1 == fd) || !buf)
+		return -1;
+	if (0 == n)
+		return 0;
+
+	// Block signals to prevent race conditions right before pselect()
+	// Catch signals while pselect() only
+	// Now blocks all signals
+	sigfillset(&all_sigmask);
+	pthread_sigmask(SIG_SETMASK, &all_sigmask, &orig_sigmask);
+
+	// Signal handler can set var to interrupt exchange.
+	// Get value of this var by special callback function.
+	if (isbreak_func && isbreak_func())
+		return -1;
+
+	bytes_num = faux_recv(fd, buf, n, timeout, sigmask);
+
+	pthread_sigmask(SIG_SETMASK, &orig_sigmask, NULL);
+
+	return bytes_num;
+}
+
 ssize_t faux_recvv(int fd, struct iovec *iov, int iovcnt,
 	const struct timespec *timeout, const sigset_t *sigmask)
 {
@@ -371,4 +404,39 @@ ssize_t faux_recvv(int fd, struct iovec *iov, int iovcnt,
 	}
 
 	return total_readed;
+}
+
+
+ssize_t faux_recvv_block(int fd, struct iovec *iov, int iovcnt,
+	const struct timespec *timeout, const sigset_t *sigmask,
+	int (*isbreak_func)(void))
+{
+	sigset_t all_sigmask = {}; // All signals mask
+	sigset_t orig_sigmask = {}; // Saved signal mask
+	ssize_t bytes_num = 0;
+
+	assert(fd != -1);
+	if ((-1 == fd))
+		return -1;
+	if (!iov)
+		return -1;
+	if (iovcnt == 0)
+		return 0;
+
+	// Block signals to prevent race conditions right before pselect()
+	// Catch signals while pselect() only
+	// Now blocks all signals
+	sigfillset(&all_sigmask);
+	pthread_sigmask(SIG_SETMASK, &all_sigmask, &orig_sigmask);
+
+	// Signal handler can set var to interrupt exchange.
+	// Get value of this var by special callback function.
+	if (isbreak_func && isbreak_func())
+		return -1;
+
+	bytes_num = faux_recvv(fd, iov, iovcnt, timeout, sigmask);
+
+	pthread_sigmask(SIG_SETMASK, &orig_sigmask, NULL);
+
+	return bytes_num;
 }
