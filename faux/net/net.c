@@ -1,3 +1,13 @@
+/** @file net.c
+ * @brief Class for comfortable send and receive data to and from socket.
+ * Class supports timeout for all receive, send functions. It supports signal
+ * mask to specify signals that can interrupt send/receive operation. It
+ * supports isbreak_func() callback function for consistent working with
+ * signals and remove race conditions. It's hard to specify all necessary
+ * parameter as a function argument so class hides long functions from user.
+ * Parameters of sending or receving can be specified using class methods.
+ */
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -21,7 +31,11 @@
 #include "private.h"
 
 
-static faux_net_t *faux_net_allocate(void)
+/** @brief Allocates memory for faux_net_t object.
+ *
+ * @return Allocated faux_net_t object or NULL on error.
+ */
+faux_net_t *faux_net_new(void)
 {
 	faux_net_t *faux_net = NULL;
 
@@ -39,19 +53,10 @@ static faux_net_t *faux_net_allocate(void)
 }
 
 
-faux_net_t *faux_net_new(void)
-{
-	faux_net_t *faux_net = NULL;
-
-	faux_net = faux_net_allocate();
-	assert(faux_net);
-	if (!faux_net)
-		return NULL;
-
-	return faux_net;
-}
-
-
+/** @brief Frees previously allocated faux_net_t object.
+ *
+ * @param [in] faux_net Allocated faux_net_t object.
+ */
 void faux_net_free(faux_net_t *faux_net)
 {
 	if (!faux_net)
@@ -60,6 +65,13 @@ void faux_net_free(faux_net_t *faux_net)
 }
 
 
+/** @brief Sets system descriptor to work with.
+ *
+ * It's a socket descriptor. Object will operate over this descriptor.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] fd The descriptor to link object to it.
+ */
 void faux_net_set_fd(faux_net_t *faux_net, int fd)
 {
 	if (!faux_net)
@@ -68,14 +80,11 @@ void faux_net_set_fd(faux_net_t *faux_net, int fd)
 }
 
 
-void faux_net_reset_fd(faux_net_t *faux_net)
-{
-	if (!faux_net)
-		return;
-	faux_net->fd = -1;
-}
-
-
+/** @brief Sets timeout for send operation.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] send_timeout Timeout to set.
+ */
 void faux_net_set_send_timeout(faux_net_t *faux_net, struct timespec *send_timeout)
 {
 	assert(faux_net);
@@ -90,6 +99,11 @@ void faux_net_set_send_timeout(faux_net_t *faux_net, struct timespec *send_timeo
 }
 
 
+/** @brief Sets timeout for receive operation.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] send_timeout Timeout to set.
+ */
 void faux_net_set_recv_timeout(faux_net_t *faux_net, struct timespec *recv_timeout)
 {
 	assert(faux_net);
@@ -104,6 +118,11 @@ void faux_net_set_recv_timeout(faux_net_t *faux_net, struct timespec *recv_timeo
 }
 
 
+/** @brief Sets timeout both for send and receive operation.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] send_timeout Timeout to set.
+ */
 void faux_net_set_timeout(faux_net_t *faux_net, struct timespec *timeout)
 {
 	assert(faux_net);
@@ -114,6 +133,15 @@ void faux_net_set_timeout(faux_net_t *faux_net, struct timespec *timeout)
 }
 
 
+/** @brief Sets isbreak_func() funtion for network operation.
+ *
+ * Callback function informs network functions to interrupt actions.
+ * See faux_send_block() function for explanation.
+ *
+ * @sa faux_send_block()
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] isbreak_func Callback function.
+ */
 void faux_net_set_isbreak_func(faux_net_t *faux_net, int (*isbreak_func)(void))
 {
 	assert(faux_net);
@@ -123,6 +151,10 @@ void faux_net_set_isbreak_func(faux_net_t *faux_net, int (*isbreak_func)(void))
 }
 
 
+/** @brief Emptyes signal mask using while network operations.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ */
 void faux_net_sigmask_empty(faux_net_t *faux_net)
 {
 	assert(faux_net);
@@ -132,6 +164,10 @@ void faux_net_sigmask_empty(faux_net_t *faux_net)
 }
 
 
+/** @brief Fills signal mask using while network operations.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ */
 void faux_net_sigmask_fill(faux_net_t *faux_net)
 {
 	assert(faux_net);
@@ -141,6 +177,11 @@ void faux_net_sigmask_fill(faux_net_t *faux_net)
 }
 
 
+/** @brief Adds signal to signal mask using while network operations.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] signum Signal number to add.
+ */
 void faux_net_sigmask_add(faux_net_t *faux_net, int signum)
 {
 	assert(faux_net);
@@ -150,6 +191,11 @@ void faux_net_sigmask_add(faux_net_t *faux_net, int signum)
 }
 
 
+/** @brief Removes signal to signal mask using while network operations.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] signum Signal number to remove.
+ */
 void faux_net_sigmask_del(faux_net_t *faux_net, int signum)
 {
 	assert(faux_net);
@@ -159,6 +205,16 @@ void faux_net_sigmask_del(faux_net_t *faux_net, int signum)
 }
 
 
+/** @brief Sends data to socket associated with given objects.
+ *
+ * Function uses previously set parameters such as descriptor, timeout,
+ * signal mask, callback function.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] buf Data buffer to send
+ * @param [in] n Number of bytes to send.
+ * @return Number of bytes was succesfully sent or < 0 on error.
+ */
 ssize_t faux_net_send(faux_net_t *faux_net, const void *buf, size_t n)
 {
 
@@ -167,6 +223,16 @@ ssize_t faux_net_send(faux_net_t *faux_net, const void *buf, size_t n)
 }
 
 
+/** @brief Sends data vector to socket associated with given objects.
+ *
+ * Function uses previously set parameters such as descriptor, timeout,
+ * signal mask, callback function.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] iov Array of struct iovec structures.
+ * @param [in] iovcnt Number of iov array members.
+ * @return Number of bytes was succesfully sent or < 0 on error.
+ */
 ssize_t faux_net_sendv(faux_net_t *faux_net,
 	const struct iovec *iov, int iovcnt)
 {
@@ -175,6 +241,16 @@ ssize_t faux_net_sendv(faux_net_t *faux_net,
 }
 
 
+/** @brief Receives data from socket associated with given objects.
+ *
+ * Function uses previously set parameters such as descriptor, timeout,
+ * signal mask, callback function.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] buf Data buffer for receiving.
+ * @param [in] n Number of bytes to receive.
+ * @return Number of bytes was succesfully received or < 0 on error.
+ */
 ssize_t faux_net_recv(faux_net_t *faux_net, void *buf, size_t n)
 {
 
@@ -183,6 +259,16 @@ ssize_t faux_net_recv(faux_net_t *faux_net, void *buf, size_t n)
 }
 
 
+/** @brief Receives data vector from socket associated with given objects.
+ *
+ * Function uses previously set parameters such as descriptor, timeout,
+ * signal mask, callback function.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @param [in] iov Array of struct iovec structures.
+ * @param [in] iovcnt Number of iov array members.
+ * @return Number of bytes was succesfully received or < 0 on error.
+ */
 ssize_t faux_net_recvv(faux_net_t *faux_net, struct iovec *iov, int iovcnt)
 {
 	return faux_recvv_block(faux_net->fd, iov, iovcnt, faux_net->recv_timeout,
