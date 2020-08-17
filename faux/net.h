@@ -45,6 +45,11 @@ void faux_net_sigmask_empty(faux_net_t *faux_net);
 void faux_net_sigmask_fill(faux_net_t *faux_net);
 void faux_net_sigmask_add(faux_net_t *faux_net, int signum);
 void faux_net_sigmask_del(faux_net_t *faux_net, int signum);
+ssize_t faux_net_send(faux_net_t *faux_net, const void *buf, size_t n);
+ssize_t faux_net_sendv(faux_net_t *faux_net,
+	const struct iovec *iov, int iovcnt);
+ssize_t faux_net_recv(faux_net_t *faux_net, void *buf, size_t n);
+ssize_t faux_net_recvv(faux_net_t *faux_net, struct iovec *iov, int iovcnt);
 
 C_DECL_END
 
