@@ -39,7 +39,7 @@ static faux_net_t *faux_net_allocate(void)
 }
 
 
-faux_net_t *faux_net_new_by_fd(int fd)
+faux_net_t *faux_net_new(void)
 {
 	faux_net_t *faux_net = NULL;
 
@@ -47,8 +47,6 @@ faux_net_t *faux_net_new_by_fd(int fd)
 	assert(faux_net);
 	if (!faux_net)
 		return NULL;
-
-	faux_net->fd = fd;
 
 	return faux_net;
 }
@@ -59,6 +57,22 @@ void faux_net_free(faux_net_t *faux_net)
 	if (!faux_net)
 		return;
 	faux_free(faux_net);
+}
+
+
+void faux_net_set_fd(faux_net_t *faux_net, int fd)
+{
+	if (!faux_net)
+		return;
+	faux_net->fd = fd;
+}
+
+
+void faux_net_reset_fd(faux_net_t *faux_net)
+{
+	if (!faux_net)
+		return;
+	faux_net->fd = -1;
 }
 
 

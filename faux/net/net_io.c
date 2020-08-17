@@ -175,6 +175,9 @@ ssize_t faux_sendv(int fd, const struct iovec *iov, int iovcnt,
 	struct timespec now = {};
 	struct timespec deadline = {};
 
+	assert(fd != -1);
+	if (fd == -1)
+		return -1;
 	if (!iov)
 		return -1;
 	if (iovcnt == 0)
@@ -372,6 +375,9 @@ ssize_t faux_recvv(int fd, struct iovec *iov, int iovcnt,
 	struct timespec now = {};
 	struct timespec deadline = {};
 
+	assert(fd != -1);
+	if (fd == -1)
+		return -1;
 	if (!iov)
 		return -1;
 	if (iovcnt == 0)
