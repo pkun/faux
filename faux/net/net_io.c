@@ -31,13 +31,16 @@
  *
  * The function acts like a pselect(). It gets timeout interval to interrupt
  * too long sending. It gets signal mask to atomically set it while blocking
- * within select() like function. But it doesn't blocks signals before it.
+ * within select()-like function. But it doesn't blocks signals before it.
  * User code must do it. The function can be interrupted by unblocked signal or
- * by timeout. Else it will send() all data given.
+ * by timeout. Else it will send() all data given. Function can return sent
+ * size less than required by user. It can happen due to errors.
  *
  * @param [in] fd Socket.
  * @param [in] buf Buffer to write.
  * @param [in] n Number of bytes to write.
+ * @param [in] timeout Send timeout.
+ * @param [in] sigmask Signal mask to set while pselect() call.
  * @return Number of bytes written or < 0 on error.
  */
 ssize_t faux_send(int fd, const void *buf, size_t n,
@@ -119,6 +122,33 @@ ssize_t faux_send(int fd, const void *buf, size_t n,
 	return total_written;
 }
 
+
+/** @brief Sends data to socket. It blocks signals and removes races.
+ *
+ * The function is like a faux_send() but it blocks all the signals and then
+ * checks for "isbreak_func()" function to interrupt function call in a case
+ * when isbreak_func() returns not-null value. See pselect() manpage for race
+ * conditions explanation. It's needed for consistent signal handling.
+ *
+ * Usually signal hanler sets global volatile var to inform main programm about
+ * event. For example it can be SIGINT to stop the programm. Programm analyzes
+ * this var and can exit. Library function knows nothing about global vars or
+ * signal handlers so user can create special function that returns 0 if nothing
+ * is happened and !=0 if system call (or function in our case) must be
+ * interrupted. So isbreak_func() is a such function. Library function will call
+ * it to determine if it must to be interrupted due to signal. Additionally
+ * sigmask allows only interested signals while data sending.
+ *
+ * @sa faux_send()
+ * @sa pselect()
+ * @param [in] fd Socket.
+ * @param [in] buf Buffer to write.
+ * @param [in] n Number of bytes to write.
+ * @param [in] timeout Send timeout.
+ * @param [in] sigmask Signal mask to set while pselect() call.
+ * @param [in] isbreak_func Function returns !=0 if call must be interrupted.
+ * @return Number of bytes written or < 0 on error.
+ */
 ssize_t faux_send_block(int fd, const void *buf, size_t n,
 	const struct timespec *timeout, const sigset_t *sigmask,
 	int (*isbreak_func)(void))
@@ -153,15 +183,16 @@ ssize_t faux_send_block(int fd, const void *buf, size_t n,
 }
 
 
-/** @brief Sends struct iovec data blocks to socket.
+/** @brief Sends "struct iovec" data blocks to socket.
  *
  * This function is like a faux_send() function but uses scatter/gather.
  *
  * @see faux_send().
  * @param [in] fd Socket.
- * @param [in] buf Buffer to write.
- * @param [in] n Number of bytes to write.
- * @param [in] flags Flags.
+ * @param [in] iov Array of "struct iovec" structures.
+ * @param [in] iovcnt Number of iov array members.
+ * @param [in] timeout Send timeout.
+ * @param [in] sigmask Signal mask to set while pselect() call.
  * @return Number of bytes written.
  * < total_length then insufficient space, timeout or
  * error (but some data were already sent).
@@ -219,6 +250,22 @@ ssize_t faux_sendv(int fd, const struct iovec *iov, int iovcnt,
 }
 
 
+/** @brief Sends "struct iovec" data blocks to socket. It removes signal races.
+ *
+ * This function is like a faux_send_block() function but uses scatter/gather.
+ *
+ * @see faux_send_block().
+ * @param [in] fd Socket.
+ * @param [in] iov Array of "struct iovec" structures.
+ * @param [in] iovcnt Number of iov array members.
+ * @param [in] timeout Send timeout.
+ * @param [in] sigmask Signal mask to set while pselect() call.
+ * @param [in] isbreak_func Function returns !=0 if call must be interrupted.
+ * @return Number of bytes written.
+ * < total_length then insufficient space, timeout or
+ * error (but some data were already sent).
+ * < 0 - error.
+ */
 ssize_t faux_sendv_block(int fd, const struct iovec *iov, int iovcnt,
 	const struct timespec *timeout, const sigset_t *sigmask,
 	int (*isbreak_func)(void))
@@ -254,6 +301,13 @@ ssize_t faux_sendv_block(int fd, const struct iovec *iov, int iovcnt,
 }
 
 
+/** @brief Receives data from the socket.
+ *
+ * Function has the same parameters and features like faux_send() function
+ * but it receives data.
+ *
+ * @sa faux_send()
+ */
 ssize_t faux_recv(int fd, void *buf, size_t n,
 	const struct timespec *timeout, const sigset_t *sigmask)
 {
@@ -334,6 +388,13 @@ ssize_t faux_recv(int fd, void *buf, size_t n,
 }
 
 
+/** @brief Receives data from the socket. It removes signal races.
+ *
+ * Function has the same parameters and features like faux_send_block() function
+ * but it receives data.
+ *
+ * @sa faux_send_block()
+ */
 ssize_t faux_recv_block(int fd, void *buf, size_t n,
 	const struct timespec *timeout, const sigset_t *sigmask,
 	int (*isbreak_func)(void))
@@ -367,6 +428,14 @@ ssize_t faux_recv_block(int fd, void *buf, size_t n,
 	return bytes_num;
 }
 
+
+/** @brief Receives data from the socket. Uses scatter/gather.
+ *
+ * Function has the same parameters and features like faux_sendv() function
+ * but it receives data.
+ *
+ * @sa faux_sendv()
+ */
 ssize_t faux_recvv(int fd, struct iovec *iov, int iovcnt,
 	const struct timespec *timeout, const sigset_t *sigmask)
 {
@@ -419,6 +488,13 @@ ssize_t faux_recvv(int fd, struct iovec *iov, int iovcnt,
 }
 
 
+/** @brief Receives data from the socket. Uses sactter/gather, removes races.
+ *
+ * Function has the same parameters and features like faux_sendv_block()
+ * function but it receives data.
+ *
+ * @sa faux_sendv_block()
+ */
 ssize_t faux_recvv_block(int fd, struct iovec *iov, int iovcnt,
 	const struct timespec *timeout, const sigset_t *sigmask,
 	int (*isbreak_func)(void))
