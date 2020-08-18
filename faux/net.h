@@ -38,6 +38,7 @@ ssize_t faux_recvv_block(int fd, struct iovec *iov, int iovcnt,
 faux_net_t *faux_net_new(void);
 void faux_net_free(faux_net_t *faux_net);
 void faux_net_set_fd(faux_net_t *faux_net, int fd);
+int faux_net_get_fd(faux_net_t *faux_net);
 void faux_net_set_send_timeout(faux_net_t *faux_net, struct timespec *send_timeout);
 void faux_net_set_recv_timeout(faux_net_t *faux_net, struct timespec *recv_timeout);
 void faux_net_set_timeout(faux_net_t *faux_net, struct timespec *timeout);

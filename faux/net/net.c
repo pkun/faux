@@ -80,6 +80,19 @@ void faux_net_set_fd(faux_net_t *faux_net, int fd)
 }
 
 
+/** @brief Gets file descriptor from object.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ * @return File descriptor from object.
+ */
+int faux_net_get_fd(faux_net_t *faux_net)
+{
+	if (!faux_net)
+		return -1;
+	return faux_net->fd;
+}
+
+
 /** @brief Sets timeout for send operation.
  *
  * @param [in] faux_net The faux_net_t object.
