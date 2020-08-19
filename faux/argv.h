@@ -5,8 +5,8 @@
 #ifndef _faux_argv_h
 #define _faux_argv_h
 
-#include "faux/faux.h"
-#include "faux/list.h"
+#include <faux/faux.h>
+#include <faux/list.h>
 
 typedef struct faux_argv_s faux_argv_t;
 typedef faux_list_node_t faux_argv_node_t;

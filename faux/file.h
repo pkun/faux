@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "faux/faux.h"
+#include <faux/faux.h>
 
 typedef struct faux_file_s faux_file_t;
 

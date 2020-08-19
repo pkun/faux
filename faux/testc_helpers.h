@@ -7,7 +7,7 @@
 
 #include <stddef.h>
 
-#include "faux/faux.h"
+#include <faux/faux.h>
 
 #define FAUX_TESTC_TMPDIR_ENV "TESTC_TMPDIR"
 

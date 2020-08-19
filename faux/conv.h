@@ -5,7 +5,7 @@
 #ifndef _faux_conv_h
 #define _faux_conv_h
 
-#include "faux/faux.h"
+#include <faux/faux.h>
 
 C_DECL_BEGIN
 

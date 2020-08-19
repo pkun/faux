@@ -10,7 +10,7 @@
 #include <pwd.h>
 #include <grp.h>
 
-#include "faux/faux.h"
+#include <faux/faux.h>
 
 C_DECL_BEGIN
 

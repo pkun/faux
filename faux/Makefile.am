@@ -15,6 +15,7 @@ nobase_include_HEADERS += \
 	faux/conv.h \
 	faux/log.h \
 	faux/list.h \
+	faux/vec.h \
 	faux/ini.h \
 	faux/file.h \
 	faux/argv.h \
@@ -31,6 +32,7 @@ EXTRA_DIST += \
 	faux/conv/Makefile.am \
 	faux/log/Makefile.am \
 	faux/list/Makefile.am \
+	faux/vec/Makefile.am \
 	faux/ini/Makefile.am \
 	faux/file/Makefile.am \
 	faux/argv/Makefile.am \
@@ -46,6 +48,7 @@ include $(top_srcdir)/faux/sysdb/Makefile.am
 include $(top_srcdir)/faux/conv/Makefile.am
 include $(top_srcdir)/faux/log/Makefile.am
 include $(top_srcdir)/faux/list/Makefile.am
+include $(top_srcdir)/faux/vec/Makefile.am
 include $(top_srcdir)/faux/ini/Makefile.am
 include $(top_srcdir)/faux/file/Makefile.am
 include $(top_srcdir)/faux/argv/Makefile.am

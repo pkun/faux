@@ -7,7 +7,7 @@
 
 #include <stddef.h>
 
-#include "faux.h"
+#include <faux/faux.h>
 
 typedef enum {
 	FAUX_LIST_SORTED = BOOL_TRUE,
