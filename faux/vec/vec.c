@@ -12,6 +12,15 @@
 #include "private.h"
 
 
+/** @brief Allocates and initalizes new vector.
+ *
+ * Callback function matchFn can be used later to find item by user specified
+ * key. Function can compare key and item's data.
+ *
+ * @param [in] item_size Size of single vector's item.
+ * @param [in] matchFn Callback function to compare user key and item's data.
+ * @return Allocated and initialized vector or NULL on error.
+ */
 faux_vec_t *faux_vec_new(size_t item_size, faux_vec_kcmp_fn matchFn)
 {
 	faux_vec_t *faux_vec = NULL;
@@ -19,6 +28,8 @@ faux_vec_t *faux_vec_new(size_t item_size, faux_vec_kcmp_fn matchFn)
 	faux_vec = faux_zmalloc(sizeof(*faux_vec));
 	assert(faux_vec);
 	if (!faux_vec)
+		return NULL;
+	if (0 == item_size)
 		return NULL;
 
 	// Init
@@ -31,6 +42,10 @@ faux_vec_t *faux_vec_new(size_t item_size, faux_vec_kcmp_fn matchFn)
 }
 
 
+/** @brief Frees previously allocated vector object.
+ *
+ * @param [in] faux_vec Allocated vector object.
+ */
 void faux_vec_free(faux_vec_t *faux_vec)
 {
 	if (!faux_vec)
@@ -40,6 +55,11 @@ void faux_vec_free(faux_vec_t *faux_vec)
 }
 
 
+/** @brief Gets vector length in items.
+ *
+ * @param [in] faux_vec Allocated vector object.
+ * @return Number of items.
+ */
 size_t faux_vec_len(const faux_vec_t *faux_vec)
 {
 	assert(faux_vec);
@@ -50,6 +70,11 @@ size_t faux_vec_len(const faux_vec_t *faux_vec)
 }
 
 
+/** @brief Gets size of item.
+ *
+ * @param [in] faux_vec Allocated vector object.
+ * @return Size of item in bytes.
+ */
 size_t faux_vec_item_size(const faux_vec_t *faux_vec)
 {
 	assert(faux_vec);
@@ -60,6 +85,13 @@ size_t faux_vec_item_size(const faux_vec_t *faux_vec)
 }
 
 
+/** @brief Gets item by index.
+ *
+ * Gets pointer to item's data.
+ *
+ * @param [in] faux_vec Allocated vector object.
+ * @return Pointer to item or NULL on error.
+ */
 void *faux_vec_item(const faux_vec_t *faux_vec, unsigned int index)
 {
 	assert(faux_vec);
@@ -73,6 +105,12 @@ void *faux_vec_item(const faux_vec_t *faux_vec, unsigned int index)
 }
 
 
+/** @brief Gets pointer to whole vector.
+ *
+ * @param [in] faux_vec Allocated vector object.
+ * @return Pointer to vector or NULL on error.
+ */
+
 void *faux_vec_data(const faux_vec_t *faux_vec)
 {
 	assert(faux_vec);
@@ -83,6 +121,11 @@ void *faux_vec_data(const faux_vec_t *faux_vec)
 }
 
 
+/** @brief Adds item to vector and gets pointer to newly created item.
+ *
+ * @param [in] faux_vec Allocated vector object.
+ * @return Newly created item or NULL on error.
+ */
 void *faux_vec_add(faux_vec_t *faux_vec)
 {
 	void *new_vector = NULL;
@@ -106,6 +149,15 @@ void *faux_vec_add(faux_vec_t *faux_vec)
 }
 
 
+/** @brief Removes item from vector by index.
+ *
+ * Function removes item by index and then fill hole with the following items.
+ * It saves items sequence and frees vector memory.
+ *
+ * @param [in] faux_vec Allocated vector object.
+ * @param [in] index Index of item to remove.
+ * @return New number of items within vector after removing or < 0 on error.
+ */
 ssize_t faux_vec_del(faux_vec_t *faux_vec, unsigned int index)
 {
 	void *new_vector = NULL;
@@ -141,6 +193,18 @@ ssize_t faux_vec_del(faux_vec_t *faux_vec, unsigned int index)
 }
 
 
+/** @brief Finds item by user defined key using specified callback function.
+ *
+ * It iterates through the vector and try to find item with the specified key
+ * value. It starts searching with specified item index and returns index of
+ * found item. So it can be used to iterate all the vector with duplicate keys.
+ *
+ * @param [in] faux_vec Allocated vector object.
+ * @param [in] matchFn Callback function to compare user key and item's data.
+ * @param [in] userkey User defined key to compare item to.
+ * @param [in] start_index Item's index to start searching from.
+ * @return Index of found item or < 0 on error or "not found" case.
+ */
 int faux_vec_find_fn(const faux_vec_t *faux_vec, faux_vec_kcmp_fn matchFn,
 	const void *userkey, unsigned int start_index)
 {
@@ -165,6 +229,18 @@ int faux_vec_find_fn(const faux_vec_t *faux_vec, faux_vec_kcmp_fn matchFn,
 }
 
 
+/** @brief Finds item by user defined key.
+ *
+ * It acts like a faux_vec_find_fn() function but uses callback function
+ * specified while faux_vec_new() call.
+ *
+ * @sa faux_vec_find_fn()
+ * @sa faux_vec_new()
+ * @param [in] faux_vec Allocated vector object.
+ * @param [in] userkey User defined key to compare item to.
+ * @param [in] start_index Item's index to start searching from.
+ * @return Index of found item or < 0 on error or "not found" case.
+ */
 int faux_vec_find(const faux_vec_t *faux_vec, const void *userkey,
 	unsigned int start_index)
 {
