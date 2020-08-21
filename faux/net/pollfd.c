@@ -145,9 +145,10 @@ struct pollfd *faux_pollfd_find(faux_pollfd_t *faux_pollfd, int fd)
  *
  * @param [in] faux_pollfd Allocated faux_pollfd_t object.
  * @param [in] fd File descriptor to set to newly created item.
+ * @param [in] events The events interested in.
  * @return Pointer to new item or NULL on error.
  */
-struct pollfd *faux_pollfd_add(faux_pollfd_t *faux_pollfd, int fd)
+struct pollfd *faux_pollfd_add(faux_pollfd_t *faux_pollfd, int fd, short events)
 {
 	struct pollfd *pollfd = NULL;
 
@@ -158,17 +159,18 @@ struct pollfd *faux_pollfd_add(faux_pollfd_t *faux_pollfd, int fd)
 	if (fd < 0)
 		return NULL;
 
-	// Don't add duplicate fd
+	// Don't add duplicated fd
 	pollfd = faux_pollfd_find(faux_pollfd, fd);
-	if (pollfd)
-		return pollfd;
+	if (!pollfd) {
+		// Create new item
+		pollfd = faux_vec_add(faux_pollfd->vec);
+		assert(pollfd);
+		if (!pollfd)
+			return NULL;
+		pollfd->fd = fd;
+	}
 
-	// Create new item
-	pollfd = faux_vec_add(faux_pollfd->vec);
-	assert(pollfd);
-	if (!pollfd)
-		return NULL;
-	pollfd->fd = fd;
+	pollfd->events = events;
 
 	return pollfd;
 }

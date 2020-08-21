@@ -62,7 +62,7 @@ struct pollfd *faux_pollfd_vector(faux_pollfd_t *faux_pollfd);
 size_t faux_pollfd_len(faux_pollfd_t *faux_pollfd);
 struct pollfd *faux_pollfd_item(faux_pollfd_t *faux_pollfd, unsigned int index);
 struct pollfd *faux_pollfd_find(faux_pollfd_t *faux_pollfd, int fd);
-struct pollfd *faux_pollfd_add(faux_pollfd_t *faux_pollfd, int fd);
+struct pollfd *faux_pollfd_add(faux_pollfd_t *faux_pollfd, int fd, short events);
 int faux_pollfd_del_by_fd(faux_pollfd_t *faux_pollfd, int fd);
 int faux_pollfd_del_by_index(faux_pollfd_t *faux_pollfd, unsigned int index);
 void faux_pollfd_init_iterator(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_t *iterator);
