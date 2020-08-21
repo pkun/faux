@@ -130,6 +130,7 @@ void *faux_vec_add(faux_vec_t *faux_vec)
 {
 	void *new_vector = NULL;
 	size_t new_data_len = 0;
+	void *new_item = NULL;
 
 	assert(faux_vec);
 	if (!faux_vec)
@@ -144,8 +145,11 @@ void *faux_vec_add(faux_vec_t *faux_vec)
 	faux_vec->len++;
 	faux_vec->data = new_vector;
 
-	// Return newly created item (it's last one)
-	return faux_vec_item(faux_vec, faux_vec_len(faux_vec) - 1);
+	// Newly created item (it's last one)
+	new_item = faux_vec_item(faux_vec, faux_vec_len(faux_vec) - 1);
+	faux_bzero(new_item, faux_vec_item_size(faux_vec));
+
+	return new_item;
 }
 
 

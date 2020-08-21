@@ -171,6 +171,7 @@ struct pollfd *faux_pollfd_add(faux_pollfd_t *faux_pollfd, int fd, short events)
 	}
 
 	pollfd->events = events;
+	pollfd->revents = 0;
 
 	return pollfd;
 }
