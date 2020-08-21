@@ -8,6 +8,8 @@
 #include <faux/faux.h>
 
 typedef struct faux_net_s faux_net_t;
+typedef struct faux_pollfd_s faux_pollfd_t;
+typedef int faux_pollfd_iterator_t;
 
 
 C_DECL_BEGIN
@@ -52,6 +54,20 @@ ssize_t faux_net_sendv(faux_net_t *faux_net,
 	const struct iovec *iov, int iovcnt);
 ssize_t faux_net_recv(faux_net_t *faux_net, void *buf, size_t n);
 ssize_t faux_net_recvv(faux_net_t *faux_net, struct iovec *iov, int iovcnt);
+
+// Pollfd class
+faux_pollfd_t *faux_pollfd_new(void);
+void faux_pollfd_free(faux_pollfd_t *faux_pollfd);
+struct pollfd *faux_pollfd_vector(faux_pollfd_t *faux_pollfd);
+size_t faux_pollfd_len(faux_pollfd_t *faux_pollfd);
+struct pollfd *faux_pollfd_item(faux_pollfd_t *faux_pollfd, unsigned int index);
+struct pollfd *faux_pollfd_find(faux_pollfd_t *faux_pollfd, int fd);
+struct pollfd *faux_pollfd_add(faux_pollfd_t *faux_pollfd, int fd);
+int faux_pollfd_del_by_fd(faux_pollfd_t *faux_pollfd, int fd);
+int faux_pollfd_del_by_index(faux_pollfd_t *faux_pollfd, unsigned int index);
+void faux_pollfd_init_iterator(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_t *iterator);
+struct pollfd *faux_pollfd_each(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_t *iterator);
+struct pollfd *faux_pollfd_each_active(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_t *iterator);
 
 C_DECL_END
 
