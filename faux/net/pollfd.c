@@ -17,7 +17,7 @@
 #include "private.h"
 
 
-/** @brief Function to search specified fd within pollfd structures.
+/** @brief Callback function to search specified fd within pollfd structures.
  */
 static int cmp_by_fd(const void *key, const void *item)
 {
@@ -61,6 +61,13 @@ void faux_pollfd_free(faux_pollfd_t *faux_pollfd)
 }
 
 
+/** @brief Returns whole "struct pollfd" vector.
+ *
+ * It can be used while poll() call.
+ *
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @return Pointer to "struct pollfd" vector or NULL on error.
+ */
 struct pollfd *faux_pollfd_vector(faux_pollfd_t *faux_pollfd)
 {
 	assert(faux_pollfd);
@@ -71,6 +78,11 @@ struct pollfd *faux_pollfd_vector(faux_pollfd_t *faux_pollfd)
 }
 
 
+/** @brief Returns number of "struct pollfd" items within object.
+ *
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @return Number of items.
+ */
 size_t faux_pollfd_len(faux_pollfd_t *faux_pollfd)
 {
 	assert(faux_pollfd);
@@ -81,6 +93,12 @@ size_t faux_pollfd_len(faux_pollfd_t *faux_pollfd)
 }
 
 
+/** @brief Returns "struct pollfd" item by specified index.
+ *
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @param [in] index Index of item to get.
+ * @return Pointer to item or NULL on error.
+ */
 struct pollfd *faux_pollfd_item(faux_pollfd_t *faux_pollfd, unsigned int index)
 {
 	assert(faux_pollfd);
@@ -91,6 +109,15 @@ struct pollfd *faux_pollfd_item(faux_pollfd_t *faux_pollfd, unsigned int index)
 }
 
 
+/** @brief Finds item with specified fd value.
+ *
+ * File descriptor is a key for array. Object can contain the only one item
+ * with the same fd value.
+ *
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @param [in] fd File descriptor to search for.
+ * @return Pointer to found item or NULL on error or in "not found" case.
+ */
 struct pollfd *faux_pollfd_find(faux_pollfd_t *faux_pollfd, int fd)
 {
 	int index = 0;
@@ -109,6 +136,17 @@ struct pollfd *faux_pollfd_find(faux_pollfd_t *faux_pollfd, int fd)
 	return (struct pollfd *)faux_vec_item(faux_pollfd->vec, index);
 }
 
+
+/** @brief Adds new item to object.
+ *
+ * The file descriptors are unique within array. So function try to find item
+ * with the specified fd. If it's found the correspondent item will be returned
+ * but new item will not be created.
+ *
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @param [in] fd File descriptor to set to newly created item.
+ * @return Pointer to new item or NULL on error.
+ */
 struct pollfd *faux_pollfd_add(faux_pollfd_t *faux_pollfd, int fd)
 {
 	struct pollfd *pollfd = NULL;
@@ -136,6 +174,12 @@ struct pollfd *faux_pollfd_add(faux_pollfd_t *faux_pollfd, int fd)
 }
 
 
+/** @brief Removes item specified by fd.
+ *
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @param [in] fd File descriptor to remove.
+ * @return 0 - success, < 0 on error.
+ */
 int faux_pollfd_del_by_fd(faux_pollfd_t *faux_pollfd, int fd)
 {
 	int index = 0;
@@ -155,6 +199,12 @@ int faux_pollfd_del_by_fd(faux_pollfd_t *faux_pollfd, int fd)
 }
 
 
+/** @brief Removes item specified by index.
+ *
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @param [in] index Index of item to remove.
+ * @return 0 - success, < 0 on error.
+ */
 int faux_pollfd_del_by_index(faux_pollfd_t *faux_pollfd, unsigned int index)
 {
 	assert(faux_pollfd);
@@ -165,6 +215,13 @@ int faux_pollfd_del_by_index(faux_pollfd_t *faux_pollfd, unsigned int index)
 }
 
 
+/** @brief Initilizes iterator to iterate through all the vector.
+ *
+ * @sa faux_pollfd_each()
+ * @sa faux_pollfd_each_active()
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @param [out] iterator Iterator to initialize.
+ */
 void faux_pollfd_init_iterator(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_t *iterator)
 {
 	assert(faux_pollfd);
@@ -176,6 +233,14 @@ void faux_pollfd_init_iterator(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_
 }
 
 
+/** @brief Iterate through all the vector.
+ *
+ * The iterator must be initialized first by faux_pollfd_init_iterator().
+ *
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @param [out] iterator Initialized iterator.
+ * @return Pointer to item or NULL on error or on end of vector.
+ */
 struct pollfd *faux_pollfd_each(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_t *iterator)
 {
 	unsigned int old_iterator = 0;
@@ -193,6 +258,16 @@ struct pollfd *faux_pollfd_each(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator
 }
 
 
+/** @brief Iterate through all active items of vector.
+ *
+ * The iterator must be initialized first by faux_pollfd_init_iterator().
+ * Function returns items that has non-null value in "revent" field i.e.
+ * active items.
+ *
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @param [out] iterator Initialized iterator.
+ * @return Pointer to active item or NULL on error or on end of vector.
+ */
 struct pollfd *faux_pollfd_each_active(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_t *iterator)
 {
 	struct pollfd *pollfd = NULL;
