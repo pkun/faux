@@ -506,6 +506,30 @@ int faux_list_del(faux_list_t *list, faux_list_node_t *node)
 }
 
 
+/** @brief Deletes list node from the list by user key.
+ *
+ * @sa faux_list_del()
+ * @param [in] list List to delete node from.
+ * @param [in] node User key to find node to delete.
+ * @return 0 on success, < 0 on error.
+ */
+int faux_list_kdel(faux_list_t *list, const void *userkey)
+{
+	faux_list_node_t *node = NULL;
+
+	assert(list);
+	assert(userkey);
+	if (!list || !userkey)
+		return -1;
+
+	node = faux_list_kfind(list, userkey);
+	if (!node)
+		return -1; // Not found
+
+	return faux_list_del(list, node);
+}
+
+
 /** @brief Search list for matching (match function).
  *
  * Function iterates through the list and executes special matching user defined
