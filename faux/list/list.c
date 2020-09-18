@@ -522,7 +522,7 @@ int faux_list_kdel(faux_list_t *list, const void *userkey)
 	if (!list || !userkey)
 		return -1;
 
-	node = faux_list_kfind(list, userkey);
+	node = faux_list_kfind_node(list, userkey);
 	if (!node)
 		return -1; // Not found
 
