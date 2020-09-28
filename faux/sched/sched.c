@@ -300,7 +300,7 @@ int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
  *
  * @param [in] sched Allocated and initialized sched object.
  * @param [in] id ID to remove.
- * @return Number of removed entries.
+ * @return Number of removed entries or < 0 on error.
  */
 int faux_sched_remove_by_id(faux_sched_t *sched, int id)
 {
@@ -326,7 +326,7 @@ int faux_sched_remove_by_id(faux_sched_t *sched, int id)
  *
  * @param [in] sched Allocated and initialized sched object.
  * @param [in] data Data to search entries to remove.
- * @return Number of removed entries.
+ * @return Number of removed entries or < 0 on error.
  */
 int faux_sched_remove_by_data(faux_sched_t *sched, void *data)
 {
@@ -339,7 +339,7 @@ int faux_sched_remove_by_data(faux_sched_t *sched, void *data)
 		return -1;
 
 	while ((node = faux_list_match_node(sched->list,
-		faux_ev_compare_id, data, &saved))) {
+		faux_ev_compare_data, data, &saved))) {
 		faux_list_del(sched->list, node);
 		nodes_deleted++;
 	}
