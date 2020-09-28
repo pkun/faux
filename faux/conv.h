@@ -21,8 +21,8 @@ int faux_conv_atoui(const char *str, unsigned int *val, int base);
 int faux_conv_atos(const char *str, short *val, int base);
 int faux_conv_atous(const char *str, unsigned short *val, int base);
 
-int faux_conv_atoc(const char *str, short *val, int base);
-int faux_conv_atouc(const char *str, unsigned short *val, int base);
+int faux_conv_atoc(const char *str, char *val, int base);
+int faux_conv_atouc(const char *str, unsigned char *val, int base);
 
 C_DECL_END
 
