@@ -66,7 +66,11 @@ char *faux_str_dupn(const char *str, size_t n)
 
 	if (!str)
 		return NULL;
-	len = strlen(str);
+	// Search for terminating '\0' among first n bytes
+	// Don't use strlen() because it can be not null-terminated.
+	for (len = 0; len < n; len++)
+		if ('\0' == str[len])
+			break;
 	len = (len < n) ? len : n;
 	res = faux_zmalloc(len + 1);
 	if (!res)
