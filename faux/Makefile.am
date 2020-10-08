@@ -2,6 +2,7 @@ lib_LTLIBRARIES += libfaux.la
 libfaux_la_SOURCES =
 libfaux_la_LIBADD = $(PTHREAD_LIBS)
 libfaux_la_CFLAGS = $(PTHREAD_CFLAGS)
+libfaux_la_LDFLAGS = $(AM_LDFLAGS) $(VERSION_INFO)
 
 if TESTC
 libfaux_la_CFLAGS += -DTESTC
