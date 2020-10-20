@@ -28,7 +28,7 @@ int faux_ev_compare(const void *first, const void *second)
 	const faux_ev_t *f = (const faux_ev_t *)first;
 	const faux_ev_t *s = (const faux_ev_t *)second;
 
-	return faux_timespec_cmp(&f->time, &s->time);
+	return faux_timespec_cmp(&(f->time), &(s->time));
 }
 
 
@@ -93,7 +93,7 @@ faux_ev_t *faux_ev_new(const struct timespec *time, int ev_id, void *data)
 	ev->data = data;
 	ev->periodic = FAUX_SCHED_ONCE; // Not periodic by default
 	ev->cycle_num = 0;
-	faux_nsec_to_timespec(&ev->period, 0l);
+	faux_nsec_to_timespec(&(ev->period), 0l);
 	faux_ev_reschedule(ev, time);
 
 	return ev;
@@ -197,7 +197,7 @@ int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
 	if (new_time) {
 		ev->time = *new_time;
 	} else { // Time isn't given so use "NOW"
-		faux_timespec_now(&ev->time);
+		faux_timespec_now(&(ev->time));
 	}
 
 	return 0;
@@ -225,7 +225,7 @@ int faux_ev_reschedule_period(faux_ev_t *ev)
 	if (ev->cycle_num <= 1)
 		return -1; // We don't need to reschedule if last cycle left
 
-	faux_timespec_sum(&new_time, &ev->time, &ev->period);
+	faux_timespec_sum(&new_time, &(ev->time), &(ev->period));
 	faux_ev_reschedule(ev, &new_time);
 
 	if (ev->cycle_num != FAUX_SCHED_INFINITE)
@@ -251,11 +251,11 @@ int faux_ev_time_left(faux_ev_t *ev, struct timespec *left)
 		return -1;
 
 	faux_timespec_now(&now);
-	if (faux_timespec_cmp(&now, &ev->time) > 0) { // Already happend
+	if (faux_timespec_cmp(&now, &(ev->time)) > 0) { // Already happend
 		faux_nsec_to_timespec(left, 0l);
 		return 0;
 	}
-	faux_timespec_diff(left, &ev->time, &now);
+	faux_timespec_diff(left, &(ev->time), &now);
 
 	return 0;
 }
@@ -302,5 +302,5 @@ const struct timespec *faux_ev_time(const faux_ev_t *ev)
 	if (!ev)
 		return NULL;
 
-	return &ev->time;
+	return &(ev->time);
 }
