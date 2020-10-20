@@ -149,7 +149,27 @@ int faux_timespec_now(struct timespec *now)
 	if (!now)
 		return -1;
 
-	clock_gettime(FAUX_CLOCK_SOURCE, now);
+	clock_gettime(CLOCK_REALTIME, now);
+
+	return 0;
+}
+
+
+/** @brief Returns current time using CLOCK_MONOTONIC (now).
+ *
+ * CLOCK_MONOTONIC is not ajustable by NTP and etc. But it represents
+ * time from system up but not since Epoch.
+ *
+ * @param [out] now The struct timespec to save current time.
+ * @return 0 - success, < 0 on error.
+ */
+int faux_timespec_now_monotonic(struct timespec *now)
+{
+	assert(now);
+	if (!now)
+		return -1;
+
+	clock_gettime(CLOCK_MONOTONIC, now);
 
 	return 0;
 }
