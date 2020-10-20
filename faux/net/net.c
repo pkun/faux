@@ -107,7 +107,7 @@ void faux_net_set_send_timeout(faux_net_t *faux_net, struct timespec *send_timeo
 		faux_net->send_timeout = NULL;
 	} else {
 		faux_net->send_timeout_val = *send_timeout;
-		faux_net->send_timeout = &faux_net->send_timeout_val;
+		faux_net->send_timeout = &(faux_net->send_timeout_val);
 	}
 }
 
@@ -126,7 +126,7 @@ void faux_net_set_recv_timeout(faux_net_t *faux_net, struct timespec *recv_timeo
 		faux_net->recv_timeout = NULL;
 	} else {
 		faux_net->recv_timeout_val = *recv_timeout;
-		faux_net->recv_timeout = &faux_net->recv_timeout_val;
+		faux_net->recv_timeout = &(faux_net->recv_timeout_val);
 	}
 }
 
@@ -173,7 +173,7 @@ void faux_net_sigmask_empty(faux_net_t *faux_net)
 	assert(faux_net);
 	if (!faux_net)
 		return;
-	sigemptyset(&faux_net->sigmask);
+	sigemptyset(&(faux_net->sigmask));
 }
 
 
@@ -186,7 +186,7 @@ void faux_net_sigmask_fill(faux_net_t *faux_net)
 	assert(faux_net);
 	if (!faux_net)
 		return;
-	sigfillset(&faux_net->sigmask);
+	sigfillset(&(faux_net->sigmask));
 }
 
 
@@ -200,7 +200,7 @@ void faux_net_sigmask_add(faux_net_t *faux_net, int signum)
 	assert(faux_net);
 	if (!faux_net)
 		return;
-	sigaddset(&faux_net->sigmask, signum);
+	sigaddset(&(faux_net->sigmask), signum);
 }
 
 
@@ -214,7 +214,7 @@ void faux_net_sigmask_del(faux_net_t *faux_net, int signum)
 	assert(faux_net);
 	if (!faux_net)
 		return;
-	sigdelset(&faux_net->sigmask, signum);
+	sigdelset(&(faux_net->sigmask), signum);
 }
 
 
@@ -232,7 +232,7 @@ ssize_t faux_net_send(faux_net_t *faux_net, const void *buf, size_t n)
 {
 
 	return faux_send_block(faux_net->fd, buf, n, faux_net->send_timeout,
-		&faux_net->sigmask, faux_net->isbreak_func);
+		&(faux_net->sigmask), faux_net->isbreak_func);
 }
 
 
@@ -250,7 +250,7 @@ ssize_t faux_net_sendv(faux_net_t *faux_net,
 	const struct iovec *iov, int iovcnt)
 {
 	return faux_sendv_block(faux_net->fd, iov, iovcnt, faux_net->send_timeout,
-		&faux_net->sigmask, faux_net->isbreak_func);
+		&(faux_net->sigmask), faux_net->isbreak_func);
 }
 
 
@@ -268,7 +268,7 @@ ssize_t faux_net_recv(faux_net_t *faux_net, void *buf, size_t n)
 {
 
 	return faux_recv_block(faux_net->fd, buf, n, faux_net->recv_timeout,
-		&faux_net->sigmask, faux_net->isbreak_func);
+		&(faux_net->sigmask), faux_net->isbreak_func);
 }
 
 
@@ -285,5 +285,5 @@ ssize_t faux_net_recv(faux_net_t *faux_net, void *buf, size_t n)
 ssize_t faux_net_recvv(faux_net_t *faux_net, struct iovec *iov, int iovcnt)
 {
 	return faux_recvv_block(faux_net->fd, iov, iovcnt, faux_net->recv_timeout,
-		&faux_net->sigmask, faux_net->isbreak_func);
+		&(faux_net->sigmask), faux_net->isbreak_func);
 }
