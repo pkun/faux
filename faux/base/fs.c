@@ -15,6 +15,29 @@
 
 #include "faux/str.h"
 
+
+/** @brief If given path is directory.
+ *
+ * @param [in] path Filesystem path.
+ * @return 0 - success, < 0 on error.
+ */
+bool_t faux_isdir(const char *path)
+{
+	struct stat statbuf = {};
+
+	assert(path);
+	if (!path)
+		return BOOL_FALSE;
+
+	if (lstat(path, &statbuf) < 0)
+		return BOOL_FALSE;
+
+	if (S_ISDIR(statbuf.st_mode))
+		return BOOL_TRUE;
+
+	return BOOL_FALSE;
+}
+
 /** @brief Removes filesystem objects recursively.
  *
  * Function can remove file or directory (recursively).
@@ -24,7 +47,6 @@
  */
 int faux_rm(const char *path)
 {
-	struct stat statbuf = {};
 	DIR *dir = NULL;
 	struct dirent *dir_entry = NULL;
 
@@ -32,11 +54,8 @@ int faux_rm(const char *path)
 	if (!path)
 		return -1;
 
-	if (lstat(path, &statbuf) < 0)
-		return -1;
-
 	// Common file (not dir)
-	if (!S_ISDIR(statbuf.st_mode))
+	if (!faux_isdir(path))
 		return unlink(path);
 
 	// Directory
