@@ -29,7 +29,7 @@ bool_t faux_isdir(const char *path)
 	if (!path)
 		return BOOL_FALSE;
 
-	if (lstat(path, &statbuf) < 0)
+	if (stat(path, &statbuf) < 0)
 		return BOOL_FALSE;
 
 	if (S_ISDIR(statbuf.st_mode))
