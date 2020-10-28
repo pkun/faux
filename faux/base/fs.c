@@ -62,6 +62,7 @@ ssize_t faux_filesize(const char *path)
 			continue;
 		sum += r;
 	}
+	closedir(dir);
 
 	return sum;
 }
