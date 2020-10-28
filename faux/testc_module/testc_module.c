@@ -10,6 +10,9 @@ const char *testc_module[][2] = {
 //	{"testc_faux_ini_signal", "Interrupted by signal"}, // demo
 //	{"testc_faux_ini_good", "INI subsystem good"}, // demo
 
+	// base
+	{"testc_faux_filesize", "Get size of filesystem object"},
+
 	// str
 	{"testc_faux_str_nextword", "Find next word (quotation)"},
 

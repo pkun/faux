@@ -16,6 +16,57 @@
 #include "faux/str.h"
 
 
+/** @brief Reports size of file or directory.
+ *
+ * Function works recursively so directory size is a sum of all file size
+ * inside it and size of subdirs.
+ *
+ * @param [in] path Filesystem path.
+ * @return Size of filesystem object or < 0 on error.
+ */
+ssize_t faux_filesize(const char *path)
+{
+	struct stat statbuf = {};
+	DIR *dir = NULL;
+	struct dirent *entry = NULL;
+	ssize_t sum = 0;
+
+	assert(path);
+	if (!path)
+		return -1;
+
+	if (stat(path, &statbuf) < 0)
+		return -1;
+
+	// Regular file
+	if (!S_ISDIR(statbuf.st_mode))
+		return statbuf.st_size;
+
+	// Directory
+	dir = opendir(path);
+	if (!dir)
+		return -1;
+	// Get each file from 'path' directory
+	for (entry = readdir(dir); entry; entry = readdir(dir)) {
+		char *fn = NULL;
+		ssize_t r = 0;
+		// Ignore "." and ".."
+		if ((faux_str_casecmp(entry->d_name, ".") == 0) ||
+			(faux_str_casecmp(entry->d_name, "..") == 0))
+			continue;
+		// Construct filename
+		fn = faux_str_sprintf("%s/%s", path, entry->d_name);
+		r = faux_filesize(fn);
+		faux_str_free(fn);
+		if (r < 0)
+			continue;
+		sum += r;
+	}
+
+	return sum;
+}
+
+
 /** @brief If given path is directory.
  *
  * @param [in] path Filesystem path.

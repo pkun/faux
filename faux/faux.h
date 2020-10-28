@@ -85,6 +85,7 @@ ssize_t faux_write_block(int fd, const void *buf, size_t n);
 size_t faux_read_block(int fd, void *buf, size_t n);
 
 // Filesystem
+ssize_t faux_filesize(const char *path);
 bool_t faux_isdir(const char *path);
 int faux_rm(const char *path);
 char *faux_expand_tilde(const char *path);
