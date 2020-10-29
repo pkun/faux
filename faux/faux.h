@@ -83,6 +83,7 @@ ssize_t faux_write(int fd, const void *buf, size_t n);
 ssize_t faux_read(int fd, void *buf, size_t n);
 ssize_t faux_write_block(int fd, const void *buf, size_t n);
 size_t faux_read_block(int fd, void *buf, size_t n);
+ssize_t faux_read_whole_file(const char *path, void **data);
 
 // Filesystem
 ssize_t faux_filesize(const char *path);

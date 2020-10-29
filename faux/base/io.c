@@ -10,7 +10,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
+#include "faux/faux.h"
 
 /** @brief Writes data to file.
  *
@@ -142,6 +145,107 @@ size_t faux_read_block(int fd, void *buf, size_t n)
 		left = left - bytes_readed;
 		total_readed += bytes_readed;
 	} while (left > 0);
+
+	return total_readed;
+}
+
+
+/** @brief Reads whole file to buffer.
+ *
+ * Allocates buffer and read whole file to it.
+ *
+ * @param [in] path File name.
+ * @param [out] buf Output buffer with file content.
+ * @warn Buffer must be freed with faux_free().
+ * @return Number of bytes readed.
+ * = n Empty file. The data param will be set to NULL.
+ * < 0 Error.
+ */
+ssize_t faux_read_whole_file(const char *path, void **data)
+{
+	ssize_t expected_size = 0;
+	struct stat statbuf = {};
+	char *buf = NULL;
+	size_t buf_full_size = 0;
+	ssize_t bytes_readed = 0;
+	size_t total_readed = 0;
+	int fd = -1;
+
+	assert(path);
+	assert(data);
+	if (!path || !data)
+		return -1;
+
+	if (stat(path, &statbuf) < 0)
+		return -1;
+
+	// Regular file?
+	if (!S_ISREG(statbuf.st_mode))
+		return -1;
+
+	// Get expected file size
+	expected_size = faux_filesize(path);
+	if (expected_size < 0)
+		return -1;
+	// Add some extra space to buffer. Because actual filesize can
+	// differ while reading. Try to read more data than expected.
+	expected_size++;
+
+	// Open file
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return -1;
+
+	// Allocate buffer
+	buf_full_size = expected_size;
+	buf = faux_zmalloc(buf_full_size);
+	if (!buf) {
+		close(fd);
+		return -1;
+	}
+
+	while ((bytes_readed = faux_read(fd, buf + total_readed,
+		buf_full_size - total_readed)) > 0) {
+		total_readed += bytes_readed;
+		// Enlarge buffer if needed
+		if (total_readed == buf_full_size) {
+			char *p = NULL;
+			buf_full_size = buf_full_size * 2;
+			p = realloc(buf, buf_full_size);
+			if (!p) {
+				free(buf);
+				close(fd);
+				return -1;
+			}
+			buf = p;
+		}
+	}
+	close(fd);
+
+	// Something went wrong
+	if (bytes_readed < 0) {
+		free(buf);
+		return -1;
+	}
+
+	// Empty file
+	if (0 == total_readed) {
+		free(buf);
+		*data = NULL;
+		return 0;
+	}
+
+	// Shrink buffer to actual data size
+	if (total_readed < buf_full_size) {
+		char *p = NULL;
+		p = realloc(buf, total_readed);
+		if (!p) {
+			free(buf);
+			return -1;
+		}
+		buf = p;
+	}
+	*data = buf;
 
 	return total_readed;
 }
