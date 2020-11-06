@@ -42,6 +42,7 @@ void faux_sched_empty(faux_sched_t *sched);
 int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data);
 int faux_sched_remove_by_id(faux_sched_t *sched, int id);
 int faux_sched_remove_by_data(faux_sched_t *sched, void *data);
+const struct timespec *faux_sched_time_by_data(faux_sched_t *sched, void *data);
 
 C_DECL_END
 

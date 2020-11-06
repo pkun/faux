@@ -346,3 +346,30 @@ int faux_sched_remove_by_data(faux_sched_t *sched, void *data)
 
 	return nodes_deleted;
 }
+
+
+/** @brief Get time of events with specified data pointer from list.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [in] data Data to search entries to remove.
+ * @return Number of removed entries or < 0 on error.
+ */
+const struct timespec *faux_sched_time_by_data(faux_sched_t *sched, void *data)
+{
+	faux_list_node_t *node = NULL;
+	faux_ev_t *ev = NULL;
+
+	assert(sched);
+	if (!sched)
+		return NULL;
+
+	node = faux_list_match_node(sched->list, faux_ev_compare_data, data, NULL);
+	if (!node)
+		return NULL;
+
+	ev = faux_list_data(node);
+	if (!ev)
+		return NULL;
+
+	return faux_ev_time(ev);
+}
