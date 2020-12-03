@@ -33,7 +33,7 @@
 #include <faux/msg.h>
 
 // Global variable to switch debug on/off (true/false)
-bool_t faux_msg_debug = BOOL_FALSE;
+bool_t faux_msg_debug_flag = BOOL_FALSE;
 
 
 /** @brief Opaque faux_msg_s structure. */
@@ -43,11 +43,15 @@ struct faux_msg_s {
 };
 
 
+static void faux_msg_set_len(faux_msg_t *msg, uint32_t len);
+static void faux_msg_set_param_num(faux_msg_t *msg, uint32_t param_num);
+
+
 /** @brief Allocate memory to store message.
  *
  * This static function is needed because new message object can be created
  * in a different ways. The first way is creating outgoing message manually and
- * the second way is receiving CRSP message from network. These ways need
+ * the second way is receiving message from network. These ways need
  * different initialization but the same memory allocation.
  *
  * @return Allocated but not fully initialized faux_msg_t object
@@ -383,16 +387,11 @@ static ssize_t faux_msg_add_param_internal(faux_msg_t *msg,
 	memcpy(param + sizeof(*phdr), buf, len);
 
 	if (update_len) {
-		uint32_t cur_param_num = 0;
-		uint32_t cur_len = 0;
-
 		// Update number of parameters
-		faux_msg_get_param_num(msg, &cur_param_num);
-		faux_msg_set_param_num(msg, cur_param_num + 1);
-
+		faux_msg_set_param_num(msg, faux_msg_get_param_num(msg) + 1);
 		// Update whole message length
-		faux_msg_get_len(msg, &cur_len);
-		crsp_msg_set_len(crsp_msg, cur_len + sizeof(*phdr) + len);
+		faux_msg_set_len(msg,
+			faux_msg_get_len(msg) + sizeof(*phdr) + len);
 	}
 
 	// Add to parameter list
@@ -501,7 +500,7 @@ faux_phdr_t *faux_msg_get_param_each(faux_list_node_t **node,
  *
  * @param [in] msg Allocated faux_msg_t object.
  * @param [in] index Parameter's index.
- * @param [out] param_type Type of parameter. See the crsp_param_e enumeration.
+ * @param [out] param_type Type of parameter.
  * @param [out] param_buf Parameter's data buffer.
  * @param [out] param_len Parameter's data length.
  * @return Pointer to parameter's header or NULL on error.
@@ -543,7 +542,7 @@ faux_phdr_t *faux_msg_get_param_by_index(const faux_msg_t *msg, unsigned int ind
  * @return Pointer to parameter's header or NULL on error.
  */
 faux_phdr_t *faux_msg_get_param_by_type(const faux_msg_t *msg,
-	uint16_t *param_type, void **param_data, uint32_t *param_len)
+	uint16_t param_type, void **param_data, uint32_t *param_len)
 {
 	faux_list_node_t *iter = NULL;
 
@@ -581,14 +580,13 @@ faux_phdr_t *faux_msg_get_param_by_type(const faux_msg_t *msg,
  * @param [in] faux_net Preinitialized faux_net_t object.
  * @return Length of sent data or < 0 on error.
  */
-ssize_t faux_msg_send(crsp_msg_t *msg, faux_net_t *faux_net)
+ssize_t faux_msg_send(faux_msg_t *msg, faux_net_t *faux_net)
 {
 	unsigned int vec_entries_num = 0;
 	struct iovec *iov = NULL;
 	unsigned int i = 0;
 	faux_list_node_t *iter = NULL;
 	size_t ret = 0;
-	uint32_t param_num = 0;
 
 	assert(msg);
 	assert(msg->hdr);
@@ -597,8 +595,7 @@ ssize_t faux_msg_send(crsp_msg_t *msg, faux_net_t *faux_net)
 
 	// Calculate number if struct iovec entries.
 	// n = (msg header) + ((param hdr) + (param data)) * (param_num)
-	faux_msg_get_param_num(msg, &param_num);
-	vec_entries_num = 1 + (2 * param_num);
+	vec_entries_num = 1 + (2 * faux_msg_get_param_num(msg));
 	iov = faux_zmalloc(vec_entries_num * sizeof(*iov));
 
 	// Message header
@@ -619,7 +616,7 @@ ssize_t faux_msg_send(crsp_msg_t *msg, faux_net_t *faux_net)
 	// Parameter data
 	for (iter = faux_msg_init_param_iter(msg);
 		iter; iter = faux_list_next_node(iter)) {
-		crsp_phdr_t *phdr = NULL;
+		faux_phdr_t *phdr = NULL;
 		void *data = NULL;
 		phdr = (faux_phdr_t *)faux_list_data(iter);
 		data = (char *)phdr + sizeof(*phdr);
@@ -633,7 +630,7 @@ ssize_t faux_msg_send(crsp_msg_t *msg, faux_net_t *faux_net)
 
 #ifdef DEBUG
 	// Debug
-	if (msg && ret > 0 && faux_msg_debug) {
+	if (msg && ret > 0 && faux_msg_debug_flag) {
 		printf("(o) ");
 		faux_msg_debug(msg);
 	}
@@ -654,32 +651,21 @@ ssize_t faux_msg_send(crsp_msg_t *msg, faux_net_t *faux_net)
  * - Interrupted by allowed signal (see signal mask).
  * - Timeout.
  *
- * It can be an logical errors while message receiving like wrong protocol
- * version. So function has additional parameter named 'status'. It will
- * be CRSP_STATUS_OK in a case when all is ok but function can return NULL and
- * set appropriate status to this parameter. It can be
- * CRSP_STATUS_WRONG_VERSION for example. The function will return NULL
- * and CRSP_STATUS_OK on some system errors like illegal parameters or
- * insufficient of memory.
- *
  * @param [in] faux_net Preinitialized faux_net_t object.
  * @param [out] status Status while message receiving. Can be NULL.
  * @return Allocated faux_msg_t object. Object contains received message.
  */
-faux_msg_t *faux_msg_recv(faux_net_t *faux_net, crsp_recv_e *status)
+faux_msg_t *faux_msg_recv(faux_net_t *faux_net)
 {
 	faux_msg_t *msg = NULL;
 	size_t received = 0;
 	faux_phdr_t *phdr = NULL;
-	unsigned int param_num = 0;
 	size_t phdr_whole_len = 0;
 	size_t max_data_len = 0;
-	size_t cur_data_len = 0;
 	unsigned int i = 0;
 	char *data = NULL;
+	uint32_t param_num = 0;
 
-	if (status)
-		*status = CRSP_RECV_OK;
 	msg = faux_msg_allocate();
 	assert(msg);
 	if (!msg)
@@ -693,21 +679,19 @@ faux_msg_t *faux_msg_recv(faux_net_t *faux_net, crsp_recv_e *status)
 	}
 
 	// Receive parameter headers
-	faux_msg_get_param_num(msg, &param_num);
+	param_num = faux_msg_get_param_num(msg);
 	if (param_num != 0) {
 		phdr_whole_len = param_num * sizeof(*phdr);
 		phdr = faux_zmalloc(phdr_whole_len);
 		received = faux_net_recv(faux_net, phdr, phdr_whole_len);
 		if (received != phdr_whole_len) {
 			faux_free(phdr);
-			crsp_msg_free(crsp_msg);
-			if (status)
-				*status = CRSP_RECV_BROKEN_PARAM;
+			faux_msg_free(msg);
 			return NULL;
 		}
 		// Find out maximum data length
 		for (i = 0; i < param_num; i++) {
-			cur_data_len = ntohl(phdr[i].param_len);
+			size_t cur_data_len = faux_phdr_get_len(phdr + i);
 			if (cur_data_len > max_data_len)
 				max_data_len = cur_data_len;
 		}
@@ -715,20 +699,18 @@ faux_msg_t *faux_msg_recv(faux_net_t *faux_net, crsp_recv_e *status)
 		// Receive parameter data
 		data = faux_zmalloc(max_data_len);
 		for (i = 0; i < param_num; i++) {
-			cur_data_len = ntohl(phdr[i].param_len);
+			size_t cur_data_len = faux_phdr_get_len(phdr + i);
 			if (0 == cur_data_len)
 				continue;
-			received = faux_net_recv(faux_net,
-				data, cur_data_len);
+			received = faux_net_recv(faux_net, data, cur_data_len);
 			if (received != cur_data_len) {
 				faux_free(data);
 				faux_free(phdr);
-				crsp_msg_free(crsp_msg);
-				if (status)
-					*status = CRSP_RECV_BROKEN_PARAM;
+				faux_msg_free(msg);
 				return NULL;
 			}
-			crsp_msg_add_param_internal(crsp_msg, phdr[i].param_type,
+			faux_msg_add_param_internal(msg,
+				faux_phdr_get_type(phdr + i),
 				data, cur_data_len, BOOL_FALSE);
 		}
 
@@ -738,7 +720,7 @@ faux_msg_t *faux_msg_recv(faux_net_t *faux_net, crsp_recv_e *status)
 
 #ifdef DEBUG
 	// Debug
-	if (msg && faux_msg_debug) {
+	if (msg && faux_msg_debug_flag) {
 		printf("(i) ");
 		faux_msg_debug(msg);
 	}
@@ -758,17 +740,6 @@ void faux_msg_debug(faux_msg_t *msg)
 #ifdef DEBUG
 {
 	faux_list_node_t *iter = 0;
-
-	// Header vars
-	uint32_t magic = 0;
-	uint8_t major = 0;
-	uint8_t minor = 0;
-	uint16_t cmd = 0;
-	uint32_t status = 0;
-	uint32_t req_id = 0;
-	uint32_t param_num = 0;
-	uint32_t len = 0;
-
 	// Parameter vars
 	void *param_data = NULL;
 	uint16_t param_type = 0;
@@ -779,22 +750,15 @@ void faux_msg_debug(faux_msg_t *msg)
 		return;
 
 	// Header
-	faux_msg_get_magic(msg, &magic);
-	faux_msg_get_version(msg, &major, &minor);
-	faux_msg_get_cmd(msg, &cmd);
-	faux_msg_get_status(msg, &status);
-	faux_msg_get_req_id(msg, &req_id);
-	faux_msg_get_param_num(msg, &param_num);
-	faux_msg_get_len(msg, &len);
 	printf("%lx(%u.%u): c%04x s%08x i%08x p%u l%u |%lub\n",
-		magic,
-		major,
-		minor,
-		cmd,
-		status,
-		req_id,
-		param_num,
-		len
+		faux_msg_get_magic(msg),
+		faux_msg_get_major(msg),
+		faux_msg_get_minor(msg),
+		faux_msg_get_cmd(msg),
+		faux_msg_get_status(msg),
+		faux_msg_get_req_id(msg),
+		faux_msg_get_param_num(msg),
+		faux_msg_get_len(msg),
 		sizeof(*msg->hdr)
 		);
 
