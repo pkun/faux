@@ -1,4 +1,5 @@
 libfaux_la_SOURCES += \
+	faux/msg/phdr.c \
 	faux/msg/msg.c
 
 #if TESTC

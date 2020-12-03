@@ -46,6 +46,9 @@
 
 typedef struct faux_msg_s faux_msg_t;
 
+// Debug variable. BOOL_TRUE for debug and BOOL_FALSE to switch debug off
+extern bool_t faux_msg_debug;
+
 
 /** @brief Parameter header
  */
@@ -74,9 +77,16 @@ typedef struct faux_hdr_s {
 // Debug variable. 1 for debug and 0 to switch debug off
 extern int crsp_debug;
 
+
 C_DECL_BEGIN
 
-// CRSP message functions
+// Parameter functions
+void faux_phdr_set_type(faux_phdr_t *phdr, uint16_t param_type);
+uint16_t faux_phdr_get_type(const faux_phdr_t *phdr);
+void faux_phdr_set_len(faux_phdr_t *phdr, uint32_t param_len);
+uint32_t faux_phdr_get_len(const faux_phdr_t *phdr);
+
+// Message functions
 crsp_msg_t *crsp_msg_new(void);
 void crsp_msg_free(crsp_msg_t *crsp_msg);
 void crsp_msg_set_cmd(crsp_msg_t *crsp_msg, crsp_cmd_e cmd);

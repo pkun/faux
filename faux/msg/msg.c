@@ -32,8 +32,8 @@
 #include <faux/net.h>
 #include <faux/msg.h>
 
-// Global variable to switch debug on/off (1/0)
-int crsp_debug = 0;
+// Global variable to switch debug on/off (true/false)
+bool_t faux_msg_debug = BOOL_FALSE;
 
 
 /** @brief Opaque faux_msg_s structure. */
@@ -148,19 +148,16 @@ void faux_msg_set_cmd(faux_msg_t *msg, uint16_t cmd)
  * See the protocol and header description for possible values.
  *
  * @param [in] msg Allocated faux_msg_t object.
- * @param [out] cmd Command code.
- * @return 0 - success, < 0 - fail
+ * @return Command code or 0 on error.
  */
-int faux_msg_get_cmd(const faux_msg_t *msg, uint16_t *cmd)
+uint16_t faux_msg_get_cmd(const faux_msg_t *msg)
 {
 	assert(msg);
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
-		return -1;
-	if (cmd)
-		*cmd = ntohs(msg->hdr->cmd);
+		return 0;
 
-	return 0;
+	return ntohs(msg->hdr->cmd);
 }
 
 
@@ -186,19 +183,16 @@ void faux_msg_set_status(faux_msg_t *msg, uint32_t status)
  * See the protocol and header description for possible values.
  *
  * @param [in] msg Allocated faux_msg_t object.
- * @param [out] status Message status.
- * @return 0 - success, < 0 -fail
+ * @return Message status or 0 on error.
  */
-int faux_msg_get_status(const faux_msg_t *msg, uint32_t *status)
+uint32_t faux_msg_get_status(const faux_msg_t *msg)
 {
 	assert(msg);
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
-		return -1;
-	if (status)
-		*status = ntohl(msg->hdr->status);
+		return 0;
 
-	return 0;
+	return ntohl(msg->hdr->status);
 }
 
 
@@ -220,19 +214,16 @@ void faux_msg_set_req_id(faux_msg_t *msg, uint32_t req_id)
 /** @brief Gets request ID from header.
  *
  * @param [in] msg Allocated faux_msg_t object.
- * @param [out] req_id Request ID.
- * @return 0 - success, < 0 - fail
+ * @return Request ID or 0 on error.
  */
-int faux_msg_get_req_id(const faux_msg_t *msg, uint32_t *req_id)
+uint32_t faux_msg_get_req_id(const faux_msg_t *msg)
 {
 	assert(msg);
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
-		return -1;
-	if (req_id)
-		*req_id = ntohl(msg->hdr->req_id);
+		return 0;
 
-	return 0;
+	return ntohl(msg->hdr->req_id);
 }
 
 
@@ -257,18 +248,16 @@ static void faux_msg_set_param_num(faux_msg_t *msg, uint32_t param_num)
 /** @brief Gets number of parameters from header.
  *
  * @param [in] msg Allocated faux_msg_t object.
- * @return Number of parameters.
+ * @return Number of parameters or 0 on error.
  */
-int faux_msg_get_param_num(const faux_msg_t *msg, uint32_t *param_num)
+uint32_t faux_msg_get_param_num(const faux_msg_t *msg)
 {
 	assert(msg);
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
 		return -1;
-	if (param_num)
-		*param_num = ntohl(msg->hdr->param_num);
 
-	return 0;
+	return ntohl(msg->hdr->param_num);
 }
 
 
@@ -293,60 +282,64 @@ static void faux_msg_set_len(faux_msg_t *msg, uint32_t len)
 /** @brief Gets total length of message from header.
  *
  * @param [in] msg Allocated faux_msg_t object.
- * @param [out] len Total length of message.
- * @return 0 - success, < 0 - fail
+ * @return Total length of message or 0 on error.
  */
-int faux_msg_get_len(const faux_msg_t *msg, uint32_t *len)
+int faux_msg_get_len(const faux_msg_t *msg)
 {
 	assert(msg);
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
-		return -1;
-	if (len)
-		*len = ntohl(msg->hdr->len);
+		return 0;
 
-	return 0;
+	return ntohl(msg->hdr->len);
 }
 
 
 /** @brief Gets magic number from header.
  *
  * @param [in] msg Allocated faux_msg_t object.
- * @param [out] magic Magic number.
- * @return 0 - success, < 0 - fail
+ * @return Magic number or 0 on error.
  */
-int faux_msg_get_magic(const faux_msg_t *msg, uint32_t *magic)
+uint32_t faux_msg_get_magic(const faux_msg_t *msg)
 {
 	assert(msg);
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
-		return -1;
-	if (magic)
-		*magic = ntohl(msg->hdr->magic);
+		return 0;
 
-	return 0;
+	return ntohl(msg->hdr->magic);
 }
 
 
-/** @brief Gets version from header.
+/** @brief Gets major version from header.
  *
  * @param [in] msg Allocated faux_msg_t object.
- * @param [out] major Major version number.
- * @param [out] minor Minor version number.
- * @return 0 - success, < 0 - fail
+ * @return Major version number or 0 on error.
  */
-int faux_msg_get_version(const faux_msg_t *msg, uint8_t *major, uint8_t *minor)
+int faux_msg_get_major(const faux_msg_t *msg)
 {
 	assert(msg);
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
-		return -1;
-	if (major)
-		*major = msg->hdr->major;
-	if (minor)
-		*minor = msg->hdr->minor;
+		return 0;
 
-	return 0;
+	return msg->hdr->major;
+}
+
+
+/** @brief Gets minor version from header.
+ *
+ * @param [in] msg Allocated faux_msg_t object.
+ * @return Minor version number or 0 on error.
+ */
+int faux_msg_get_minor(const faux_msg_t *msg)
+{
+	assert(msg);
+	assert(msg->hdr);
+	if (!msg || !msg->hdr)
+		return 0;
+
+	return msg->hdr->minor;
 }
 
 
@@ -384,8 +377,8 @@ static ssize_t faux_msg_add_param_internal(faux_msg_t *msg,
 		return -1;
 	// Init param hdr
 	phdr = (faux_phdr_t *)param;
-	phdr->param_type = htonl(type);
-	phdr->param_len = htonl(len);
+	faux_phdr_set_type(phdr, type);
+	faux_phdr_set_len(phdr, len);
 	// Copy data
 	memcpy(param + sizeof(*phdr), buf, len);
 
@@ -428,17 +421,17 @@ ssize_t faux_msg_add_param(faux_msg_t *msg, uint16_t type,
  *
  * The iterator must be initialized before iteration.
  *
- * @param [in] crsp_msg Allocated crsp_msg_t object.
+ * @param [in] msg Allocated faux_msg_t object.
  * @return Initialized iterator.
  */
-faux_list_node_t *crsp_msg_init_param_iter(const crsp_msg_t *crsp_msg)
+faux_list_node_t *faux_msg_init_param_iter(const faux_msg_t *msg)
 {
-	assert(crsp_msg);
-	assert(crsp_msg->params);
-	if (!crsp_msg || !crsp_msg->params)
+	assert(msg);
+	assert(msg->params);
+	if (!msg || !msg->params)
 		return NULL;
 
-	return faux_list_head(crsp_msg->params);
+	return faux_list_head(msg->params);
 }
 
 
@@ -447,31 +440,31 @@ faux_list_node_t *crsp_msg_init_param_iter(const crsp_msg_t *crsp_msg)
  * Note function returns the main data by output arguments.
  *
  * @param [in] node Node from the parameter's list.
- * @param [out] param_type Type of parameter. See the crsp_param_e enumeration.
+ * @param [out] param_type Type of parameter.
  * @param [out] param_buf Parameter's data buffer.
  * @param [out] param_len Parameter's data length.
  * @return Pointer to parameter's header or NULL on error.
  */
-static crsp_phdr_t *crsp_msg_get_param_by_node(const faux_list_node_t *node,
-	crsp_param_e *param_type, void **param_data, uint32_t *param_len)
+static faux_phdr_t *faux_msg_get_param_by_node(const faux_list_node_t *node,
+	uint16_t *param_type, void **param_data, uint32_t *param_len)
 {
 	char *param = NULL;
-	crsp_phdr_t *phdr = NULL;
+	faux_phdr_t *phdr = NULL;
 	char *data = NULL;
 
 	if (!node)
 		return NULL;
 
 	param = faux_list_data(node);
-	phdr = (crsp_phdr_t *)param;
+	phdr = (faux_phdr_t *)param;
 	data = param + sizeof(*phdr);
 
 	if (param_type)
-		*param_type = phdr->param_type;
+		*param_type = faux_phdr_get_type(phdr);
+	if (param_len)
+		*param_len = faux_phdr_get_len(phdr);
 	if (param_data)
 		*param_data = data;
-	if (param_len)
-		*param_len = ntohl(phdr->param_len);
 
 	return phdr;
 }
@@ -480,16 +473,16 @@ static crsp_phdr_t *crsp_msg_get_param_by_node(const faux_list_node_t *node,
 /** @brief Iterate through the message parameters.
  *
  * First parameter (iterator/node) must be initialized first by
- * crsp_msg_init_param_iter().
+ * faux_msg_init_param_iter().
  *
  * @param [in] node Initialized iterator of parameter list.
- * @param [out] param_type Type of parameter. See the crsp_param_e enumeration.
+ * @param [out] param_type Type of parameter.
  * @param [out] param_buf Parameter's data buffer.
  * @param [out] param_len Parameter's data length.
  * @return Pointer to parameter's header or NULL on error.
  */
-crsp_phdr_t *crsp_msg_get_param_each(faux_list_node_t **node,
-	crsp_param_e *param_type, void **param_data, uint32_t *param_len)
+faux_phdr_t *faux_msg_get_param_each(faux_list_node_t **node,
+	uint16_t *param_type, void **param_data, uint32_t *param_len)
 {
 	faux_list_node_t *current_node = NULL;
 
@@ -499,68 +492,72 @@ crsp_phdr_t *crsp_msg_get_param_each(faux_list_node_t **node,
 	current_node = *node;
 	*node = faux_list_next_node(current_node);
 
-	return crsp_msg_get_param_by_node(current_node,
+	return faux_msg_get_param_by_node(current_node,
 		param_type, param_data, param_len);
 }
 
 
 /** @brief Gets message parameter by the index.
  *
- * @param [in] crsp_msg Allocated crsp_msg_t object.
+ * @param [in] msg Allocated faux_msg_t object.
  * @param [in] index Parameter's index.
  * @param [out] param_type Type of parameter. See the crsp_param_e enumeration.
  * @param [out] param_buf Parameter's data buffer.
  * @param [out] param_len Parameter's data length.
  * @return Pointer to parameter's header or NULL on error.
  */
-crsp_phdr_t *crsp_msg_get_param_by_index(const crsp_msg_t *crsp_msg, unsigned int index,
-	crsp_param_e *param_type, void **param_data, uint32_t *param_len)
+faux_phdr_t *faux_msg_get_param_by_index(const faux_msg_t *msg, unsigned int index,
+	uint16_t *param_type, void **param_data, uint32_t *param_len)
 {
 	faux_list_node_t *iter = NULL;
 	unsigned int i = 0;
 
-	assert(crsp_msg);
-	assert(crsp_msg->hdr);
-	if (!crsp_msg || !crsp_msg->hdr)
+	assert(msg);
+	assert(msg->hdr);
+	if (!msg || !msg->hdr)
 		return NULL;
-	if (index >= crsp_msg_get_param_num(crsp_msg)) // Non-existent entry
+	if (index >= faux_msg_get_param_num(msg)) // Non-existent entry
 		return NULL;
 
-	iter = crsp_msg_init_param_iter(crsp_msg);
+	iter = faux_msg_init_param_iter(msg);
 	while ((i != index) && iter) {
 		i++;
 		iter = faux_list_next_node(iter);
 	}
 
-	return crsp_msg_get_param_by_node(iter,
+	return faux_msg_get_param_by_node(iter,
 		param_type, param_data, param_len);
 }
 
 
 /** @brief Gets message parameter by parameter's type.
  *
- * @param [in] crsp_msg Allocated crsp_msg_t object.
- * @param [in] param_type Type of parameter. See the crsp_param_e enumeration.
+ * Note message can contain many parameters with the same type. This function
+ * will find only the first parameter with specified type. You can iterate
+ * through all parameters to find all entries with type you need.
+ *
+ * @param [in] msg Allocated faux_msg_t object.
+ * @param [in] param_type Type of parameter.
  * @param [out] param_buf Parameter's data buffer.
  * @param [out] param_len Parameter's data length.
  * @return Pointer to parameter's header or NULL on error.
  */
-crsp_phdr_t *crsp_msg_get_param_by_type(const crsp_msg_t *crsp_msg,
-	crsp_param_e param_type, void **param_data, uint32_t *param_len)
+faux_phdr_t *faux_msg_get_param_by_type(const faux_msg_t *msg,
+	uint16_t *param_type, void **param_data, uint32_t *param_len)
 {
 	faux_list_node_t *iter = NULL;
 
-	assert(crsp_msg);
-	assert(crsp_msg->hdr);
-	if (!crsp_msg || !crsp_msg->hdr)
+	assert(msg);
+	assert(msg->hdr);
+	if (!msg || !msg->hdr)
 		return NULL;
 
-	for (iter = crsp_msg_init_param_iter(crsp_msg);
+	for (iter = faux_msg_init_param_iter(msg);
 		iter; iter = faux_list_next_node(iter)) {
-		crsp_phdr_t *phdr = NULL;
-		phdr = (crsp_phdr_t *)faux_list_data(iter);
-		if (phdr->param_type == param_type)
-			return crsp_msg_get_param_by_node(iter,
+		faux_phdr_t *phdr = NULL;
+		phdr = (faux_phdr_t *)faux_list_data(iter);
+		if (faux_phdr_get_type(phdr) == param_type)
+			return faux_msg_get_param_by_node(iter,
 				NULL, param_data, param_len);
 	}
 
@@ -569,7 +566,7 @@ crsp_phdr_t *crsp_msg_get_param_by_type(const crsp_msg_t *crsp_msg,
 }
 
 
-/** @brief Sends CRSP message to network.
+/** @brief Sends message to network.
  *
  * Function sends message to network using preinitialized faux_net_t object.
  * User can specify timeout, signal mask, etc while faux_net_t object creation.
@@ -580,69 +577,73 @@ crsp_phdr_t *crsp_msg_get_param_by_type(const crsp_msg_t *crsp_msg,
  * - Interrupted by allowed signal (see signal mask).
  * - Timeout.
  *
- * @param [in] crsp_msg Allocated crsp_msg_t object.
+ * @param [in] msg Allocated faux_msg_t object.
  * @param [in] faux_net Preinitialized faux_net_t object.
  * @return Length of sent data or < 0 on error.
  */
-ssize_t crsp_msg_send(crsp_msg_t *crsp_msg, faux_net_t *faux_net)
+ssize_t faux_msg_send(crsp_msg_t *msg, faux_net_t *faux_net)
 {
 	unsigned int vec_entries_num = 0;
 	struct iovec *iov = NULL;
 	unsigned int i = 0;
 	faux_list_node_t *iter = NULL;
 	size_t ret = 0;
+	uint32_t param_num = 0;
 
-	assert(crsp_msg);
-	assert(crsp_msg->hdr);
-	if (!crsp_msg || !crsp_msg->hdr)
+	assert(msg);
+	assert(msg->hdr);
+	if (!msg || !msg->hdr)
 		return -1;
 
 	// Calculate number if struct iovec entries.
 	// n = (msg header) + ((param hdr) + (param data)) * (param_num)
-	vec_entries_num = 1 + (2 * crsp_msg_get_param_num(crsp_msg));
+	faux_msg_get_param_num(msg, &param_num);
+	vec_entries_num = 1 + (2 * param_num);
 	iov = faux_zmalloc(vec_entries_num * sizeof(*iov));
 
 	// Message header
-	iov[i].iov_base = crsp_msg->hdr;
-	iov[i].iov_len = sizeof(*crsp_msg->hdr);
+	iov[i].iov_base = msg->hdr;
+	iov[i].iov_len = sizeof(*msg->hdr);
 	i++;
 
 	// Parameter headers
-	for (iter = crsp_msg_init_param_iter(crsp_msg);
+	for (iter = faux_msg_init_param_iter(msg);
 		iter; iter = faux_list_next_node(iter)) {
-		crsp_phdr_t *phdr = NULL;
-		phdr = (crsp_phdr_t *)faux_list_data(iter);
+		faux_phdr_t *phdr = NULL;
+		phdr = (faux_phdr_t *)faux_list_data(iter);
 		iov[i].iov_base = phdr;
 		iov[i].iov_len = sizeof(*phdr);
 		i++;
 	}
 
 	// Parameter data
-	for (iter = crsp_msg_init_param_iter(crsp_msg);
+	for (iter = faux_msg_init_param_iter(msg);
 		iter; iter = faux_list_next_node(iter)) {
 		crsp_phdr_t *phdr = NULL;
 		void *data = NULL;
-		phdr = (crsp_phdr_t *)faux_list_data(iter);
+		phdr = (faux_phdr_t *)faux_list_data(iter);
 		data = (char *)phdr + sizeof(*phdr);
 		iov[i].iov_base = data;
-		iov[i].iov_len = ntohl(phdr->param_len);
+		iov[i].iov_len = faux_phdr_get_len(phdr);
 		i++;
 	}
 
 	ret = faux_net_sendv(faux_net, iov, vec_entries_num);
 	faux_free(iov);
 
+#ifdef DEBUG
 	// Debug
-	if (crsp_msg && ret > 0 && crsp_debug) {
+	if (msg && ret > 0 && faux_msg_debug) {
 		printf("(o) ");
-		crsp_msg_debug(crsp_msg);
+		faux_msg_debug(msg);
 	}
+#endif
 
 	return ret;
 }
 
 
-/** @brief Receives full CRSP message and allocates crsp_msg_t object for it.
+/** @brief Receives full message and allocates faux_msg_t object for it.
  *
  * Function receives message from network using preinitialized faux_net_t object.
  * User can specify timeout, signal mask, etc while faux_net_t object creation.
@@ -663,13 +664,13 @@ ssize_t crsp_msg_send(crsp_msg_t *crsp_msg, faux_net_t *faux_net)
  *
  * @param [in] faux_net Preinitialized faux_net_t object.
  * @param [out] status Status while message receiving. Can be NULL.
- * @return Allocated crsp_msg_t object. Object contains received message.
+ * @return Allocated faux_msg_t object. Object contains received message.
  */
-crsp_msg_t *crsp_msg_recv(faux_net_t *faux_net, crsp_recv_e *status)
+faux_msg_t *faux_msg_recv(faux_net_t *faux_net, crsp_recv_e *status)
 {
-	crsp_msg_t *crsp_msg = NULL;
+	faux_msg_t *msg = NULL;
 	size_t received = 0;
-	crsp_phdr_t *phdr = NULL;
+	faux_phdr_t *phdr = NULL;
 	unsigned int param_num = 0;
 	size_t phdr_whole_len = 0;
 	size_t max_data_len = 0;
@@ -679,25 +680,20 @@ crsp_msg_t *crsp_msg_recv(faux_net_t *faux_net, crsp_recv_e *status)
 
 	if (status)
 		*status = CRSP_RECV_OK;
-	crsp_msg = crsp_msg_allocate();
-	assert(crsp_msg);
-	if (!crsp_msg)
+	msg = faux_msg_allocate();
+	assert(msg);
+	if (!msg)
 		return NULL;
 
 	// Receive message header
-	received = faux_net_recv(faux_net,
-		crsp_msg->hdr, sizeof(*crsp_msg->hdr));
-	if (received != sizeof(*crsp_msg->hdr)) {
-		crsp_msg_free(crsp_msg);
-		return NULL;
-	}
-	if (!crsp_msg_check_hdr(crsp_msg, status)) {
-		crsp_msg_free(crsp_msg);
+	received = faux_net_recv(faux_net, msg->hdr, sizeof(*msg->hdr));
+	if (received != sizeof(*msg->hdr)) {
+		faux_msg_free(msg);
 		return NULL;
 	}
 
 	// Receive parameter headers
-	param_num = crsp_msg_get_param_num(crsp_msg);
+	faux_msg_get_param_num(msg, &param_num);
 	if (param_num != 0) {
 		phdr_whole_len = param_num * sizeof(*phdr);
 		phdr = faux_zmalloc(phdr_whole_len);
@@ -740,88 +736,80 @@ crsp_msg_t *crsp_msg_recv(faux_net_t *faux_net, crsp_recv_e *status)
 		faux_free(phdr);
 	}
 
+#ifdef DEBUG
 	// Debug
-	if (crsp_msg && crsp_debug) {
+	if (msg && faux_msg_debug) {
 		printf("(i) ");
-		crsp_msg_debug(crsp_msg);
+		faux_msg_debug(msg);
 	}
+#endif
 
-	return crsp_msg;
+	return msg;
 }
 
 
-/** @brief Gets CRSP_PARAM_CDP_URI parameter from message.
- *
- * Protocol helper.
- *
- * @param [in] crsp_msg Allocated crsp_msg_t object.
- * @return Allocated C-string or NULL on error. Must be freed by faux_str_free().
- */
-char *crsp_msg_get_param_cdp_uri(const crsp_msg_t *crsp_msg)
-{
-	char *req_uri = NULL;
-	uint32_t req_uri_len = 0;
-
-	if (!crsp_msg_get_param_by_type(crsp_msg, CRSP_PARAM_CDP_URI,
-		(void **)&req_uri, &req_uri_len))
-		return NULL;
-
-	if (0 == req_uri_len)
-		return NULL;
-
-	return faux_str_dupn(req_uri, req_uri_len);
-}
-
-
-/** @brief Print CRSP message debug info.
+/** @brief Prints message debug info.
  *
  * Function prints header values and parameters.
  *
- * @param [in] crsp_msg Allocated crsp_msg_t object.
+ * @param [in] msg Allocated faux_msg_t object.
  */
-void crsp_msg_debug(crsp_msg_t *crsp_msg)
+void faux_msg_debug(faux_msg_t *msg)
 #ifdef DEBUG
 {
 	faux_list_node_t *iter = 0;
-	crsp_param_e param_type = CRSP_PARAM_NULL;
+
+	// Header vars
+	uint32_t magic = 0;
+	uint8_t major = 0;
+	uint8_t minor = 0;
+	uint16_t cmd = 0;
+	uint32_t status = 0;
+	uint32_t req_id = 0;
+	uint32_t param_num = 0;
+	uint32_t len = 0;
+
+	// Parameter vars
 	void *param_data = NULL;
+	uint16_t param_type = 0;
 	uint32_t param_len = 0;
 
-	assert(crsp_msg);
-	if (!crsp_msg)
+	assert(msg);
+	if (!msg)
 		return;
 
 	// Header
-	printf("%c%c%c%c(%u.%u): %c%c %u %u %u |%lub\n",
-		((char *)crsp_msg->hdr)[0],
-		((char *)crsp_msg->hdr)[1],
-		((char *)crsp_msg->hdr)[2],
-		((char *)crsp_msg->hdr)[3],
-		crsp_msg->hdr->major,
-		crsp_msg->hdr->minor,
-		crsp_msg_get_cmd(crsp_msg) != CRSP_CMD_NULL ? crsp_msg_get_cmd(crsp_msg) : '_',
-		crsp_msg_get_status(crsp_msg) != CRSP_STATUS_NULL ? crsp_msg_get_status(crsp_msg) : '_',
-		crsp_msg_get_req_id(crsp_msg),
-		crsp_msg_get_param_num(crsp_msg),
-		crsp_msg_get_len(crsp_msg),
-		sizeof(*crsp_msg->hdr)
+	faux_msg_get_magic(msg, &magic);
+	faux_msg_get_version(msg, &major, &minor);
+	faux_msg_get_cmd(msg, &cmd);
+	faux_msg_get_status(msg, &status);
+	faux_msg_get_req_id(msg, &req_id);
+	faux_msg_get_param_num(msg, &param_num);
+	faux_msg_get_len(msg, &len);
+	printf("%lx(%u.%u): c%04x s%08x i%08x p%u l%u |%lub\n",
+		magic,
+		major,
+		minor,
+		cmd,
+		status,
+		req_id,
+		param_num,
+		len
+		sizeof(*msg->hdr)
 		);
 
 	// Parameters
-	iter = crsp_msg_init_param_iter(crsp_msg);
-	while (crsp_msg_get_param_each(&iter, &param_type, &param_data, &param_len)) {
-		printf("  %c %u [", param_type, param_len);
-		if ((CRSP_PARAM_CDP_URI == param_type) ||
-			(CRSP_PARAM_CRL_FILENAME == param_type)) {
-			fwrite(param_data, param_len, 1, stdout);
-		} else {
-			printf("...");
-		}
-		printf("] |%lub\n", sizeof(crsp_phdr_t) + param_len);
+	iter = faux_msg_init_param_iter(msg);
+	while (faux_msg_get_param_each(&iter, &param_type, &param_data, &param_len)) {
+		printf("  t%04x l%u |%lub\n",
+			param_type,
+			param_len,
+			sizeof(faux_phdr_t) + param_len
+			);
 	}
 }
 #else
 {
-	crsp_msg = crsp_msg; // Happy compiler
+	msg = msg; // Happy compiler
 }
 #endif
