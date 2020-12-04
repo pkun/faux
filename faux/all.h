@@ -18,4 +18,5 @@
 #include <faux/file.h>
 #include <faux/ini.h>
 #include <faux/sched.h>
+#include <faux/msg.h>
 #include <faux/testc_helpers.h>

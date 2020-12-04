@@ -1,7 +1,7 @@
-/** @file crsp_msg.c
- * @brief Class represents a single message of CRSP protocol.
+/** @file msg.c
+ * @brief Class represents a single message for custom protocol.
  *
- * CRSP message consist of main header, a block of parameter headers and then
+ * Message consist of main header, a block of parameter headers and then
  * parameters themselfs. Class stores these data. Additionally class knows
  * the structure of message and can send and receive messages via socket. It
  * uses external faux_net_t object to do so. The receive function is necessary

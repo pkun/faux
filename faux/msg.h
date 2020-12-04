@@ -1,37 +1,32 @@
-/** @file proto.h
+/** @file msg.h
  *
  * @brief Library to implement simple network protocol
  *
- * CRSP is a protocol to send requests to CRSP server. CRSP server stores
- * information about CDPs, periodically renews CRLs.
+ * Message (request or answer) has the following structure:
  *
- * The CRSP protocol supposes request/answer method. Each request must have an
- * answer. The CRSP server is synchronous. It means that server will answer
- * immediately or nearly immediately. It can plans a long-time operations but
- * it sends answer to client immediately. For example client asks for status
- * of specified CDP but server has no such CDP in its database. So server will
- * answer with status something like "has no such CDP yet" immediately but it
- * schedules the long-time task to get CDP information. Later client can send
- * the same request but now server already has a status for specified CDP and
- * answers with correspondent status.
- *
- * Each CRSP protocol message (request or answer) has the same structure:
- *
- * [ CRSP header ]
- * [ CRSP first parameter's header ]
+ * [ Message header ]
+ * [ First parameter's header ]
  * [ ... ]
- * [ CRSP n-th parameter's header ]
+ * [ N-th parameter's header ]
  * [ First parameter's data ]
  * [ ... ]
  * [ N-th parameter's data ]
  *
- * The length of CRSP message can vary. CRSP header has constant length and
- * contains total length of whole message and number of parameters. It also
- * contains magic number, CRSP version number, CRSP command, status and
- * request ID (to identify request/answer). There are parameter header for each
- * parameter. Parameter's header contains parameter type and length of
- * parameter. After parameter headers array the parameter's data follows in
- * a sequence.
+ * Message header has such standard fields as:
+ * - Magic number
+ * - Protocol version major number
+ * - Protocol version minor number
+ * - Command code
+ * - Status
+ * - Request ID field to identify session
+ * - Number of parameters
+ * - Whole message length
+ *
+ * The length of message can vary. Header has constant length and
+ * contains total length of whole message and number of parameters. There are
+ * parameter headers for each parameter. Parameter's header contains parameter
+ * type and length of parameter. After parameter headers array the parameter's
+ * data follows in a sequence.
  */
 
 
