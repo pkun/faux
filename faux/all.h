@@ -19,4 +19,5 @@
 #include <faux/ini.h>
 #include <faux/sched.h>
 #include <faux/msg.h>
+#include <faux/eloop.h>
 #include <faux/testc_helpers.h>
