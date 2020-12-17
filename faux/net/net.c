@@ -80,6 +80,18 @@ void faux_net_set_fd(faux_net_t *faux_net, int fd)
 }
 
 
+/** @brief Unsets socket descriptor.
+ *
+ * @param [in] faux_net The faux_net_t object.
+ */
+void faux_net_unset_fd(faux_net_t *faux_net)
+{
+	if (!faux_net)
+		return;
+	faux_net->fd = -1;
+}
+
+
 /** @brief Gets file descriptor from object.
  *
  * @param [in] faux_net The faux_net_t object.

@@ -146,7 +146,7 @@ AC_CHECK_HEADERS(grp.h, [],
     AC_MSG_WARN([grp.h not found: the grp operations is not supported]))
 
 ################################
-# Check for dlopen
+# Check for dlopen()
 ################################
 AC_CHECK_HEADERS(dlfcn.h, [
         AC_SEARCH_LIBS([dlopen], [dl dld], [], [
@@ -160,6 +160,12 @@ AC_CHECK_HEADERS(dlfcn.h, [
 # Check for pthread
 ################################
 AX_PTHREAD
+
+################################
+# Check for signalfd()
+################################
+AC_CHECK_FUNCS(signalfd, [],
+    AC_MSG_WARN([signalfd() not found: more complex mechanism will be used]))
 
 
 AC_CONFIG_FILES([Makefile])
