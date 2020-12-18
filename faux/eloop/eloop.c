@@ -31,6 +31,23 @@
 
 #ifdef HAVE_SIGNALFD
 #define SIGNALFD_FLAGS (SFD_NONBLOCK | SFD_CLOEXEC)
+
+#else // Standard signals
+static void *faux_eloop_static_user_data = NULL;
+
+static void faux_eloop_static_sighandler(int signo)
+{
+	faux_list_t *signal_list =
+		(faux_list_t *)faux_eloop_static_user_data;
+	faux_eloop_signal_t *signal = NULL;
+
+	if (!signal_list)
+		return;
+	signal = faux_list_kfind(signal_list, &signo);
+	if (!signal)
+		return;
+	signal->set = BOOL_TRUE;
+}
 #endif
 
 static int faux_eloop_sched_compare(const void *first, const void *second)
@@ -119,6 +136,7 @@ faux_eloop_t *faux_eloop_new(faux_eloop_cb_f *default_event_cb)
 		faux_eloop_signal_compare, faux_eloop_signal_kcompare, faux_free);
 	assert(eloop->signals);
 	sigemptyset(&eloop->sig_set);
+	sigfillset(&eloop->sig_mask);
 #ifdef HAVE_SIGNALFD
 	eloop->signal_fd = -1;
 #endif
@@ -148,6 +166,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 	bool_t stop = BOOL_FALSE;
 	sigset_t blocked_signals;
 	sigset_t orig_sig_set;
+	sigset_t *sigset_for_ppoll = NULL;
 
 	// If event loop is active already and we try to start nested loop
 	// then return.
@@ -166,44 +185,25 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 	eloop->signal_fd = signalfd(eloop->signal_fd, &eloop->sig_set,
 		SIGNALFD_FLAGS);
 	faux_pollfd_add(eloop->pollfds, eloop->signal_fd, POLLIN);
+
+#else // Standard signal processing
+	sigset_for_ppoll = &eloop->sig_mask;
+	faux_eloop_static_user_data = eloop->signals;
+
+	if (faux_list_len(eloop->signals) != 0) {
+		faux_list_node_t *iter = faux_list_head(eloop->signals);
+		faux_eloop_signal_t *sig = NULL;
+		struct sigaction sig_act = {};
+
+		sig_act.sa_flags = 0;
+		sig_act.sa_mask = eloop->sig_set;
+		sig_act.sa_handler = &faux_eloop_static_sighandler;
+		while ((sig = (faux_eloop_signal_t *)faux_list_each(&iter))) {
+			sig->set = BOOL_FALSE;
+			sigaction(sig->signo, &sig_act, &sig->oldact);
+		}
+	}
 #endif
-
-/*
-	// Set signal handler
-	syslog(LOG_DEBUG, "Set signal handlers\n");
-	sigemptyset(&sig_set);
-	sigaddset(&sig_set, SIGTERM);
-	sigaddset(&sig_set, SIGINT);
-	sigaddset(&sig_set, SIGQUIT);
-
-	sig_act.sa_flags = 0;
-	sig_act.sa_mask = sig_set;
-	sig_act.sa_handler = &sighandler;
-	sigaction(SIGTERM, &sig_act, NULL);
-	sigaction(SIGINT, &sig_act, NULL);
-	sigaction(SIGQUIT, &sig_act, NULL);
-
-	// SIGHUP handler
-	sigemptyset(&sig_set);
-	sigaddset(&sig_set, SIGHUP);
-
-	sig_act.sa_flags = 0;
-	sig_act.sa_mask = sig_set;
-	sig_act.sa_handler = &sighup_handler;
-	sigaction(SIGHUP, &sig_act, NULL);
-
-	// SIGCHLD handler
-	sigemptyset(&sig_set);
-	sigaddset(&sig_set, SIGCHLD);
-
-	sig_act.sa_flags = 0;
-	sig_act.sa_mask = sig_set;
-	sig_act.sa_handler = &sigchld_handler;
-	sigaction(SIGCHLD, &sig_act, NULL);
-
-*/
-
-
 
 	// Main loop
 	while (!stop) {
@@ -212,36 +212,53 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 //		struct timespec next_interval = {};
 		faux_pollfd_iterator_t pollfd_iter;
 		struct pollfd *pollfd = NULL;
-//		pid_t pid = -1;
 
-		// Re-read config file on SIGHUP
-/*		if (sighup) {
-			if (access(opts->cfgfile, R_OK) == 0) {
-				syslog(LOG_INFO, "Re-reading config file \"%s\"\n", opts->cfgfile);
-				if (config_parse(opts->cfgfile, opts) < 0)
-					syslog(LOG_ERR, "Error while config file parsing.\n");
-			} else if (opts->cfgfile_userdefined) {
-				syslog(LOG_ERR, "Can't find config file \"%s\"\n", opts->cfgfile);
-			}
-			sighup = 0;
-		}
-*/
 		// Find out next scheduled interval
 /*		if (faux_sched_next_interval(eloop->sched, &next_interval) < 0)
 			timeout = NULL;
 		else
 			timeout = &next_interval;
 */
+
 		// Wait for events
-//		sn = ppoll(faux_pollfd_vector(fds), faux_pollfd_len(fds), timeout, &orig_sig_set);
-		sn = ppoll(faux_pollfd_vector(eloop->pollfds), faux_pollfd_len(eloop->pollfds), timeout, NULL);
-		if (sn < 0) {
-			if ((EAGAIN == errno) || (EINTR == errno))
-				continue;
+		sn = ppoll(faux_pollfd_vector(eloop->pollfds),
+			faux_pollfd_len(eloop->pollfds), timeout, sigset_for_ppoll);
+
+		if ((sn < 0) && (errno != EINTR)) {
 			retval = BOOL_FALSE;
-printf("ppoll() error\n");
 			break;
 		}
+
+#ifndef HAVE_SIGNALFD // Standard signals
+		// Signals
+		if ((sn < 0) && (EINTR == errno)) {
+			faux_list_node_t *iter = faux_list_head(eloop->signals);
+			faux_eloop_signal_t *sig = NULL;
+			while ((sig = (faux_eloop_signal_t *)faux_list_each(&iter))) {
+				faux_eloop_info_signal_t sinfo = {};
+				faux_eloop_cb_f *event_cb = NULL;
+				bool_t r = BOOL_TRUE;
+
+				if (BOOL_FALSE == sig->set)
+					continue;
+				sig->set = BOOL_FALSE;
+
+				event_cb = sig->context.event_cb;
+				if (!event_cb)
+					event_cb = eloop->default_event_cb;
+				if (!event_cb) // Callback is not defined
+					continue;
+				sinfo.signo = sig->signo;
+
+				// Execute callback
+				r = event_cb(eloop, FAUX_ELOOP_SIGNAL, &sinfo,
+					sig->context.user_data);
+				// BOOL_FALSE return value means "break the loop"
+				if (!r)
+					stop = BOOL_TRUE;
+			}
+		}
+#endif
 
 		// Scheduled event
 		if (0 == sn) {
@@ -257,7 +274,7 @@ printf("Sheduled event\n");
 */			continue;
 		}
 
-		
+
 		// File descriptor
 		faux_pollfd_init_iterator(eloop->pollfds, &pollfd_iter);
 		while ((pollfd = faux_pollfd_each_active(eloop->pollfds, &pollfd_iter))) {
@@ -326,6 +343,17 @@ printf("Sheduled event\n");
 	faux_pollfd_del_by_fd(eloop->pollfds, eloop->signal_fd);
 	close(eloop->signal_fd);
 	eloop->signal_fd = -1;
+
+#else // Standard signals. Restore signal handlers
+	if (faux_list_len(eloop->signals) != 0) {
+		faux_list_node_t *iter = faux_list_head(eloop->signals);
+		faux_eloop_signal_t *sig = NULL;
+
+		while ((sig = (faux_eloop_signal_t *)faux_list_each(&iter))) {
+			sig->set = BOOL_FALSE;
+			sigaction(sig->signo, &sig->oldact, NULL);
+		}
+	}
 #endif
 
 	// Unblock signals
@@ -400,19 +428,23 @@ bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
 	// signal number value.
 	if (sigaddset(&eloop->sig_set, signo) < 0)
 		return BOOL_FALSE; // Invalid signal number
+	sigdelset(&eloop->sig_mask, signo);
 
 	entry = faux_zmalloc(sizeof(*entry));
 	if (!entry) {
 		sigdelset(&eloop->sig_set, signo);
+		sigaddset(&eloop->sig_mask, signo);
 		return BOOL_FALSE;
 	}
 	entry->signo = signo;
+	entry->set = BOOL_FALSE;
 	entry->context.event_cb = event_cb;
 	entry->context.user_data = user_data;
 
 	if (!faux_list_add(eloop->signals, entry)) {
 		faux_free(entry);
 		sigdelset(&eloop->sig_set, signo);
+		sigaddset(&eloop->sig_mask, signo);
 		return BOOL_FALSE;
 	}
 
@@ -421,6 +453,13 @@ bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
 		// Reattach signalfd handler with updated sig_set
 		eloop->signal_fd = signalfd(eloop->signal_fd, &eloop->sig_set,
 			SIGNALFD_FLAGS);
+
+#else // Standard signals
+		struct sigaction sig_act = {};
+		sig_act.sa_flags = 0;
+		sig_act.sa_mask = eloop->sig_set;
+		sig_act.sa_handler = &faux_eloop_static_sighandler;
+		sigaction(signo, &sig_act, &entry->oldact);
 #endif
 	}
 
@@ -437,15 +476,21 @@ bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo)
 		return BOOL_FALSE; // Doesn't exist
 
 	sigdelset(&eloop->sig_set, signo);
-	faux_list_kdel(eloop->signals, &signo);
+	sigaddset(&eloop->sig_mask, signo);
 
-	if (eloop->working) { // Add signal on the fly
+	if (eloop->working) { // Del signal on the fly
 #ifdef HAVE_SIGNALFD
 		// Reattach signalfd handler with updated sig_set
 		eloop->signal_fd = signalfd(eloop->signal_fd, &eloop->sig_set,
 			SIGNALFD_FLAGS);
+
+#else // Standard signals
+		faux_eloop_signal_t *sig = faux_list_kfind(eloop->signals, &signo);
+		sigaction(signo, &sig->oldact, NULL);
 #endif
 	}
+
+	faux_list_kdel(eloop->signals, &signo);
 
 	return BOOL_TRUE;
 }

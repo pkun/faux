@@ -13,7 +13,8 @@ struct faux_eloop_s {
 	faux_list_t *fds; // List of registered file descriptors
 	faux_pollfd_t *pollfds; // Service object for ppoll()
 	faux_list_t *signals; // List of registered signals
-	sigset_t sig_set; // Mask of registered signals
+	sigset_t sig_set; // Set of registered signals (1 for interested signal)
+	sigset_t sig_mask; // Mask of registered signals (0 - interested) = not sig_set
 #ifdef HAVE_SIGNALFD
 	int signal_fd; // Handler for signalfd(). Valid when loop is active only
 #endif
@@ -38,5 +39,7 @@ typedef struct faux_eloop_fd_s {
 
 typedef struct faux_eloop_signal_s {
 	int signo;
+	struct sigaction oldact;
+	bool_t set;
 	faux_eloop_context_t context;
 } faux_eloop_signal_t;
