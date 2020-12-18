@@ -6,13 +6,17 @@
 
 
 struct faux_eloop_s {
-	faux_eloop_cb_f *default_event_cb;
-	faux_list_t *scheds;
-	faux_sched_t *faux_sched;
-	faux_list_t *fds;
-	faux_pollfd_t *pollfds;
-	faux_list_t *signals;
-	sigset_t sig_set;
+	bool_t working; // Is event loop active now. Can detect nested loop.
+	faux_eloop_cb_f *default_event_cb; // Default callback function
+	faux_list_t *scheds; // List of registered sched events
+	faux_sched_t *faux_sched; // Service shed structure
+	faux_list_t *fds; // List of registered file descriptors
+	faux_pollfd_t *pollfds; // Service object for ppoll()
+	faux_list_t *signals; // List of registered signals
+	sigset_t sig_set; // Mask of registered signals
+#ifdef HAVE_SIGNALFD
+	int signal_fd; // Handler for signalfd(). Valid when loop is active only
+#endif
 };
 
 

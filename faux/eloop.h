@@ -16,9 +16,6 @@ typedef enum {
 	FAUX_ELOOP_FD = 3
 } faux_eloop_type_e;
 
-typedef bool_t faux_eloop_cb_f(faux_eloop_t *eloop, faux_eloop_type_e type,
-	void *associated_data, void *user_data);
-
 typedef struct {
 	int ev_id;
 } faux_eloop_info_sched_t;
@@ -31,6 +28,10 @@ typedef struct {
 typedef struct {
 	int signo;
 } faux_eloop_info_signal_t;
+
+// Callback function prototype
+typedef bool_t faux_eloop_cb_f(faux_eloop_t *eloop, faux_eloop_type_e type,
+	void *associated_data, void *user_data);
 
 
 C_DECL_BEGIN

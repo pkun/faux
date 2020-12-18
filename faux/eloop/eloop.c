@@ -29,6 +29,9 @@
 
 #include "private.h"
 
+#ifdef HAVE_SIGNALFD
+#define SIGNALFD_FLAGS (SFD_NONBLOCK | SFD_CLOEXEC)
+#endif
 
 static int faux_eloop_sched_compare(const void *first, const void *second)
 {
@@ -94,6 +97,7 @@ faux_eloop_t *faux_eloop_new(faux_eloop_cb_f *default_event_cb)
 		return NULL;
 
 	// Init
+	eloop->working = BOOL_FALSE;
 	eloop->default_event_cb = default_event_cb;
 
 	// Sched
@@ -115,6 +119,9 @@ faux_eloop_t *faux_eloop_new(faux_eloop_cb_f *default_event_cb)
 		faux_eloop_signal_compare, faux_eloop_signal_kcompare, faux_free);
 	assert(eloop->signals);
 	sigemptyset(&eloop->sig_set);
+#ifdef HAVE_SIGNALFD
+	eloop->signal_fd = -1;
+#endif
 
 	return eloop;
 }
@@ -142,9 +149,11 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 	sigset_t blocked_signals;
 	sigset_t orig_sig_set;
 
-#ifdef HAVE_SIGNALFD
-	int signal_fd = -1;
-#endif
+	// If event loop is active already and we try to start nested loop
+	// then return.
+	if (eloop->working)
+		return BOOL_FALSE;
+	eloop->working = BOOL_TRUE;
 
 	// Block signals to prevent race conditions while loop and ppoll()
 	// Catch signals while ppoll() only
@@ -154,8 +163,9 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 #ifdef HAVE_SIGNALFD
 	// Create Linux-specific signal file descriptor. Wait for all signals.
 	// Unneeded signals will be filtered out later.
-	signal_fd = signalfd(-1, &blocked_signals, SFD_NONBLOCK | SFD_CLOEXEC);
-	faux_pollfd_add(eloop->pollfds, signal_fd, POLLIN);
+	eloop->signal_fd = signalfd(eloop->signal_fd, &eloop->sig_set,
+		SIGNALFD_FLAGS);
+	faux_pollfd_add(eloop->pollfds, eloop->signal_fd, POLLIN);
 #endif
 
 /*
@@ -259,7 +269,7 @@ printf("Sheduled event\n");
 
 #ifdef HAVE_SIGNALFD
 			// Read special signal file descriptor
-			if (fd == signal_fd) {
+			if (fd == eloop->signal_fd) {
 				struct signalfd_siginfo signal_info = {};
 
 				while (faux_read_block(fd, &signal_info,
@@ -313,13 +323,16 @@ printf("Sheduled event\n");
 
 #ifdef HAVE_SIGNALFD
 	// Close signal file descriptor
-	faux_pollfd_del_by_fd(eloop->pollfds, signal_fd);
-	close(signal_fd);
+	faux_pollfd_del_by_fd(eloop->pollfds, eloop->signal_fd);
+	close(eloop->signal_fd);
+	eloop->signal_fd = -1;
 #endif
 
 	// Unblock signals
 	sigprocmask(SIG_SETMASK, &orig_sig_set, NULL);
 
+	// Deactivate loop flag
+	eloop->working = BOOL_FALSE;
 
 	return retval;
 }
@@ -403,6 +416,14 @@ bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
 		return BOOL_FALSE;
 	}
 
+	if (eloop->working) { // Add signal on the fly
+#ifdef HAVE_SIGNALFD
+		// Reattach signalfd handler with updated sig_set
+		eloop->signal_fd = signalfd(eloop->signal_fd, &eloop->sig_set,
+			SIGNALFD_FLAGS);
+#endif
+	}
+
 	return BOOL_TRUE;
 }
 
@@ -417,6 +438,14 @@ bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo)
 
 	sigdelset(&eloop->sig_set, signo);
 	faux_list_kdel(eloop->signals, &signo);
+
+	if (eloop->working) { // Add signal on the fly
+#ifdef HAVE_SIGNALFD
+		// Reattach signalfd handler with updated sig_set
+		eloop->signal_fd = signalfd(eloop->signal_fd, &eloop->sig_set,
+			SIGNALFD_FLAGS);
+#endif
+	}
 
 	return BOOL_TRUE;
 }
