@@ -41,6 +41,9 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop);
 bool_t faux_eloop_add_fd(faux_eloop_t *eloop, int fd, short events,
 	faux_eloop_cb_f *event_cb, void *user_data);
 bool_t faux_eloop_del_fd(faux_eloop_t *eloop, int fd);
+bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
+	faux_eloop_cb_f *event_cb, void *user_data);
+bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo);
 
 C_DECL_END
 

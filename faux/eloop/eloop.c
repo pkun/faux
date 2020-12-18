@@ -19,6 +19,7 @@
 #include <time.h>
 #include <signal.h>
 #include <poll.h>
+#include <sys/signalfd.h>
 
 #include "faux/faux.h"
 #include "faux/str.h"
@@ -138,6 +139,24 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 {
 	bool_t retval = BOOL_TRUE;
 	bool_t stop = BOOL_FALSE;
+	sigset_t blocked_signals;
+	sigset_t orig_sig_set;
+
+#ifdef HAVE_SIGNALFD
+	int signal_fd = -1;
+#endif
+
+	// Block signals to prevent race conditions while loop and ppoll()
+	// Catch signals while ppoll() only
+	sigfillset(&blocked_signals);
+	sigprocmask(SIG_SETMASK, &blocked_signals, &orig_sig_set);
+
+#ifdef HAVE_SIGNALFD
+	// Create Linux-specific signal file descriptor. Wait for all signals.
+	// Unneeded signals will be filtered out later.
+	signal_fd = signalfd(-1, &blocked_signals, SFD_NONBLOCK | SFD_CLOEXEC);
+	faux_pollfd_add(eloop->pollfds, signal_fd, POLLIN);
+#endif
 
 /*
 	// Set signal handler
@@ -172,16 +191,10 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 	sig_act.sa_handler = &sigchld_handler;
 	sigaction(SIGCHLD, &sig_act, NULL);
 
-	// Block signals to prevent race conditions while loop and ppoll()
-	// Catch signals while ppoll() only
-	sigemptyset(&sig_set);
-	sigaddset(&sig_set, SIGTERM);
-	sigaddset(&sig_set, SIGINT);
-	sigaddset(&sig_set, SIGQUIT);
-	sigaddset(&sig_set, SIGHUP);
-	sigaddset(&sig_set, SIGCHLD);
-	sigprocmask(SIG_BLOCK, &sig_set, &orig_sig_set);
 */
+
+
+
 	// Main loop
 	while (!stop) {
 		int sn = 0;
@@ -234,6 +247,7 @@ printf("Sheduled event\n");
 */			continue;
 		}
 
+		
 		// File descriptor
 		faux_pollfd_init_iterator(eloop->pollfds, &pollfd_iter);
 		while ((pollfd = faux_pollfd_each_active(eloop->pollfds, &pollfd_iter))) {
@@ -242,6 +256,38 @@ printf("Sheduled event\n");
 			faux_eloop_cb_f *event_cb = NULL;
 			faux_eloop_fd_t *entry = NULL;
 			bool_t r = BOOL_TRUE;
+
+#ifdef HAVE_SIGNALFD
+			// Read special signal file descriptor
+			if (fd == signal_fd) {
+				struct signalfd_siginfo signal_info = {};
+
+				while (faux_read_block(fd, &signal_info,
+					sizeof(signal_info)) == sizeof(signal_info)) {
+					faux_eloop_info_signal_t sinfo = {};
+					faux_eloop_signal_t *sentry =
+						(faux_eloop_signal_t *)faux_list_kfind(
+						eloop->signals, &signal_info.ssi_signo);
+
+					if (!sentry) // Not registered signal. Drop it.
+						continue;
+					event_cb = sentry->context.event_cb;
+					if (!event_cb)
+						event_cb = eloop->default_event_cb;
+					if (!event_cb) // Callback is not defined
+						continue;
+					sinfo.signo = sentry->signo;
+
+					// Execute callback
+					r = event_cb(eloop, FAUX_ELOOP_SIGNAL, &sinfo,
+						sentry->context.user_data);
+					// BOOL_FALSE return value means "break the loop"
+					if (!r)
+						stop = BOOL_TRUE;
+				}
+				continue; // Another fds are common, not signal
+			}
+#endif
 
 			// Prepare event data
 			entry = (faux_eloop_fd_t *)faux_list_kfind(eloop->fds, &fd);
@@ -264,6 +310,16 @@ printf("Sheduled event\n");
 		}
 
 	} // Loop end
+
+#ifdef HAVE_SIGNALFD
+	// Close signal file descriptor
+	faux_pollfd_del_by_fd(eloop->pollfds, signal_fd);
+	close(signal_fd);
+#endif
+
+	// Unblock signals
+	sigprocmask(SIG_SETMASK, &orig_sig_set, NULL);
+
 
 	return retval;
 }
@@ -311,6 +367,56 @@ bool_t faux_eloop_del_fd(faux_eloop_t *eloop, int fd)
 
 	if (faux_pollfd_del_by_fd(eloop->pollfds, fd) < 0)
 		return BOOL_FALSE;
+
+	return BOOL_TRUE;
+}
+
+
+bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
+	faux_eloop_cb_f *event_cb, void *user_data)
+{
+	faux_eloop_signal_t *entry = NULL;
+
+	if (!eloop || (signo < 0))
+		return BOOL_FALSE;
+
+	if (sigismember(&eloop->sig_set, signo) == 1)
+		return BOOL_FALSE; // Already exists
+
+	// Firstly try to add signal to sigset. Library function will validate
+	// signal number value.
+	if (sigaddset(&eloop->sig_set, signo) < 0)
+		return BOOL_FALSE; // Invalid signal number
+
+	entry = faux_zmalloc(sizeof(*entry));
+	if (!entry) {
+		sigdelset(&eloop->sig_set, signo);
+		return BOOL_FALSE;
+	}
+	entry->signo = signo;
+	entry->context.event_cb = event_cb;
+	entry->context.user_data = user_data;
+
+	if (!faux_list_add(eloop->signals, entry)) {
+		faux_free(entry);
+		sigdelset(&eloop->sig_set, signo);
+		return BOOL_FALSE;
+	}
+
+	return BOOL_TRUE;
+}
+
+
+bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo)
+{
+	if (!eloop || (signo < 0))
+		return BOOL_FALSE;
+
+	if (sigismember(&eloop->sig_set, signo) != 1)
+		return BOOL_FALSE; // Doesn't exist
+
+	sigdelset(&eloop->sig_set, signo);
+	faux_list_kdel(eloop->signals, &signo);
 
 	return BOOL_TRUE;
 }
