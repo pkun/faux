@@ -45,6 +45,17 @@ bool_t faux_eloop_del_fd(faux_eloop_t *eloop, int fd);
 bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
 	faux_eloop_cb_f *event_cb, void *user_data);
 bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo);
+bool_t faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec *time,
+	int ev_id, faux_eloop_cb_f *event_cb, void *data);
+bool_t faux_eloop_add_sched_once_delayed(faux_eloop_t *eloop, const struct timespec *interval,
+	int ev_id, faux_eloop_cb_f *event_cb, void *data);
+bool_t faux_eloop_add_sched_periodic(faux_eloop_t *eloop, const struct timespec *time,
+	int ev_id, faux_eloop_cb_f *event_cb, void *data,
+	const struct timespec *period, unsigned int cycle_num);
+bool_t faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
+	int ev_id, faux_eloop_cb_f *event_cb, void *data,
+	const struct timespec *period, unsigned int cycle_num);
+bool_t faux_eloop_del_sched(faux_eloop_t *eloop, int id);
 
 C_DECL_END
 
