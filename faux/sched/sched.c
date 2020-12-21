@@ -296,6 +296,7 @@ int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
 	return 0;
 }
 
+
 /** @brief Removes all events with specified ID from list.
  *
  * @param [in] sched Allocated and initialized sched object.
@@ -345,6 +346,56 @@ int faux_sched_remove_by_data(faux_sched_t *sched, void *data)
 	}
 
 	return nodes_deleted;
+}
+
+
+/** @brief Report does entry with specified ID already exist.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [in] id ID.
+ * @return BOOL_TRUE - exist, BOOL_FALSE - doesn't exist.
+ */
+bool_t faux_sched_id_exist(faux_sched_t *sched, int id)
+{
+	assert(sched);
+	if (!sched)
+		return -1;
+
+	if (faux_list_match_node(sched->list, faux_ev_compare_id, &id, NULL))
+		return BOOL_TRUE;
+
+	return BOOL_FALSE;
+}
+
+
+/** @brief Get sched entries with specified ID.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [in] id ID to search for.
+ * @param [out] data Return user data.
+ * @param [in,out] saved Iterator.
+ * @return BOOL_TRUE - found, BOOL_FALSE - not found.
+ */
+bool_t faux_sched_get_by_id(faux_sched_t *sched, int ev_id, void **data,
+	faux_list_node_t **saved)
+{
+	faux_list_node_t *node = NULL;
+	faux_ev_t *ev = NULL;
+
+	assert(sched);
+	if (!sched)
+		return BOOL_FALSE;
+
+	node = faux_list_match_node(sched->list,
+		faux_ev_compare_id, &ev_id, saved);
+	if (!node)
+		return BOOL_FALSE;
+
+	ev = (faux_ev_t *)faux_list_data(node);
+	if (data)
+		*data = faux_ev_data(ev);
+
+	return BOOL_TRUE;
 }
 
 
