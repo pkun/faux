@@ -29,6 +29,8 @@
 
 #include "private.h"
 
+#define TIMESPEC_TO_MILISECONDS(t) ((t.tv_sec * 1000) + (t.tv_nsec / 1000000l))
+
 #ifdef HAVE_SIGNALFD
 #define SIGNALFD_FLAGS (SFD_NONBLOCK | SFD_CLOEXEC)
 
@@ -37,16 +39,14 @@ static void *faux_eloop_static_user_data = NULL;
 
 static void faux_eloop_static_sighandler(int signo)
 {
-	faux_list_t *signal_list =
-		(faux_list_t *)faux_eloop_static_user_data;
-	faux_eloop_signal_t *signal = NULL;
+	int pipe = -1;
 
-	if (!signal_list)
+	if (!faux_eloop_static_user_data)
 		return;
-	signal = faux_list_kfind(signal_list, &signo);
-	if (!signal)
-		return;
-	signal->set = BOOL_TRUE;
+
+	pipe = *((int *)faux_eloop_static_user_data);
+
+	write(pipe, &signo, sizeof(signo));
 }
 #endif
 
@@ -144,7 +144,13 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 	bool_t stop = BOOL_FALSE;
 	sigset_t blocked_signals;
 	sigset_t orig_sig_set;
+#ifdef HAVE_PPOLL
 	sigset_t *sigset_for_ppoll = NULL;
+#endif // HAVE_PPOLL
+#ifndef HAVE_SIGNALFD
+	int signal_pipe[2];
+	int fflags = 0;
+#endif // not HAVE_SIGNALFD
 
 	// If event loop is active already and we try to start nested loop
 	// then return.
@@ -165,8 +171,20 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 	faux_pollfd_add(eloop->pollfds, eloop->signal_fd, POLLIN);
 
 #else // Standard signal processing
+#ifdef PPOLL
 	sigset_for_ppoll = &eloop->sig_mask;
-	faux_eloop_static_user_data = eloop->signals;
+#endif // HAVE_PPOLL
+
+	// Create signal pipe pair to get signal number on pipe read end
+	pipe(signal_pipe);
+	fcntl(signal_pipe[0], F_SETFD, FD_CLOEXEC);
+	fflags = fcntl(signal_pipe[0], F_GETFL);
+	fcntl(signal_pipe[0], F_SETFL, fflags | O_NONBLOCK);
+	fcntl(signal_pipe[1], F_SETFD, FD_CLOEXEC);
+	fflags = fcntl(signal_pipe[1], F_GETFL);
+	fcntl(signal_pipe[1], F_SETFL, fflags | O_NONBLOCK);
+	faux_eloop_static_user_data = &signal_pipe[1];
+	faux_pollfd_add(eloop->pollfds, signal_pipe[0], POLLIN);
 
 	if (faux_list_len(eloop->signals) != 0) {
 		faux_list_node_t *iter = faux_list_head(eloop->signals);
@@ -176,12 +194,10 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 		sig_act.sa_flags = 0;
 		sig_act.sa_mask = eloop->sig_set;
 		sig_act.sa_handler = &faux_eloop_static_sighandler;
-		while ((sig = (faux_eloop_signal_t *)faux_list_each(&iter))) {
-			sig->set = BOOL_FALSE;
+		while ((sig = (faux_eloop_signal_t *)faux_list_each(&iter)))
 			sigaction(sig->signo, &sig_act, &sig->oldact);
-		}
 	}
-#endif
+#endif // HAVE_SIGNALFD
 
 	// Main loop
 	while (!stop) {
@@ -198,44 +214,25 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 			timeout = &next_interval;
 
 		// Wait for events
+#ifdef HAVE_PPOLL
 		sn = ppoll(faux_pollfd_vector(eloop->pollfds),
 			faux_pollfd_len(eloop->pollfds), timeout, sigset_for_ppoll);
+#else // poll()
+		sigprocmask(SIG_SETMASK, &eloop->sig_mask, NULL);
+		sn = poll(faux_pollfd_vector(eloop->pollfds),
+			faux_pollfd_len(eloop->pollfds),
+			timeout ? TIMESPEC_TO_MILISECONDS(next_interval) : -1);
+		sigprocmask(SIG_SETMASK, &blocked_signals, NULL);
+#endif // HAVE_PPOLL
 
-		if ((sn < 0) && (errno != EINTR)) {
+		// Error or signal
+		if (sn < 0) {
+			// Let poll() read signal pipe or signalfd on next step
+			if (EINTR == errno)
+				continue;
 			retval = BOOL_FALSE;
 			break;
 		}
-
-#ifndef HAVE_SIGNALFD // Standard signals
-		// Signals
-		if ((sn < 0) && (EINTR == errno)) {
-			faux_list_node_t *iter = faux_list_head(eloop->signals);
-			faux_eloop_signal_t *sig = NULL;
-			while ((sig = (faux_eloop_signal_t *)faux_list_each(&iter))) {
-				faux_eloop_info_signal_t sinfo = {};
-				faux_eloop_cb_f *event_cb = NULL;
-				bool_t r = BOOL_TRUE;
-
-				if (BOOL_FALSE == sig->set)
-					continue;
-				sig->set = BOOL_FALSE;
-
-				event_cb = sig->context.event_cb;
-				if (!event_cb)
-					event_cb = eloop->default_event_cb;
-				if (!event_cb) // Callback is not defined
-					continue;
-				sinfo.signo = sig->signo;
-
-				// Execute callback
-				r = event_cb(eloop, FAUX_ELOOP_SIGNAL, &sinfo,
-					sig->context.user_data);
-				// BOOL_FALSE return value means "break the loop"
-				if (!r)
-					stop = BOOL_TRUE;
-			}
-		}
-#endif
 
 		// Scheduled event
 		if (0 == sn) {
@@ -279,17 +276,24 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 			faux_eloop_fd_t *entry = NULL;
 			bool_t r = BOOL_TRUE;
 
-#ifdef HAVE_SIGNALFD
 			// Read special signal file descriptor
+#ifdef HAVE_SIGNALFD
 			if (fd == eloop->signal_fd) {
 				struct signalfd_siginfo signal_info = {};
-
 				while (faux_read_block(fd, &signal_info,
 					sizeof(signal_info)) == sizeof(signal_info)) {
+					int signo = signal_info.ssi_signo;
+#else
+			if (fd == signal_pipe[0]) {
+				int tmp = 0;
+				while (faux_read_block(fd, &tmp,
+					sizeof(tmp)) == sizeof(tmp)) {
+					int signo = tmp;
+#endif // HAVE_SIGNALFD
 					faux_eloop_info_signal_t sinfo = {};
 					faux_eloop_signal_t *sentry =
 						(faux_eloop_signal_t *)faux_list_kfind(
-						eloop->signals, &signal_info.ssi_signo);
+						eloop->signals, &signo);
 
 					if (!sentry) // Not registered signal. Drop it.
 						continue;
@@ -298,7 +302,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 						event_cb = eloop->default_event_cb;
 					if (!event_cb) // Callback is not defined
 						continue;
-					sinfo.signo = sentry->signo;
+					sinfo.signo = signo;
 
 					// Execute callback
 					r = event_cb(eloop, FAUX_ELOOP_SIGNAL, &sinfo,
@@ -309,7 +313,6 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 				}
 				continue; // Another fds are common, not signal
 			}
-#endif
 
 			// Prepare event data
 			entry = (faux_eloop_fd_t *)faux_list_kfind(eloop->fds, &fd);
@@ -344,11 +347,13 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 		faux_list_node_t *iter = faux_list_head(eloop->signals);
 		faux_eloop_signal_t *sig = NULL;
 
-		while ((sig = (faux_eloop_signal_t *)faux_list_each(&iter))) {
-			sig->set = BOOL_FALSE;
+		while ((sig = (faux_eloop_signal_t *)faux_list_each(&iter)))
 			sigaction(sig->signo, &sig->oldact, NULL);
-		}
 	}
+
+	faux_pollfd_del_by_fd(eloop->pollfds, signal_pipe[0]);
+	close(signal_pipe[0]);
+	close(signal_pipe[1]);
 #endif
 
 	// Unblock signals
@@ -432,7 +437,6 @@ bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
 		return BOOL_FALSE;
 	}
 	entry->signo = signo;
-	entry->set = BOOL_FALSE;
 	entry->context.event_cb = event_cb;
 	entry->context.user_data = user_data;
 

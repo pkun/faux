@@ -34,6 +34,5 @@ typedef struct faux_eloop_fd_s {
 typedef struct faux_eloop_signal_s {
 	int signo;
 	struct sigaction oldact;
-	bool_t set;
 	faux_eloop_context_t context;
 } faux_eloop_signal_t;
