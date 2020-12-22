@@ -7,7 +7,7 @@
 
 struct faux_eloop_s {
 	bool_t working; // Is event loop active now. Can detect nested loop.
-	faux_eloop_cb_f *default_event_cb; // Default callback function
+	faux_eloop_cb_f default_event_cb; // Default callback function
 	faux_sched_t *sched; // Service shed structure
 	faux_list_t *fds; // List of registered file descriptors
 	faux_pollfd_t *pollfds; // Service object for ppoll()
@@ -21,7 +21,7 @@ struct faux_eloop_s {
 
 
 typedef struct faux_eloop_context_s {
-	faux_eloop_cb_f *event_cb;
+	faux_eloop_cb_f event_cb;
 	void *user_data;
 } faux_eloop_context_t;
 

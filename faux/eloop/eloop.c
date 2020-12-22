@@ -86,7 +86,7 @@ static int faux_eloop_signal_kcompare(const void *key, const void *list_item)
 }
 
 
-faux_eloop_t *faux_eloop_new(faux_eloop_cb_f *default_event_cb)
+faux_eloop_t *faux_eloop_new(faux_eloop_cb_f default_event_cb)
 {
 	faux_eloop_t *eloop = NULL;
 
@@ -242,7 +242,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 			// Some scheduled events
 			while(faux_sched_pop(eloop->sched, &ev_id, (void **)&context) == 0) {
 				faux_eloop_info_sched_t info = {};
-				faux_eloop_cb_f *event_cb = NULL;
+				faux_eloop_cb_f event_cb = NULL;
 				bool_t r = BOOL_TRUE;
 
 				event_cb = context->event_cb;
@@ -272,7 +272,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 		while ((pollfd = faux_pollfd_each_active(eloop->pollfds, &pollfd_iter))) {
 			int fd = pollfd->fd;
 			faux_eloop_info_fd_t info = {};
-			faux_eloop_cb_f *event_cb = NULL;
+			faux_eloop_cb_f event_cb = NULL;
 			faux_eloop_fd_t *entry = NULL;
 			bool_t r = BOOL_TRUE;
 
@@ -367,7 +367,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 
 
 bool_t faux_eloop_add_fd(faux_eloop_t *eloop, int fd, short events,
-	faux_eloop_cb_f *event_cb, void *user_data)
+	faux_eloop_cb_f event_cb, void *user_data)
 {
 	faux_eloop_fd_t *entry = NULL;
 	faux_list_node_t *new_node = NULL;
@@ -414,7 +414,7 @@ bool_t faux_eloop_del_fd(faux_eloop_t *eloop, int fd)
 
 
 bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
-	faux_eloop_cb_f *event_cb, void *user_data)
+	faux_eloop_cb_f event_cb, void *user_data)
 {
 	faux_eloop_signal_t *entry = NULL;
 
@@ -496,7 +496,7 @@ bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo)
 
 
 static faux_eloop_context_t *faux_eloop_new_context(
-	faux_eloop_cb_f *event_cb, void *data)
+	faux_eloop_cb_f event_cb, void *data)
 {
 	faux_eloop_context_t *context = NULL;
 
@@ -513,7 +513,7 @@ static faux_eloop_context_t *faux_eloop_new_context(
 
 
 bool_t faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec *time,
-	int ev_id, faux_eloop_cb_f *event_cb, void *data)
+	int ev_id, faux_eloop_cb_f event_cb, void *data)
 {
 	faux_eloop_context_t *context = NULL;
 
@@ -539,7 +539,7 @@ bool_t faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec *tim
 
 
 bool_t faux_eloop_add_sched_once_delayed(faux_eloop_t *eloop, const struct timespec *interval,
-	int ev_id, faux_eloop_cb_f *event_cb, void *data)
+	int ev_id, faux_eloop_cb_f event_cb, void *data)
 {
 	faux_eloop_context_t *context = NULL;
 
@@ -565,7 +565,7 @@ bool_t faux_eloop_add_sched_once_delayed(faux_eloop_t *eloop, const struct times
 
 
 bool_t faux_eloop_add_sched_periodic(faux_eloop_t *eloop, const struct timespec *time,
-	int ev_id, faux_eloop_cb_f *event_cb, void *data,
+	int ev_id, faux_eloop_cb_f event_cb, void *data,
 	const struct timespec *period, unsigned int cycle_num)
 {
 	faux_eloop_context_t *context = NULL;
@@ -593,7 +593,7 @@ bool_t faux_eloop_add_sched_periodic(faux_eloop_t *eloop, const struct timespec 
 
 
 bool_t faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
-	int ev_id, faux_eloop_cb_f *event_cb, void *data,
+	int ev_id, faux_eloop_cb_f event_cb, void *data,
 	const struct timespec *period, unsigned int cycle_num)
 {
 	faux_eloop_context_t *context = NULL;
