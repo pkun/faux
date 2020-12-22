@@ -88,7 +88,7 @@ ssize_t faux_read_whole_file(const char *path, void **data);
 // Filesystem
 ssize_t faux_filesize(const char *path);
 bool_t faux_isdir(const char *path);
-int faux_rm(const char *path);
+bool_t faux_rm(const char *path);
 char *faux_expand_tilde(const char *path);
 
 C_DECL_END

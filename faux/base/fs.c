@@ -95,24 +95,27 @@ bool_t faux_isdir(const char *path)
  * Function can remove file or directory (recursively).
  *
  * @param [in] path File/directory name.
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_rm(const char *path)
+bool_t faux_rm(const char *path)
 {
 	DIR *dir = NULL;
 	struct dirent *dir_entry = NULL;
 
 	assert(path);
 	if (!path)
-		return -1;
+		return BOOL_FALSE;
 
 	// Common file (not dir)
-	if (!faux_isdir(path))
-		return unlink(path);
+	if (!faux_isdir(path)) {
+		if (unlink(path) < 0)
+			return BOOL_FALSE;
+		return BOOL_TRUE;
+	}
 
 	// Directory
 	if ((dir = opendir(path)) == NULL)
-		return -1;
+		return BOOL_FALSE;
 	while ((dir_entry = readdir(dir))) {
 		if (!strcmp(dir_entry->d_name, ".") ||
 			!strcmp(dir_entry->d_name, ".."))
@@ -121,7 +124,10 @@ int faux_rm(const char *path)
 	}
 	closedir(dir);
 
-	return rmdir(path);
+	if (rmdir(path) < 0)
+		return BOOL_FALSE;
+
+	return BOOL_TRUE;
 }
 
 /** @brief Expand tilde within path due to HOME env var.
