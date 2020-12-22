@@ -18,9 +18,9 @@
  * @param [in] str Input string to convert.
  * @param [out] val Pointer to result value.
  * @param [in] base Base to convert.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_conv_atol(const char *str, long int *val, int base)
+bool_t faux_conv_atol(const char *str, long int *val, int base)
 {
 	char *endptr = NULL;
 	long int res = 0;
@@ -29,13 +29,13 @@ int faux_conv_atol(const char *str, long int *val, int base)
 	res = strtol(str, &endptr, base);
 	// Check for overflow
 	if (((LONG_MIN == res) || (LONG_MAX == res)) && (ERANGE == errno))
-		return -1;
+		return BOOL_FALSE;
 	// No valid digits at all
 	if ((0 == res) && ((endptr == str) || (errno != 0)))
-		return -1;
+		return BOOL_FALSE;
 	*val = res;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -48,9 +48,9 @@ int faux_conv_atol(const char *str, long int *val, int base)
  * @param [in] str Input string to convert.
  * @param [out] val Pointer to result value.
  * @param [in] base Base to convert.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_conv_atoul(const char *str, unsigned long int *val, int base)
+bool_t faux_conv_atoul(const char *str, unsigned long int *val, int base)
 {
 	char *endptr = NULL;
 	unsigned long int res = 0;
@@ -59,13 +59,13 @@ int faux_conv_atoul(const char *str, unsigned long int *val, int base)
 	res = strtoul(str, &endptr, base);
 	// Check for overflow
 	if ((ULONG_MAX == res) && (ERANGE == errno))
-		return -1;
+		return BOOL_FALSE;
 	// No valid digits at all
 	if ((0 == res) && ((endptr == str) || (errno != 0)))
-		return -1;
+		return BOOL_FALSE;
 	*val = res;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -78,9 +78,9 @@ int faux_conv_atoul(const char *str, unsigned long int *val, int base)
  * @param [in] str Input string to convert.
  * @param [out] val Pointer to result value.
  * @param [in] base Base to convert.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_conv_atoll(const char *str, long long int *val, int base)
+bool_t faux_conv_atoll(const char *str, long long int *val, int base)
 {
 	char *endptr = NULL;
 	long long int res = 0;
@@ -89,13 +89,13 @@ int faux_conv_atoll(const char *str, long long int *val, int base)
 	res = strtoll(str, &endptr, base);
 	// Check for overflow
 	if (((LLONG_MIN == res) || (LLONG_MAX == res)) && (ERANGE == errno))
-		return -1;
+		return BOOL_FALSE;
 	// No valid digits at all
 	if ((0 == res) && ((endptr == str) || (errno != 0)))
-		return -1;
+		return BOOL_FALSE;
 	*val = res;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -108,9 +108,9 @@ int faux_conv_atoll(const char *str, long long int *val, int base)
  * @param [in] str Input string to convert.
  * @param [out] val Pointer to result value.
  * @param [in] base Base to convert.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_conv_atoull(const char *str, unsigned long long int *val, int base)
+bool_t faux_conv_atoull(const char *str, unsigned long long int *val, int base)
 {
 	char *endptr = NULL;
 	unsigned long long int res = 0;
@@ -119,13 +119,13 @@ int faux_conv_atoull(const char *str, unsigned long long int *val, int base)
 	res = strtoull(str, &endptr, base);
 	// Check for overflow
 	if ((ULLONG_MAX == res) && (ERANGE == errno))
-		return -1;
+		return BOOL_FALSE;
 	// No valid digits at all
 	if ((0 == res) && ((endptr == str) || (errno != 0)))
-		return -1;
+		return BOOL_FALSE;
 	*val = res;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -138,20 +138,20 @@ int faux_conv_atoull(const char *str, unsigned long long int *val, int base)
  * @param [in] str Input string to convert.
  * @param [out] val Pointer to result value.
  * @param [in] base Base to convert.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_conv_atoi(const char *str, int *val, int base)
+bool_t faux_conv_atoi(const char *str, int *val, int base)
 {
 	long int tmp = 0;
 
 	// Use existent func. The long int is longer or equal to int.
 	if (faux_conv_atol(str, &tmp, base) < 0)
-		return -1;
+		return BOOL_FALSE;
 	if ((tmp < INT_MIN) || (tmp > INT_MAX)) // Overflow
-		return -1;
+		return BOOL_FALSE;
 	*val = tmp;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -164,20 +164,20 @@ int faux_conv_atoi(const char *str, int *val, int base)
  * @param [in] str Input string to convert.
  * @param [out] val Pointer to result value.
  * @param [in] base Base to convert.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_conv_atoui(const char *str, unsigned int *val, int base)
+bool_t faux_conv_atoui(const char *str, unsigned int *val, int base)
 {
 	unsigned long int tmp = 0;
 
 	// Use existent func. The long int is longer or equal to int.
 	if (faux_conv_atoul(str, &tmp, base) < 0)
-		return -1;
+		return BOOL_FALSE;
 	if (tmp > UINT_MAX) // Overflow
-		return -1;
+		return BOOL_FALSE;
 	*val = tmp;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -190,19 +190,19 @@ int faux_conv_atoui(const char *str, unsigned int *val, int base)
  * @param [in] str Input string to convert.
  * @param [out] val Pointer to result value.
  * @param [in] base Base to convert.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_conv_atos(const char *str, short *val, int base)
+bool_t faux_conv_atos(const char *str, short *val, int base)
 {
 	long int tmp = 0;
 
 	if (faux_conv_atol(str, &tmp, base) < 0)
-		return -1;
+		return BOOL_FALSE;
 	if ((tmp < SHRT_MIN) || (tmp > SHRT_MAX)) // Overflow
-		return -1;
+		return BOOL_FALSE;
 	*val = tmp;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -215,19 +215,19 @@ int faux_conv_atos(const char *str, short *val, int base)
  * @param [in] str Input string to convert.
  * @param [out] val Pointer to result value.
  * @param [in] base Base to convert.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_conv_atous(const char *str, unsigned short *val, int base)
+bool_t faux_conv_atous(const char *str, unsigned short *val, int base)
 {
 	unsigned long int tmp = 0;
 
 	if (faux_conv_atoul(str, &tmp, base) < 0)
-		return -1;
+		return BOOL_FALSE;
 	if (tmp > USHRT_MAX) // Overflow
-		return -1;
+		return BOOL_FALSE;
 	*val = tmp;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -240,19 +240,19 @@ int faux_conv_atous(const char *str, unsigned short *val, int base)
  * @param [in] str Input string to convert.
  * @param [out] val Pointer to result value.
  * @param [in] base Base to convert.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_conv_atoc(const char *str, char *val, int base)
+bool_t faux_conv_atoc(const char *str, char *val, int base)
 {
 	long int tmp = 0;
 
 	if (faux_conv_atol(str, &tmp, base) < 0)
-		return -1;
+		return BOOL_FALSE;
 	if ((tmp < CHAR_MIN) || (tmp > CHAR_MAX)) // Overflow
-		return -1;
+		return BOOL_FALSE;
 	*val = tmp;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -265,17 +265,17 @@ int faux_conv_atoc(const char *str, char *val, int base)
  * @param [in] str Input string to convert.
  * @param [out] val Pointer to result value.
  * @param [in] base Base to convert.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_conv_atouc(const char *str, unsigned char *val, int base)
+bool_t faux_conv_atouc(const char *str, unsigned char *val, int base)
 {
 	unsigned long int tmp = 0;
 
 	if (faux_conv_atoul(str, &tmp, base) < 0)
-		return -1;
+		return BOOL_FALSE;
 	if (tmp > UCHAR_MAX) // Overflow
-		return -1;
+		return BOOL_FALSE;
 	*val = tmp;
 
-	return 0;
+	return BOOL_TRUE;
 }
