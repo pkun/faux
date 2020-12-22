@@ -79,7 +79,8 @@ int faux_ev_compare_data(const void *key, const void *list_item)
  * @param [in] data Pointer to arbitrary linked data.
  * @return Allocated and initialized ev object.
  */
-faux_ev_t *faux_ev_new(const struct timespec *time, int ev_id, void *data)
+faux_ev_t *faux_ev_new(const struct timespec *time,
+	int ev_id, void *data, faux_list_free_fn free_data_cb)
 {
 	faux_ev_t *ev = NULL;
 
@@ -91,6 +92,7 @@ faux_ev_t *faux_ev_new(const struct timespec *time, int ev_id, void *data)
 	// Initialize
 	ev->id = ev_id;
 	ev->data = data;
+	ev->free_data_cb = free_data_cb;
 	ev->periodic = FAUX_SCHED_ONCE; // Not periodic by default
 	ev->cycle_num = 0;
 	faux_nsec_to_timespec(&(ev->period), 0l);
@@ -110,6 +112,8 @@ void faux_ev_free(void *ptr)
 
 	if (!ev)
 		return;
+	if (ev->free_data_cb)
+		ev->free_data_cb(ev->data);
 	faux_free(ev);
 }
 
@@ -119,24 +123,30 @@ void faux_ev_free(void *ptr)
  * By default new events are not periodic.
  *
  * @param [in] ev Allocated and initialized ev object.
- * @param [in] period Period of periodic event.
+ * @param [in] period Period of periodic event. If NULL then non-periodic event.
  * @param [in] cycle_num Number of cycles. FAUX_SHED_INFINITE - infinite.
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_ev_periodic(faux_ev_t *ev,
+bool_t faux_ev_periodic(faux_ev_t *ev,
 	const struct timespec *period, unsigned int cycle_num)
 {
 	assert(ev);
 	assert(period);
+	if (!ev)
+		return BOOL_FALSE;
+	if (!period) {
+		ev->periodic = FAUX_SCHED_ONCE;
+		return BOOL_TRUE;
+	}
 	// When cycle_num == 0 then periodic has no meaning
-	if (!ev || !period || cycle_num == 0)
-		return -1;
+	if (0 == cycle_num)
+		return BOOL_FALSE;
 
 	ev->periodic = FAUX_SCHED_PERIODIC;
 	ev->cycle_num = cycle_num;
 	ev->period = *period;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -145,7 +155,7 @@ int faux_ev_periodic(faux_ev_t *ev,
  * @param [in] ev Allocated and initialized ev object.
  * @return FAUX_SCHED_PERIODIC - periodic, FAUX_SCHED_ONCE - non-periodic.
  */
-faux_sched_periodic_t faux_ev_is_periodic(faux_ev_t *ev)
+faux_sched_periodic_e faux_ev_is_periodic(faux_ev_t *ev)
 {
 	assert(ev);
 	if (!ev)

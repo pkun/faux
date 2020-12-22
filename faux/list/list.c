@@ -196,7 +196,7 @@ void *faux_list_eachr(faux_list_node_t **iter)
  * @param [in] freeFn Callback function to free user data.
  * @return Newly created bidirectional list or NULL on error.
  */
-faux_list_t *faux_list_new(faux_list_sorted_t sorted, faux_list_unique_t unique,
+faux_list_t *faux_list_new(faux_list_sorted_e sorted, faux_list_unique_e unique,
 	faux_list_cmp_fn cmpFn, faux_list_kcmp_fn kcmpFn,
 	faux_list_free_fn freeFn)
 {

@@ -99,7 +99,7 @@ static int _sched_ev(faux_sched_t *sched, faux_ev_t *ev)
  * @return 0 - success, < 0 on error.
  */
 static int _sched(faux_sched_t *sched, const struct timespec *time,
-	int ev_id, void *data, faux_sched_periodic_t periodic,
+	int ev_id, void *data, faux_sched_periodic_e periodic,
 	const struct timespec *period, unsigned int cycle_num)
 {
 	faux_ev_t *ev = NULL;
