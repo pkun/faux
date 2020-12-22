@@ -398,7 +398,7 @@ bool_t faux_eloop_del_fd(faux_eloop_t *eloop, int fd)
 	if (!eloop || (fd < 0))
 		return BOOL_FALSE;
 
-	if (faux_list_kdel(eloop->fds, &fd) < 0)
+	if (!faux_list_kdel(eloop->fds, &fd))
 		return BOOL_FALSE;
 
 	if (!faux_pollfd_del_by_fd(eloop->pollfds, fd))

@@ -484,25 +484,25 @@ void *faux_list_takeaway(faux_list_t *list, faux_list_node_t *node)
  *
  * @param [in] list List to delete node from.
  * @param [in] node List node to delete.
- * @return 0 on success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_list_del(faux_list_t *list, faux_list_node_t *node)
+bool_t faux_list_del(faux_list_t *list, faux_list_node_t *node)
 {
 	void *data = NULL;
 
 	assert(list);
 	assert(node);
 	if (!list || !node)
-		return -1;
+		return BOOL_FALSE;
 
 	data = faux_list_takeaway(list, node);
 	assert(data);
 	if (!data) // Illegal case
-		return -1;
+		return BOOL_FALSE;
 	if (list->freeFn)
 		list->freeFn(data);
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -511,20 +511,20 @@ int faux_list_del(faux_list_t *list, faux_list_node_t *node)
  * @sa faux_list_del()
  * @param [in] list List to delete node from.
  * @param [in] node User key to find node to delete.
- * @return 0 on success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_list_kdel(faux_list_t *list, const void *userkey)
+bool_t faux_list_kdel(faux_list_t *list, const void *userkey)
 {
 	faux_list_node_t *node = NULL;
 
 	assert(list);
 	assert(userkey);
 	if (!list || !userkey)
-		return -1;
+		return BOOL_FALSE;
 
 	node = faux_list_kfind_node(list, userkey);
 	if (!node)
-		return -1; // Not found
+		return BOOL_FALSE; // Not found
 
 	return faux_list_del(list, node);
 }

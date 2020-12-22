@@ -50,8 +50,8 @@ size_t faux_list_len(const faux_list_t *list);
 faux_list_node_t *faux_list_add(faux_list_t *list, void *data);
 faux_list_node_t *faux_list_add_find(faux_list_t *list, void *data);
 void *faux_list_takeaway(faux_list_t *list, faux_list_node_t *node);
-int faux_list_del(faux_list_t *list, faux_list_node_t *node);
-int faux_list_kdel(faux_list_t *list, const void *userkey);
+bool_t faux_list_del(faux_list_t *list, faux_list_node_t *node);
+bool_t faux_list_kdel(faux_list_t *list, const void *userkey);
 void faux_list_empty(faux_list_t *list);
 
 faux_list_node_t *faux_list_match_node(const faux_list_t *list,
