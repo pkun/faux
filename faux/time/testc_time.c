@@ -62,9 +62,9 @@ int testc_faux_timespec_diff(void)
 		{.tv_sec = 0, .tv_nsec = 0l},
 		{.tv_sec = 109, .tv_nsec = 999999999l},
 		};
-	int eretval[TNUM2] = {
-		-1,
-		0
+	bool_t eretval[TNUM2] = {
+		BOOL_FALSE,
+		BOOL_TRUE
 		};
 	int eerrno[TNUM2] = {
 		EOVERFLOW,
@@ -76,7 +76,7 @@ int testc_faux_timespec_diff(void)
 	// Diff
 	for (i = 0; i < TNUM2; i++) {
 		struct timespec res = {};
-		int retval = 0;
+		bool_t retval = 0;
 		int err = 0;
 		printf("Test %u:\n", i);
 		printf("val1=%ld:%ld, val2=%ld:%ld\n",
@@ -96,7 +96,7 @@ int testc_faux_timespec_diff(void)
 				i, retval, eretval[i]);
 			ret = -1;
 		}
-		if ((retval < 0) && (err != eerrno[i])) {
+		if (!retval && (err != eerrno[i])) {
 			printf("Test %u errno failed\n", i);
 			ret = -1;
 		}

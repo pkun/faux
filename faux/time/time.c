@@ -50,11 +50,11 @@ int faux_timespec_cmp(const struct timespec *val1, const struct timespec *val2)
  * @param [out] res Result of operation.
  * @param [in] val1 First struct timespec value.
  * @param [in] val2 Second struct timespec value.
- * @return 0 - success or -1 on error.
+ * @return 0 - BOOL_TRUE, BOOL_FALSE on error.
  * @exception EINVAL Invalid arguments value.
  * @exception EOVERFLOW If val2>val1.
  */
-int faux_timespec_diff(struct timespec *res,
+bool_t faux_timespec_diff(struct timespec *res,
 	const struct timespec *val1, const struct timespec *val2)
 {
 	assert(res);
@@ -62,12 +62,12 @@ int faux_timespec_diff(struct timespec *res,
 	assert(val2);
 	if (!res || !val1 || !val2) {
 		errno = EINVAL;
-		return -1;
+		return BOOL_FALSE;
 	}
 
 	if (faux_timespec_cmp(val1, val2) < 0) {
 		errno = EOVERFLOW;
-		return -1;
+		return BOOL_FALSE;
 	}
 
 	res->tv_sec = val1->tv_sec - val2->tv_sec;
@@ -78,7 +78,7 @@ int faux_timespec_diff(struct timespec *res,
 		res->tv_nsec = val1->tv_nsec - val2->tv_nsec;
 	}
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 /** @brief Sum of two time (struct timespec) values.

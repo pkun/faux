@@ -15,7 +15,7 @@ C_DECL_BEGIN
 
 // Operations for struct timespec
 int faux_timespec_cmp(const struct timespec *val1, const struct timespec *val2);
-int faux_timespec_diff(struct timespec *res,
+bool_t faux_timespec_diff(struct timespec *res,
 	const struct timespec *val1, const struct timespec *val2);
 int faux_timespec_sum(struct timespec *res,
 	const struct timespec *val1, const struct timespec *val2);
