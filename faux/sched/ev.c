@@ -171,15 +171,15 @@ faux_sched_periodic_e faux_ev_is_periodic(faux_ev_t *ev)
  *
  * @param [in] ev Allocated and initialized ev object.
  * @param [out] new_cycle_num Returns new number of cycles. Can be NULL.
- * @return FAUX_SCHED_PERIODIC - periodic, FAUX_SCHED_ONCE - non-periodic.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
  */
-int faux_ev_dec_cycles(faux_ev_t *ev, unsigned int *new_cycle_num)
+bool_t faux_ev_dec_cycles(faux_ev_t *ev, unsigned int *new_cycle_num)
 {
 	assert(ev);
 	if (!ev)
-		return -1;
+		return BOOL_FALSE;
 	if (!faux_ev_is_periodic(ev))
-		return -1; // Non-periodic event
+		return BOOL_FALSE; // Non-periodic event
 	if ((ev->cycle_num != FAUX_SCHED_INFINITE) &&
 		(ev->cycle_num > 0))
 		ev->cycle_num--;
@@ -187,7 +187,7 @@ int faux_ev_dec_cycles(faux_ev_t *ev, unsigned int *new_cycle_num)
 	if (new_cycle_num)
 		*new_cycle_num = ev->cycle_num;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 /** Reschedules existent event to newly specified time.
@@ -221,19 +221,19 @@ bool_t faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
  * FAUX_SCHED_INFINITE then number of cycles will not be decremented.
  *
  * @param [in] ev Allocated and initialized ev object.
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_ev_reschedule_period(faux_ev_t *ev)
+bool_t faux_ev_reschedule_period(faux_ev_t *ev)
 {
 	struct timespec new_time = {};
 
 	assert(ev);
 	if (!ev)
-		return -1;
+		return BOOL_FALSE;
 	if (!faux_ev_is_periodic(ev))
-		return -1;
+		return BOOL_FALSE;
 	if (ev->cycle_num <= 1)
-		return -1; // We don't need to reschedule if last cycle left
+		return BOOL_FALSE; // We don't need to reschedule if last cycle left
 
 	faux_timespec_sum(&new_time, &(ev->time), &(ev->period));
 	faux_ev_reschedule(ev, &new_time);
@@ -241,7 +241,7 @@ int faux_ev_reschedule_period(faux_ev_t *ev)
 	if (ev->cycle_num != FAUX_SCHED_INFINITE)
 		faux_ev_dec_cycles(ev, NULL);
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -249,25 +249,25 @@ int faux_ev_reschedule_period(faux_ev_t *ev)
  *
  * @param [in] ev Allocated and initialized ev object.
  * @param [out] left Calculated time left.
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_ev_time_left(faux_ev_t *ev, struct timespec *left)
+bool_t faux_ev_time_left(faux_ev_t *ev, struct timespec *left)
 {
 	struct timespec now = {};
 
 	assert(ev);
 	assert(left);
 	if (!ev || !left)
-		return -1;
+		return BOOL_FALSE;
 
 	faux_timespec_now(&now);
 	if (faux_timespec_cmp(&now, &(ev->time)) > 0) { // Already happend
 		faux_nsec_to_timespec(left, 0l);
-		return 0;
+		return BOOL_TRUE;
 	}
 	faux_timespec_diff(left, &(ev->time), &now);
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 

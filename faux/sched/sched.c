@@ -237,7 +237,10 @@ int faux_sched_next_interval(faux_sched_t *sched, struct timespec *interval)
 		return -1;
 	ev = (faux_ev_t *)faux_list_data(iter);
 
-	return faux_ev_time_left(ev, interval);
+	if (!faux_ev_time_left(ev, interval))
+		return -1;
+
+	return 0;
 }
 
 
@@ -287,7 +290,7 @@ int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
 	if (data)
 		*data = faux_ev_data(ev);
 
-	if (faux_ev_reschedule_period(ev) < 0) {
+	if (!faux_ev_reschedule_period(ev)) {
 		faux_ev_free(ev);
 	} else {
 		_sched_ev(sched, ev);
