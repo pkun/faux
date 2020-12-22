@@ -58,7 +58,7 @@ int testc_faux_ini_parse_file(void)
 	dst_fn = faux_str_sprintf("%s/dst", getenv(FAUX_TESTC_TMPDIR_ENV));
 
 	ini = faux_ini_new();
-	if (faux_ini_parse_file(ini, src_fn) < 0) {
+	if (!faux_ini_parse_file(ini, src_fn)) {
 		fprintf(stderr, "Can't parse INI file %s\n", src_fn);
 		goto parse_error;
 	}
@@ -69,7 +69,7 @@ int testc_faux_ini_parse_file(void)
 	}
 
 	faux_ini_set(ini, "test space", "lk lk lk ");
-	if (faux_ini_write_file(ini, dst_fn) < 0) {
+	if (!faux_ini_write_file(ini, dst_fn)) {
 		fprintf(stderr, "Can't write INI file %s\n", dst_fn);
 		goto parse_error;
 	}

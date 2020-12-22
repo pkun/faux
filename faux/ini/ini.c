@@ -287,9 +287,9 @@ static char *faux_ini_purify_word(const char *str)
  *
  * @param [in] ini Allocated and initialized INI object.
  * @param [in] string String to parse.
- * @return 0 - succes, < 0 - error
+ * @return BOOL_TRUE - succes, BOOL_FALSE - error
  */
-int faux_ini_parse_str(faux_ini_t *ini, const char *string)
+bool_t faux_ini_parse_str(faux_ini_t *ini, const char *string)
 {
 	char *buffer = NULL;
 	char *saveptr = NULL;
@@ -297,9 +297,9 @@ int faux_ini_parse_str(faux_ini_t *ini, const char *string)
 
 	assert(ini);
 	if (!ini)
-		return -1;
+		return BOOL_FALSE;
 	if (!string)
-		return 0;
+		return BOOL_TRUE;
 
 	buffer = faux_str_dup(string);
 	// Now loop though each line
@@ -349,7 +349,7 @@ int faux_ini_parse_str(faux_ini_t *ini, const char *string)
 	}
 	faux_str_free(buffer);
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -365,10 +365,10 @@ int faux_ini_parse_str(faux_ini_t *ini, const char *string)
  *
  * @param [in] ini Allocated and initialized INI object.
  * @param [in] string String to parse.
- * @return 0 - succes, < 0 - error
+ * @return BOOL_TRUE - succes, BOOL_FALSE - error
  * @sa faux_ini_parse_str()
  */
-int faux_ini_parse_file(faux_ini_t *ini, const char *fn)
+bool_t faux_ini_parse_file(faux_ini_t *ini, const char *fn)
 {
 	bool_t eof = BOOL_FALSE;
 	faux_file_t *f = NULL;
@@ -377,13 +377,13 @@ int faux_ini_parse_file(faux_ini_t *ini, const char *fn)
 	assert(ini);
 	assert(fn);
 	if (!ini)
-		return -1;
+		return BOOL_FALSE;
 	if (!fn || '\0' == *fn)
-		return -1;
+		return BOOL_FALSE;
 
 	f = faux_file_open(fn, O_RDONLY, 0);
 	if (!f)
-		return -1;
+		return BOOL_FALSE;
 
 	while ((buf = faux_file_getline(f))) {
 		// Don't analyze retval because it's not obvious what
@@ -395,9 +395,9 @@ int faux_ini_parse_file(faux_ini_t *ini, const char *fn)
 	eof = faux_file_eof(f);
 	faux_file_close(f);
 	if (!eof) // File reading was interrupted before EOF
-		return -1;
+		return BOOL_FALSE;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -408,9 +408,9 @@ int faux_ini_parse_file(faux_ini_t *ini, const char *fn)
  *
  * @param [in] ini Allocated and initialized INI object.
  * @param [in] fn File name to write to.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_ini_write_file(const faux_ini_t *ini, const char *fn)
+bool_t faux_ini_write_file(const faux_ini_t *ini, const char *fn)
 {
 	faux_file_t *f = NULL;
 	faux_ini_node_t *iter = NULL;
@@ -420,13 +420,13 @@ int faux_ini_write_file(const faux_ini_t *ini, const char *fn)
 	assert(ini);
 	assert(fn);
 	if (!ini)
-		return -1;
+		return BOOL_FALSE;
 	if (!fn || '\0' == *fn)
-		return -1;
+		return BOOL_FALSE;
 
 	f = faux_file_open(fn, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (!f)
-		return -1;
+		return BOOL_FALSE;
 
 	iter = faux_ini_iter(ini);
 	while ((pair = faux_ini_each(&iter))) {
@@ -447,7 +447,7 @@ int faux_ini_write_file(const faux_ini_t *ini, const char *fn)
 			quote_value, value, quote_value);
 		if (!line) {
 			faux_file_close(f);
-			return -1;
+			return BOOL_FALSE;
 		}
 
 		// Write to file
@@ -455,11 +455,11 @@ int faux_ini_write_file(const faux_ini_t *ini, const char *fn)
 		faux_str_free(line);
 		if (bytes_written < 0) { // Can't write to file
 			faux_file_close(f);
-			return -1;
+			return BOOL_FALSE;
 		}
 	}
 
 	faux_file_close(f);
 
-	return 0;
+	return BOOL_TRUE;
 }

@@ -30,9 +30,9 @@ const char *faux_ini_find(const faux_ini_t *ini, const char *name);
 faux_ini_node_t *faux_ini_iter(const faux_ini_t *ini);
 const faux_pair_t *faux_ini_each(faux_ini_node_t **iter);
 
-int faux_ini_parse_str(faux_ini_t *ini, const char *str);
-int faux_ini_parse_file(faux_ini_t *ini, const char *fn);
-int faux_ini_write_file(const faux_ini_t *ini, const char *fn);
+bool_t faux_ini_parse_str(faux_ini_t *ini, const char *str);
+bool_t faux_ini_parse_file(faux_ini_t *ini, const char *fn);
+bool_t faux_ini_write_file(const faux_ini_t *ini, const char *fn);
 
 C_DECL_END
 
