@@ -108,24 +108,24 @@ struct passwd *faux_sysdb_getpwuid(uid_t uid)
  *
  * @param [in] name User name.
  * @param [out] uid UID.
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_sysdb_uid_by_name(const char *name, uid_t *uid)
+bool_t faux_sysdb_uid_by_name(const char *name, uid_t *uid)
 {
 	struct passwd *pw = NULL;
 
 	assert(name);
 	if (!name)
-		return -1;
+		return BOOL_FALSE;
 
 	pw = faux_sysdb_getpwnam(name);
 	if (!pw)
-		return -1; // Unknown user
+		return BOOL_FALSE; // Unknown user
 	if (uid)
 		*uid = pw->pw_uid;
 	faux_free(pw);
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -236,24 +236,24 @@ struct group *faux_sysdb_getgrgid(gid_t gid)
  *
  * @param [in] name Group name.
  * @param [out] gid GID.
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_sysdb_gid_by_name(const char *name, gid_t *gid)
+bool_t faux_sysdb_gid_by_name(const char *name, gid_t *gid)
 {
 	struct group *gr = NULL;
 
 	assert(name);
 	if (!name)
-		return -1;
+		return BOOL_FALSE;
 
 	gr = faux_sysdb_getgrnam(name);
 	if (!gr)
-		return -1; // Unknown group
+		return BOOL_FALSE; // Unknown group
 	if (gid)
 		*gid = gr->gr_gid;
 	faux_free(gr);
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
