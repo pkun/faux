@@ -104,7 +104,7 @@ static int _sched(faux_sched_t *sched, const struct timespec *time,
 {
 	faux_ev_t *ev = NULL;
 
-	ev = faux_ev_new(time, ev_id, data);
+	ev = faux_ev_new(time, ev_id, data, NULL);
 	assert(ev);
 	if (!ev)
 		return -1;
