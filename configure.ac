@@ -167,6 +167,12 @@ AX_PTHREAD
 AC_CHECK_FUNCS(signalfd, [],
     AC_MSG_WARN([signalfd() not found: more complex mechanism will be used]))
 
+################################
+# Check for ppoll()
+################################
+AC_CHECK_FUNCS(ppoll, [],
+    AC_MSG_WARN([ppoll() not found: more complex mechanism will be used]))
+
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
