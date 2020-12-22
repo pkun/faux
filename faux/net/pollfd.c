@@ -181,24 +181,27 @@ struct pollfd *faux_pollfd_add(faux_pollfd_t *faux_pollfd, int fd, short events)
  *
  * @param [in] faux_pollfd Allocated faux_pollfd_t object.
  * @param [in] fd File descriptor to remove.
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_pollfd_del_by_fd(faux_pollfd_t *faux_pollfd, int fd)
+bool_t faux_pollfd_del_by_fd(faux_pollfd_t *faux_pollfd, int fd)
 {
 	int index = 0;
 
 	assert(faux_pollfd);
 	if (!faux_pollfd)
-		return -1;
+		return BOOL_FALSE;
 	assert(fd >= 0);
 	if (fd < 0)
-		return -1;
+		return BOOL_FALSE;
 
 	index = faux_vec_find(faux_pollfd->vec, &fd, 0);
 	if (index < 0) // Not found
-		return -1;
+		return BOOL_FALSE;
 
-	return faux_vec_del(faux_pollfd->vec, index);
+	if (faux_vec_del(faux_pollfd->vec, index) < 0)
+		return BOOL_FALSE;
+
+	return BOOL_TRUE;
 }
 
 
@@ -206,15 +209,18 @@ int faux_pollfd_del_by_fd(faux_pollfd_t *faux_pollfd, int fd)
  *
  * @param [in] faux_pollfd Allocated faux_pollfd_t object.
  * @param [in] index Index of item to remove.
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_pollfd_del_by_index(faux_pollfd_t *faux_pollfd, unsigned int index)
+bool_t faux_pollfd_del_by_index(faux_pollfd_t *faux_pollfd, unsigned int index)
 {
 	assert(faux_pollfd);
 	if (!faux_pollfd)
-		return -1;
+		return BOOL_FALSE;
 
-	return faux_vec_del(faux_pollfd->vec, index);
+	if (faux_vec_del(faux_pollfd->vec, index) < 0)
+		return BOOL_FALSE;
+
+	return BOOL_TRUE;
 }
 
 
