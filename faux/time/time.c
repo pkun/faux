@@ -141,17 +141,17 @@ void faux_nsec_to_timespec(struct timespec *ts, uint64_t nsec)
 /** @brief Returns current time (now).
  *
  * @param [out] now The struct timespec to save current time.
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_timespec_now(struct timespec *now)
+bool_t faux_timespec_now(struct timespec *now)
 {
 	assert(now);
 	if (!now)
-		return -1;
+		return BOOL_FALSE;
 
 	clock_gettime(CLOCK_REALTIME, now);
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -161,17 +161,17 @@ int faux_timespec_now(struct timespec *now)
  * time from system up but not since Epoch.
  *
  * @param [out] now The struct timespec to save current time.
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE success, BOOL_FALSE on error.
  */
-int faux_timespec_now_monotonic(struct timespec *now)
+bool_t faux_timespec_now_monotonic(struct timespec *now)
 {
 	assert(now);
 	if (!now)
-		return -1;
+		return BOOL_FALSE;
 
 	clock_gettime(CLOCK_MONOTONIC, now);
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
