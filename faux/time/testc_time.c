@@ -131,7 +131,7 @@ int testc_faux_timespec_sum(void)
 		printf("val1=%ld:%ld, val2=%ld:%ld\n",
 			val1[i].tv_sec, val1[i].tv_nsec,
 			val2[i].tv_sec, val2[i].tv_nsec);
-		if (faux_timespec_sum(&res, &val1[i], &val2[i]) < 0) {
+		if (!faux_timespec_sum(&res, &val1[i], &val2[i])) {
 			printf("Test %u retval failed\n", i);
 			ret = -1;
 		}

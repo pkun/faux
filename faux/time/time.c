@@ -88,10 +88,10 @@ bool_t faux_timespec_diff(struct timespec *res,
  * @param [out] res Result of operation.
  * @param [in] val1 First time value.
  * @param [in] val2 Second time value.
- * @return 0 - success or -1 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  * @exception EINVAL Invalid arguments value.
  */
-int faux_timespec_sum(struct timespec *res,
+bool_t faux_timespec_sum(struct timespec *res,
 	const struct timespec *val1, const struct timespec *val2)
 {
 	assert(res);
@@ -99,13 +99,13 @@ int faux_timespec_sum(struct timespec *res,
 	assert(val2);
 	if (!res || !val1 || !val2) {
 		errno = EINVAL;
-		return -1;
+		return BOOL_FALSE;
 	}
 
 	res->tv_sec = val1->tv_sec + val2->tv_sec + ((val1->tv_nsec + val2->tv_nsec) / 1000000000l);
 	res->tv_nsec = (val1->tv_nsec + val2->tv_nsec) % 1000000000l;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 /** @brief Converts struct timespec value to nanoseconds.
