@@ -52,25 +52,25 @@ static struct log_name log_names[] = {
  *
  * @param [in] str Facility string.
  * @param [out] facility Facility in digital form.
- * @returns 0 - success, < 0 - parsing error
+ * @returns BOOL_TRUE - success, BOOL_FALSE - parsing error
  */
-int faux_log_facility_id(const char *str, int *facility)
+bool_t faux_log_facility_id(const char *str, int *facility)
 {
 	int i = 0;
 
 	assert(facility);
 	assert(str);
 	if (!str || !facility)
-		return -1;
+		return BOOL_FALSE;
 
 	for (i = 0; log_names[i].name; i++) {
 		if (faux_str_casecmp(str, log_names[i].name) == 0) {
 			*facility = log_names[i].facility;
-			return 0;
+			return BOOL_TRUE;
 		}
 	}
 
-	return -1;
+	return BOOL_FALSE;
 }
 
 /** @brief Returns syslog facility string by facility id.

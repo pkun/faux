@@ -11,7 +11,7 @@ int testc_faux_log_facility_id(void)
 	int e = LOG_DAEMON;
 	int r = 0;
 
-	if (faux_log_facility_id(str, &r) < 0) {
+	if (!faux_log_facility_id(str, &r)) {
 		printf("Can't get id by string\n");
 		return -1;
 	}
