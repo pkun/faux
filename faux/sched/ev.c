@@ -196,13 +196,13 @@ int faux_ev_dec_cycles(faux_ev_t *ev, unsigned int *new_cycle_num)
  *
  * @param [in] ev Allocated and initialized ev object.
  * @param [in] new_time New time of event (FAUX_SCHED_NOW for now).
- * @return 0 - success, < 0 on error.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
+bool_t faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
 {
 	assert(ev);
 	if (!ev)
-		return -1;
+		return BOOL_FALSE;
 
 	if (new_time) {
 		ev->time = *new_time;
@@ -210,7 +210,7 @@ int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
 		faux_timespec_now(&(ev->time));
 	}
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
