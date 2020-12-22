@@ -18,7 +18,7 @@ C_DECL_BEGIN
 
 faux_file_t *faux_file_fdopen(int fd);
 faux_file_t *faux_file_open(const char *pathname, int flags, mode_t mode);
-int faux_file_close(faux_file_t *file);
+bool_t faux_file_close(faux_file_t *file);
 int faux_file_fileno(faux_file_t *file);
 bool_t faux_file_eof(const faux_file_t *file);
 

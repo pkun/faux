@@ -103,21 +103,24 @@ faux_file_t *faux_file_open(const char *pathname, int flags, mode_t mode)
  * file and frees file object structures.
  *
  * @param [in] f File object to close and free.
- * @return 0 - success, < 0 - error
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
  */
-int faux_file_close(faux_file_t *f)
+bool_t faux_file_close(faux_file_t *f)
 {
 	int fd = -1;
 
 	assert(f);
 	if (!f)
-		return -1;
+		return BOOL_FALSE;
 
 	fd = f->fd;
 	faux_free(f->buf);
 	faux_free(f);
 
-	return close(fd);
+	if (close(fd) < 0)
+		return BOOL_FALSE;
+
+	return BOOL_TRUE;
 }
 
 
