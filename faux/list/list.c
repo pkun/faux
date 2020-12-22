@@ -229,22 +229,27 @@ faux_list_t *faux_list_new(faux_list_sorted_t sorted, faux_list_unique_t unique,
 }
 
 
-/** @brief Empty list
+/** @brief Delete all entries from list
  *
  * Removes and frees all list entries.
  *
  * @param [in] list List to empty.
+ * @return Number of deleted entries or < 0 on error.
  */
-void faux_list_empty(faux_list_t *list)
+ssize_t faux_list_del_all(faux_list_t *list)
 {
 	faux_list_node_t *iter = NULL;
+	ssize_t num = 0;
 
 	if (!list)
-		return;
+		return -1;
 
 	while ((iter = faux_list_head(list))) {
 		faux_list_del(list, iter);
+		num++;
 	}
+
+	return num;
 }
 
 
@@ -259,7 +264,7 @@ void faux_list_empty(faux_list_t *list)
  */
 void faux_list_free(faux_list_t *list)
 {
-	faux_list_empty(list);
+	faux_list_del_all(list);
 	faux_free(list);
 }
 

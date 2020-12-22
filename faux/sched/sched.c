@@ -251,7 +251,7 @@ void faux_sched_empty(faux_sched_t *sched)
 	if (!sched)
 		return;
 
-	faux_list_empty(sched->list);
+	faux_list_del_all(sched->list);
 }
 
 
