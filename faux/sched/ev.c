@@ -127,7 +127,7 @@ void faux_ev_free(void *ptr)
  * @param [in] cycle_num Number of cycles. FAUX_SHED_INFINITE - infinite.
  * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-bool_t faux_ev_periodic(faux_ev_t *ev,
+bool_t faux_ev_set_periodic(faux_ev_t *ev,
 	const struct timespec *period, unsigned int cycle_num)
 {
 	assert(ev);

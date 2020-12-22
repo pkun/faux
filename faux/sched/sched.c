@@ -109,7 +109,7 @@ static int _sched(faux_sched_t *sched, const struct timespec *time,
 	if (!ev)
 		return -1;
 	if (FAUX_SCHED_PERIODIC == periodic)
-		faux_ev_periodic(ev, period, cycle_num);
+		faux_ev_set_periodic(ev, period, cycle_num);
 
 	if (_sched_ev(sched, ev) < 0) { // Something went wrong
 		faux_ev_free(ev);

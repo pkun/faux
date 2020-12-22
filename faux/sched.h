@@ -28,7 +28,7 @@ C_DECL_BEGIN
 faux_ev_t *faux_ev_new(const struct timespec *time,
 	int ev_id, void *data, faux_list_free_fn free_data_cb);
 void faux_ev_free(void *ptr);
-bool_t faux_ev_periodic(faux_ev_t *ev,
+bool_t faux_ev_set_periodic(faux_ev_t *ev,
 	const struct timespec *interval, unsigned int cycle_num);
 int faux_ev_dec_cycles(faux_ev_t *ev, unsigned int *new_cycle_num);
 int faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time);
