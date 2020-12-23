@@ -25,3 +25,19 @@ EXTRA_DIST = \
 include $(top_srcdir)/faux/Makefile.am
 include $(top_srcdir)/utils/Makefile.am
 include $(top_srcdir)/testc/Makefile.am
+
+define CONTROL
+PACKAGE: faux
+Version: $(PACKAGE_VERSION)
+Architecture: amd64
+Maintainer: pkun
+Description: Various auxiliary functions
+Homepage: https://src.libcode.org/pkun/faux
+endef
+
+export CONTROL
+deb: all
+	mkdir -p deb/DEBIAN
+	echo "$$CONTROL" > deb/DEBIAN/control
+	DESTDIR=$(shell pwd)/deb make install
+	dpkg-deb --build deb/ faux_$(PACKAGE_VERSION).deb
