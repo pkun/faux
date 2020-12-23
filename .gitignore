@@ -45,3 +45,4 @@
 /faux-*.tar*
 /*.tgz
 /*.xz
+/*.deb
