@@ -25,38 +25,40 @@ typedef faux_list_node_t faux_sched_node_t;
 C_DECL_BEGIN
 
 // Time event
-faux_ev_t *faux_ev_new(const struct timespec *time,
-	int ev_id, void *data, faux_list_free_fn free_data_cb);
+faux_ev_t *faux_ev_new(int ev_id, void *data);
 void faux_ev_free(void *ptr);
+bool_t faux_ev_is_busy(const faux_ev_t *ev);
+void faux_ev_set_free_data_cb(faux_ev_t *ev, faux_list_free_fn free_data_cb);
+bool_t faux_ev_set_time(faux_ev_t *ev, const struct timespec *new_time);
+const struct timespec *faux_ev_time(const faux_ev_t *ev);
 bool_t faux_ev_set_periodic(faux_ev_t *ev,
 	const struct timespec *interval, unsigned int cycle_num);
-bool_t faux_ev_dec_cycles(faux_ev_t *ev, unsigned int *new_cycle_num);
-bool_t faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time);
-bool_t faux_ev_reschedule_period(faux_ev_t *ev);
-bool_t faux_ev_time_left(faux_ev_t *ev, struct timespec *left);
+faux_sched_periodic_e faux_ev_is_periodic(const faux_ev_t *ev);
+bool_t faux_ev_time_left(const faux_ev_t *ev, struct timespec *left);
 int faux_ev_id(const faux_ev_t *ev);
 void *faux_ev_data(const faux_ev_t *ev);
-const struct timespec *faux_ev_time(const faux_ev_t *ev);
-faux_sched_periodic_e faux_ev_is_periodic(faux_ev_t *ev);
 
 // Time event scheduler
 faux_sched_t *faux_sched_new(void);
 void faux_sched_free(faux_sched_t *sched);
-int faux_sched_once(
+bool_t faux_sched_add(faux_sched_t *sched, faux_ev_t *ev);
+faux_ev_t *faux_sched_once(
 	faux_sched_t *sched, const struct timespec *time, int ev_id, void *data);
-int faux_sched_once_delayed(faux_sched_t *sched,
+faux_ev_t *faux_sched_once_delayed(faux_sched_t *sched,
 	const struct timespec *interval, int ev_id, void *data);
-int faux_sched_periodic(
+faux_ev_t *faux_sched_periodic(
 	faux_sched_t *sched, const struct timespec *time, int ev_id, void *data,
 	const struct timespec *period, unsigned int cycle_num);
-int faux_sched_periodic_delayed(
+faux_ev_t *faux_sched_periodic_delayed(
 	faux_sched_t *sched, int ev_id, void *data,
 	const struct timespec *period, unsigned int cycle_num);
-int faux_sched_next_interval(faux_sched_t *sched, struct timespec *interval);
-void faux_sched_empty(faux_sched_t *sched);
-int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data);
-int faux_sched_remove_by_id(faux_sched_t *sched, int id);
-int faux_sched_remove_by_data(faux_sched_t *sched, void *data);
+bool_t faux_sched_next_interval(const faux_sched_t *sched, struct timespec *interval);
+void faux_sched_del_all(faux_sched_t *sched);
+faux_ev_t *faux_sched_pop(faux_sched_t *sched);
+ssize_t faux_sched_del(faux_sched_t *sched, faux_ev_t *ev);
+ssize_t faux_sched_del_by_id(faux_sched_t *sched, int id);
+ssize_t faux_sched_del_by_data(faux_sched_t *sched, void *data);
+
 const struct timespec *faux_sched_time_by_data(faux_sched_t *sched, void *data);
 bool_t faux_sched_id_exist(faux_sched_t *sched, int id);
 bool_t faux_sched_get_by_id(faux_sched_t *sched, int ev_id, void **data,

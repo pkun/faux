@@ -72,15 +72,30 @@ int faux_ev_compare_data(const void *key, const void *list_item)
 }
 
 
+/** @brief Callback function to compare key and list item by event pointer.
+ *
+ * It's used to search for specified event pointer within schedule list.
+ *
+ * @param [in] key Pointer to key value
+ * @param [in] list_item Pointer to list item.
+ * @return
+ * 1 - not equal
+ * 0 - equal
+ */
+int faux_ev_compare_ptr(const void *key, const void *list_item)
+{
+	return ((key == list_item) ? 0 : 1);
+}
+
+
 /** @brief Allocates and initialize ev object.
  *
- * @param [in] time Time of event.
  * @param [in] ev_id ID of event.
- * @param [in] data Pointer to arbitrary linked data.
+ * @param [in] data Pointer to arbitrary linked data. Can be NULL.
+ * @param [in] free_data_cb Callback to free user data. Can be NULL.
  * @return Allocated and initialized ev object.
  */
-faux_ev_t *faux_ev_new(const struct timespec *time,
-	int ev_id, void *data, faux_list_free_fn free_data_cb)
+faux_ev_t *faux_ev_new(int ev_id, void *data)
 {
 	faux_ev_t *ev = NULL;
 
@@ -92,21 +107,24 @@ faux_ev_t *faux_ev_new(const struct timespec *time,
 	// Initialize
 	ev->id = ev_id;
 	ev->data = data;
-	ev->free_data_cb = free_data_cb;
+	ev->free_data_cb = NULL;
 	ev->periodic = FAUX_SCHED_ONCE; // Not periodic by default
 	ev->cycle_num = 0;
 	faux_nsec_to_timespec(&(ev->period), 0l);
-	faux_ev_reschedule(ev, time);
+	faux_ev_reschedule(ev, FAUX_SCHED_NOW);
+	ev->busy = BOOL_FALSE;
 
 	return ev;
 }
 
 
-/** @brief Frees ev object.
+/** @brief Frees ev object. Forced version.
+ *
+ * Private function. Don't check busy flag.
  *
  * @param [in] ptr Pointer to ev object.
  */
-void faux_ev_free(void *ptr)
+void faux_ev_free_forced(void *ptr)
 {
 	faux_ev_t *ev = (faux_ev_t *)ptr;
 
@@ -117,10 +135,80 @@ void faux_ev_free(void *ptr)
 	faux_free(ev);
 }
 
+/** @brief Frees ev object.
+ *
+ * Doesn't free busy event.
+ *
+ * @param [in] ptr Pointer to ev object.
+ */
+void faux_ev_free(void *ptr)
+{
+	faux_ev_t *ev = (faux_ev_t *)ptr;
+
+	if (!ev)
+		return;
+	if (faux_ev_is_busy(ev))
+		return; // Don't free busy event
+	faux_ev_free_forced(ev);
+}
+
+
+/** @brief Gets busy status of event.
+ *
+ * When event is scheduled then event is "busy". Only scheduler can change
+ * busy status of event. Busy event can't be freed.
+ * Busy event can't be changed.
+ *
+ * @param [in] ev Allocated and initialized event object.
+ * @return BOOL_TRUE - busy, BOOL_FALSE - not busy.
+ */
+bool_t faux_ev_is_busy(const faux_ev_t *ev)
+{
+	assert(ev);
+	if (!ev)
+		return BOOL_FALSE;
+
+	return ev->busy;
+}
+
+
+/** @brief Sets busy flag.
+ *
+ * It's private but not static function. Only scheduler can use this function.
+ * Another code can only get busy status.
+ *
+ * @param [in] ev Allocated and initialized event object.
+ * @param [in] busy New state of busy flag.
+ * @return BOOL_TRUE - busy, BOOL_FALSE - not busy.
+ */
+void faux_ev_set_busy(faux_ev_t *ev, bool_t busy)
+{
+	assert(ev);
+	if (!ev)
+		return;
+
+	ev->busy = busy;
+}
+
+
+/** @brief Sets callback to free user data.
+ *
+ * @param [in] ev Allocated and initialized event object.
+ * @param [in] free_data_cb Function to free user data.
+ */
+void faux_ev_set_free_data_cb(faux_ev_t *ev, faux_list_free_fn free_data_cb)
+{
+	assert(ev);
+	if (!ev)
+		return;
+
+	ev->free_data_cb = free_data_cb;
+}
+
 
 /** @brief Makes event periodic.
  *
- * By default new events are not periodic.
+ * By default new events are not periodic. Doesn't change state of busy object.
  *
  * @param [in] ev Allocated and initialized ev object.
  * @param [in] period Period of periodic event. If NULL then non-periodic event.
@@ -134,6 +222,8 @@ bool_t faux_ev_set_periodic(faux_ev_t *ev,
 	assert(period);
 	if (!ev)
 		return BOOL_FALSE;
+	if (faux_ev_is_busy(ev))
+		return BOOL_FALSE; // Don't change busy event
 	if (!period) {
 		ev->periodic = FAUX_SCHED_ONCE;
 		return BOOL_TRUE;
@@ -155,7 +245,7 @@ bool_t faux_ev_set_periodic(faux_ev_t *ev,
  * @param [in] ev Allocated and initialized ev object.
  * @return FAUX_SCHED_PERIODIC - periodic, FAUX_SCHED_ONCE - non-periodic.
  */
-faux_sched_periodic_e faux_ev_is_periodic(faux_ev_t *ev)
+faux_sched_periodic_e faux_ev_is_periodic(const faux_ev_t *ev)
 {
 	assert(ev);
 	if (!ev)
@@ -168,6 +258,7 @@ faux_sched_periodic_e faux_ev_is_periodic(faux_ev_t *ev)
 /** @brief Decrements number of periodic cycles.
  *
  * On every completed cycle the internal cycles counter must be decremented.
+ * Private function. Only scheduler can use it.
  *
  * @param [in] ev Allocated and initialized ev object.
  * @param [out] new_cycle_num Returns new number of cycles. Can be NULL.
@@ -190,9 +281,46 @@ bool_t faux_ev_dec_cycles(faux_ev_t *ev, unsigned int *new_cycle_num)
 	return BOOL_TRUE;
 }
 
+
+/** Set schedule time of  existent event to specified value.
+ *
+ * It's same as faux_ev_reschedule but checks for busy flag before setting.
+ *
+ * @param [in] ev Allocated and initialized event object.
+ * @param [in] new_time New time of event (FAUX_SCHED_NOW for now).
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
+ */
+bool_t faux_ev_set_time(faux_ev_t *ev, const struct timespec *new_time)
+{
+	assert(ev);
+	if (!ev)
+		return BOOL_FALSE;
+	if (faux_ev_is_busy(ev))
+		return BOOL_FALSE; // Don't change busy event
+
+	return faux_ev_reschedule(ev, new_time);
+}
+
+
+/** Returns time of event object.
+ *
+ * @param [in] ev Allocated and initialized ev object.
+ * @return Pointer to static timespec.
+ */
+const struct timespec *faux_ev_time(const faux_ev_t *ev)
+{
+	assert(ev);
+	if (!ev)
+		return NULL;
+
+	return &(ev->time);
+}
+
+
 /** Reschedules existent event to newly specified time.
  *
- * Note: faux_ev_new() use it. Be carefull.
+ * Note: faux_ev_new() use it. Be carefull. Same as faux_ev_set_time() but
+ * doesn't check for busy flag. Private function.
  *
  * @param [in] ev Allocated and initialized ev object.
  * @param [in] new_time New time of event (FAUX_SCHED_NOW for now).
@@ -219,6 +347,7 @@ bool_t faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time)
  * New scheduled time is calculated as "now" + "period".
  * Function decrements number of cycles. If number of cycles is
  * FAUX_SCHED_INFINITE then number of cycles will not be decremented.
+ * Private function. Only scheduler can use it.
  *
  * @param [in] ev Allocated and initialized ev object.
  * @return BOOL_TRUE - success, BOOL_FALSE on error.
@@ -251,7 +380,7 @@ bool_t faux_ev_reschedule_period(faux_ev_t *ev)
  * @param [out] left Calculated time left.
  * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-bool_t faux_ev_time_left(faux_ev_t *ev, struct timespec *left)
+bool_t faux_ev_time_left(const faux_ev_t *ev, struct timespec *left)
 {
 	struct timespec now = {};
 
@@ -261,7 +390,7 @@ bool_t faux_ev_time_left(faux_ev_t *ev, struct timespec *left)
 		return BOOL_FALSE;
 
 	faux_timespec_now(&now);
-	if (faux_timespec_cmp(&now, &(ev->time)) > 0) { // Already happend
+	if (faux_timespec_cmp(&now, &(ev->time)) > 0) { // Already happened
 		faux_nsec_to_timespec(left, 0l);
 		return BOOL_TRUE;
 	}
@@ -286,10 +415,10 @@ int faux_ev_id(const faux_ev_t *ev)
 }
 
 
-/** Returns data pointer of event object.
+/** Returns user data pointer of event object.
  *
  * @param [in] ev Allocated and initialized ev object.
- * @return Data pointer.
+ * @return User data pointer.
  */
 void *faux_ev_data(const faux_ev_t *ev)
 {
@@ -301,16 +430,3 @@ void *faux_ev_data(const faux_ev_t *ev)
 }
 
 
-/** Returns time of event object.
- *
- * @param [in] ev Allocated and initialized ev object.
- * @return Pointer to static timespec.
- */
-const struct timespec *faux_ev_time(const faux_ev_t *ev)
-{
-	assert(ev);
-	if (!ev)
-		return NULL;
-
-	return &(ev->time);
-}

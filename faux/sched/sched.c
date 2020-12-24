@@ -44,7 +44,7 @@ faux_sched_t *faux_sched_new(void)
 
 	// Init
 	sched->list = faux_list_new(FAUX_LIST_SORTED, FAUX_LIST_NONUNIQUE,
-		faux_ev_compare, NULL, faux_ev_free);
+		faux_ev_compare, NULL, faux_ev_free_forced);
 
 	return sched;
 }
@@ -65,27 +65,31 @@ void faux_sched_free(faux_sched_t *sched)
 }
 
 
-/** @brief Internal function to add existent event to scheduling list.
+/** @brief Adds time event (faux_ev_t) to scheduling list.
  *
  * @param [in] sched Allocated and initialized sched object.
- * @param [in] ev Existent ev object.
- * @return 0 - success, < 0 on error.
+ * @param [in] ev Allocated and initialized event object.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
  */
-static int _sched_ev(faux_sched_t *sched, faux_ev_t *ev)
+bool_t faux_sched_add(faux_sched_t *sched, faux_ev_t *ev)
 {
 	faux_list_node_t *node = NULL;
 
 	assert(sched);
 	assert(ev);
 	if (!sched || !ev)
-		return -1;
+		return BOOL_FALSE;
+	if (faux_ev_is_busy(ev))
+		return BOOL_FALSE; // Don't add busy (already scheduled) event
 
 	node = faux_list_add(sched->list, ev);
 	if (!node) // Something went wrong
-		return -1;
+		return BOOL_FALSE;
+	faux_ev_set_busy(ev, BOOL_TRUE);
 
-	return 0;
+	return BOOL_TRUE;
 }
+
 
 /** @brief Internal function to add constructed event to scheduling list.
  *
@@ -96,27 +100,28 @@ static int _sched_ev(faux_sched_t *sched, faux_ev_t *ev)
  * @param [in] periodic Periodic flag.
  * @param [in] period Periodic interval.
  * @param [in] cycle_num Number of cycles (FAUX_SCHED_INFINITE for infinite).
- * @return 0 - success, < 0 on error.
+ * @return Pointer to newly created faux_ev_t object or NULL on error.
  */
-static int _sched(faux_sched_t *sched, const struct timespec *time,
+static faux_ev_t *_sched(faux_sched_t *sched, const struct timespec *time,
 	int ev_id, void *data, faux_sched_periodic_e periodic,
 	const struct timespec *period, unsigned int cycle_num)
 {
 	faux_ev_t *ev = NULL;
 
-	ev = faux_ev_new(time, ev_id, data, NULL);
+	ev = faux_ev_new(ev_id, data);
 	assert(ev);
 	if (!ev)
-		return -1;
+		return NULL;
+	faux_ev_set_time(ev, time);
 	if (FAUX_SCHED_PERIODIC == periodic)
 		faux_ev_set_periodic(ev, period, cycle_num);
 
-	if (_sched_ev(sched, ev) < 0) { // Something went wrong
+	if (!faux_sched_add(sched, ev)) { // Something went wrong
 		faux_ev_free(ev);
-		return -1;
+		return NULL;
 	}
 
-	return 0;
+	return ev;
 }
 
 
@@ -126,9 +131,9 @@ static int _sched(faux_sched_t *sched, const struct timespec *time,
  * @param [in] time Absolute time of future event (FAUX_SCHED_NOW for now).
  * @param [in] ev_id Event ID.
  * @param [in] data Pointer to arbitrary data linked to event.
- * @return 0 - success, < 0 on error.
+ * @return Pointer to newly created faux_ev_t object or NULL on error.
  */
-int faux_sched_once(
+faux_ev_t *faux_sched_once(
 	faux_sched_t *sched, const struct timespec *time, int ev_id, void *data)
 {
 	return _sched(sched, time, ev_id, data,
@@ -145,9 +150,9 @@ int faux_sched_once(
  * @param [in] interval Interval (NULL means "now").
  * @param [in] ev_id Event ID.
  * @param [in] data Pointer to arbitrary data linked to event.
- * @return 0 - success, < 0 on error.
+ * @return Pointer to newly created faux_ev_t object or NULL on error.
  */
-int faux_sched_once_delayed(faux_sched_t *sched,
+faux_ev_t *faux_sched_once_delayed(faux_sched_t *sched,
 	const struct timespec *interval, int ev_id, void *data)
 {
 	struct timespec now = {};
@@ -155,7 +160,7 @@ int faux_sched_once_delayed(faux_sched_t *sched,
 
 	assert(sched);
 	if (!sched)
-		return -1;
+		return NULL;
 
 	if (!interval)
 		return faux_sched_once(sched, FAUX_SCHED_NOW, ev_id, data);
@@ -174,9 +179,9 @@ int faux_sched_once_delayed(faux_sched_t *sched,
  * @param [in] data Pointer to arbitrary data linked to event.
  * @param [in] period Period of periodic event.
  * @param [in] cycle_num Number of cycles.
- * @return 0 - success, < 0 on error.
+ * @return Pointer to newly created faux_ev_t object or NULL on error.
  */
-int faux_sched_periodic(
+faux_ev_t *faux_sched_periodic(
 	faux_sched_t *sched, const struct timespec *time, int ev_id, void *data,
 	const struct timespec *period, unsigned int cycle_num)
 {
@@ -192,9 +197,9 @@ int faux_sched_periodic(
  * @param [in] data Pointer to arbitrary data linked to event.
  * @param [in] period Period of periodic event.
  * @param [in] cycle_num Number of cycles.
- * @return 0 - success, < 0 on error.
+ * @return Pointer to newly created faux_ev_t object or NULL on error.
  */
-int faux_sched_periodic_delayed(
+faux_ev_t *faux_sched_periodic_delayed(
 	faux_sched_t *sched, int ev_id, void *data,
 	const struct timespec *period, unsigned int cycle_num)
 {
@@ -204,7 +209,7 @@ int faux_sched_periodic_delayed(
 	assert(sched);
 	assert(period);
 	if (!sched || !period)
-		return -1;
+		return NULL;
 
 	faux_timespec_now(&now);
 	faux_timespec_sum(&plan, &now, period);
@@ -216,13 +221,13 @@ int faux_sched_periodic_delayed(
 /** @brief Returns the interval from current time and next scheduled event.
  *
  * If event is in the past then return null interval.
- * If no events was scheduled then return -1.
+ * If no events was scheduled then return BOOL_FALSE.
  *
  * @param [in] sched Allocated and initialized sched object.
  * @param [out] interval Calculated interval.
- * @return 0 - success, < 0 on error or when there is no scheduled events.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error or there is no scheduled events.
  */
-int faux_sched_next_interval(faux_sched_t *sched, struct timespec *interval)
+bool_t faux_sched_next_interval(const faux_sched_t *sched, struct timespec *interval)
 {
 	faux_ev_t *ev = NULL;
 	faux_list_node_t *iter = NULL;
@@ -230,17 +235,17 @@ int faux_sched_next_interval(faux_sched_t *sched, struct timespec *interval)
 	assert(sched);
 	assert(interval);
 	if (!sched || !interval)
-		return -1;
+		return BOOL_FALSE;
 
 	iter = faux_list_head(sched->list);
 	if (!iter)
-		return -1;
+		return BOOL_FALSE;
 	ev = (faux_ev_t *)faux_list_data(iter);
 
 	if (!faux_ev_time_left(ev, interval))
-		return -1;
+		return BOOL_FALSE;
 
-	return 0;
+	return BOOL_TRUE;
 }
 
 
@@ -248,7 +253,7 @@ int faux_sched_next_interval(faux_sched_t *sched, struct timespec *interval)
  *
  * @param [in] sched Allocated and initialized sched object.
  */
-void faux_sched_empty(faux_sched_t *sched)
+void faux_sched_del_all(faux_sched_t *sched)
 {
 	assert(sched);
 	if (!sched)
@@ -262,93 +267,103 @@ void faux_sched_empty(faux_sched_t *sched)
  *
  * Pop (get and remove from list) timestamp if it's in the past.
  * If the timestamp is in the future then do nothing.
+ * The event object can be rescheduled in a case of periodic event or
+ * removed from the scheduled list. Removed event must be freed by user.
+ * User can inspect event object's busy flag to decide if freeing is needed.
+ * If busy flag is BOOL_TRUE then event is rescheduled. If busy flag is
+ * BOOL_FALSE then object is ready to be freed.
  *
  * @param [in] sched Allocated and initialized sched object.
- * @param [out] ev_id ID of upcoming event.
- * @param [out] data Data of upcoming event.
- * @return 0 - success, < 0 on error.
+ * @return Event object or NULL on error or there is no already coming events.
  */
-int faux_sched_pop(faux_sched_t *sched, int *ev_id, void **data)
+faux_ev_t *faux_sched_pop(faux_sched_t *sched)
 {
 	faux_list_node_t *iter = NULL;
 	faux_ev_t *ev = NULL;
 
 	assert(sched);
 	if (!sched)
-		return -1;
+		return NULL;
 
 	iter = faux_list_head(sched->list);
 	if (!iter)
-		return -1;
+		return NULL;
 	ev = (faux_ev_t *)faux_list_data(iter);
 	if (!faux_timespec_before_now(faux_ev_time(ev)))
-		return -1; // No events for this time
+		return NULL; // No events for this time
 	faux_list_takeaway(sched->list, iter); // Remove entry from list
+	faux_ev_set_busy(ev, BOOL_FALSE);
 
-	if (ev_id)
-		*ev_id = faux_ev_id(ev);
-	if (data)
-		*data = faux_ev_data(ev);
+	if (faux_ev_reschedule_period(ev))
+		faux_sched_add(sched, ev);
 
-	if (!faux_ev_reschedule_period(ev)) {
-		faux_ev_free(ev);
-	} else {
-		_sched_ev(sched, ev);
-	}
-
-	return 0;
+	return ev;
 }
 
 
-/** @brief Removes all events with specified ID from list.
+/** @brief Deletes all events with specified value from list.
+ *
+ * Static function.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [in] value Pointer to key value.
+ * @param [in] cmp_f Callback to compare key and entry.
+ * @return Number of removed entries or < 0 on error.
+ */
+static ssize_t faux_sched_del_by_something(faux_sched_t *sched, void *value,
+	faux_list_kcmp_fn cmp_f)
+{
+	faux_list_node_t *node = NULL;
+	faux_list_node_t *saved = NULL;
+	ssize_t nodes_deleted = 0;
+
+	assert(sched);
+	if (!sched)
+		return -1;
+
+	while ((node = faux_list_match_node(sched->list, cmp_f,
+		value, &saved))) {
+		faux_list_del(sched->list, node);
+		nodes_deleted++;
+	}
+
+	return nodes_deleted;
+}
+
+
+/** @brief Delete event from list.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [in] ptr Pointer to event object.
+ * @return Number of removed entries or < 0 on error.
+ */
+ssize_t faux_sched_del(faux_sched_t *sched, faux_ev_t *ev)
+{
+	return faux_sched_del_by_something(sched, ev, faux_ev_compare_ptr);
+}
+
+
+/** @brief Deletes all events with specified ID from list.
  *
  * @param [in] sched Allocated and initialized sched object.
  * @param [in] id ID to remove.
  * @return Number of removed entries or < 0 on error.
  */
-int faux_sched_remove_by_id(faux_sched_t *sched, int id)
+ssize_t faux_sched_del_by_id(faux_sched_t *sched, int id)
 {
-	faux_list_node_t *node = NULL;
-	faux_list_node_t *saved = NULL;
-	int nodes_deleted = 0;
-
-	assert(sched);
-	if (!sched)
-		return -1;
-
-	while ((node = faux_list_match_node(sched->list,
-		faux_ev_compare_id, &id, &saved))) {
-		faux_list_del(sched->list, node);
-		nodes_deleted++;
-	}
-
-	return nodes_deleted;
+	return faux_sched_del_by_something(sched, &id, faux_ev_compare_id);
 }
 
 
-/** @brief Removes all events with specified data pointer from list.
+/** @brief Deletes all events with specified data pointer from list.
  *
  * @param [in] sched Allocated and initialized sched object.
  * @param [in] data Data to search entries to remove.
  * @return Number of removed entries or < 0 on error.
  */
-int faux_sched_remove_by_data(faux_sched_t *sched, void *data)
+ssize_t faux_sched_del_by_data(faux_sched_t *sched, void *data)
 {
-	faux_list_node_t *node = NULL;
-	faux_list_node_t *saved = NULL;
-	int nodes_deleted = 0;
-
-	assert(sched);
-	if (!sched)
-		return -1;
-
-	while ((node = faux_list_match_node(sched->list,
-		faux_ev_compare_data, data, &saved))) {
-		faux_list_del(sched->list, node);
-		nodes_deleted++;
-	}
-
-	return nodes_deleted;
+	return faux_sched_del_by_something(sched, data, faux_ev_compare_data);
 }
 
 

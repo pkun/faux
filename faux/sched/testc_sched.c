@@ -19,6 +19,7 @@ int testc_faux_sched_once(void)
 	int e_id = 0;
 	void *e_str = NULL;
 	struct timespec twait = {};
+	faux_ev_t *ev = NULL;
 
 	faux_nsec_to_timespec(&pol_s, nsec);
 	faux_timespec_now(&now);
@@ -31,11 +32,11 @@ int testc_faux_sched_once(void)
 	// Schedule event
 	faux_sched_once(sched, &t, id, str);
 	// Don't wait so pop must return -1
-	if (faux_sched_pop(sched, &e_id, &e_str) == 0)
+	if (faux_sched_pop(sched))
 		return -1;
 	// Get next event interval. It must be greater than 0 and greater
 	// than full interval (half of second)
-	if (faux_sched_next_interval(sched, &twait) < 0)
+	if (!faux_sched_next_interval(sched, &twait))
 		return -1;
 	if (faux_timespec_cmp(&twait, &(struct timespec){0, 0}) <= 0)
 		return -1;
@@ -43,8 +44,10 @@ int testc_faux_sched_once(void)
 		return -1;
 	// Wait and get event
 	nanosleep(&pol_s, NULL); // wait
-	if (faux_sched_pop(sched, &e_id, &e_str) < 0)
+	if (!(ev = faux_sched_pop(sched)))
 		return -1;
+	e_id = faux_ev_id(ev);
+	e_str = faux_ev_data(ev);
 	if (e_id != id)
 		return -1;
 	if (e_str != str)
@@ -56,8 +59,10 @@ int testc_faux_sched_once(void)
 	nanosleep(&pol_s, NULL); // wait
 	e_id = 0;
 	e_str = NULL;
-	if (faux_sched_pop(sched, &e_id, &e_str) < 0)
+	if (!(ev = faux_sched_pop(sched)))
 		return -1;
+	e_id = faux_ev_id(ev);
+	e_str = faux_ev_data(ev);
 	if (e_id != id)
 		return -1;
 	if (e_str != str)
@@ -80,6 +85,7 @@ int testc_faux_sched_periodic(void)
 	char *str = "test";
 	int e_id = 0;
 	void *e_str = NULL;
+	faux_ev_t *ev = NULL;
 
 	faux_nsec_to_timespec(&pol_s, nsec);
 	faux_timespec_now(&now);
@@ -92,31 +98,33 @@ int testc_faux_sched_periodic(void)
 	// Schedule event
 	faux_sched_periodic_delayed(sched, id, str, &pol_s, 2);
 	// Don't wait so pop must return -1
-	if (faux_sched_pop(sched, &e_id, &e_str) == 0) {
+	if (faux_sched_pop(sched)) {
 		printf("faux_shed_pop: Immediately event\n");
 		return -1;
 	}
 	// Wait and get one event
 	nanosleep(&pol_s, NULL); // wait
-	if (faux_sched_pop(sched, &e_id, &e_str) < 0) {
+	if (!(ev = faux_sched_pop(sched))) {
 		printf("faux_shed_pop: Can't get 1/2 event\n");
 		return -1;
 	}
+	e_id = faux_ev_id(ev);
+	e_str = faux_ev_data(ev);
 	if (e_id != id)
 		return -1;
 	if (e_str != str)
 		return -1;
-	if (faux_sched_pop(sched, &e_id, &e_str) == 0) { // another event?
+	if (faux_sched_pop(sched)) { // another event?
 		printf("faux_shed_pop: Two events at once\n");
 		return -1;
 	}
 	nanosleep(&pol_s, NULL); // wait next time
-	if (faux_sched_pop(sched, &e_id, &e_str) < 0) {
+	if (!faux_sched_pop(sched)) {
 		printf("faux_shed_pop: Can't get 2/2 event\n");
 		return -1;
 	}
 	nanosleep(&pol_s, NULL); // wait third time
-	if (faux_sched_pop(sched, &e_id, &e_str) == 0) { // no events any more
+	if (faux_sched_pop(sched)) { // no events any more
 		printf("faux_shed_pop: The 3/2 event\n");
 		return -1;
 	}
@@ -138,6 +146,7 @@ int testc_faux_sched_infinite(void)
 	char *str = "test";
 	int e_id = 0;
 	void *e_str = NULL;
+	faux_ev_t *ev = NULL;
 
 	faux_nsec_to_timespec(&pol_s, nsec);
 	faux_timespec_now(&now);
@@ -151,32 +160,34 @@ int testc_faux_sched_infinite(void)
 	faux_sched_periodic_delayed(sched, id, str, &pol_s,
 		FAUX_SCHED_INFINITE);
 	// Don't wait so pop must return -1
-	if (faux_sched_pop(sched, &e_id, &e_str) == 0) {
+	if (faux_sched_pop(sched)) {
 		printf("faux_shed_pop: Immediately event\n");
 		return -1;
 	}
 	// Wait and get one event
 	nanosleep(&pol_s, NULL); // wait
-	if (faux_sched_pop(sched, &e_id, &e_str) < 0) {
+	if (!(ev = faux_sched_pop(sched))) {
 		printf("faux_shed_pop: Can't get 1 event\n");
 		return -1;
 	}
+	e_id = faux_ev_id(ev);
+	e_str = faux_ev_data(ev);
 	if (e_id != id)
 		return -1;
 	if (e_str != str)
 		return -1;
-	if (faux_sched_pop(sched, &e_id, &e_str) == 0) { // another event?
+	if (faux_sched_pop(sched)) { // another event?
 		printf("faux_shed_pop: Two events at once\n");
 		return -1;
 	}
 	nanosleep(&pol_s, NULL); // wait next time
-	if (faux_sched_pop(sched, &e_id, &e_str) < 0) {
+	if (!faux_sched_pop(sched)) {
 		printf("faux_shed_pop: Can't get 2 event\n");
 		return -1;
 	}
-	faux_sched_empty(sched); // Empty the list
+	faux_sched_del_all(sched); // Empty the list
 	nanosleep(&pol_s, NULL); // wait third time
-	if (faux_sched_pop(sched, &e_id, &e_str) == 0) {
+	if (faux_sched_pop(sched)) {
 		printf("faux_shed_pop: Event after empty operation\n");
 		return -1;
 	}
