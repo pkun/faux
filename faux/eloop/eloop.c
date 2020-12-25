@@ -1,5 +1,15 @@
 /** @file eloop.c
- * @brief Class for
+ * @brief Event loop.
+ *
+ * It's a class to organize main event loop. Class has unified interface to get
+ * different types of events: signals, file descriptor events, scheduled time
+ * events. User can register callbacks for interested events. Callback has
+ * the same prototype for all types of events. Callback is called with
+ * associated data. Assiciated data is user data, type of event and additional
+ * data with information about things specific for current type. It's a number
+ * of signal for signals, file descriptor and type of file event for file
+ * descriptor events, event ID and pointer to special event object for scheduled
+ * time events.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -37,6 +47,15 @@
 #else // Standard signals
 static void *faux_eloop_static_user_data = NULL;
 
+/** @brief Signal handler sends signal number to programm over pipe.
+ *
+ * Static service function. It's used for non-linux implementation on systems
+ * that has no signalfd() function. The pipe pair is created. The write end is
+ * used in signal handler to write signo to it. The read end of pipe is used
+ * with poll()-like function to get signal number in main programm. It is
+ * necessary to solve race problem with poll() function and signal handlers. See
+ * manpage for select() and pselect().
+ */
 static void faux_eloop_static_sighandler(int signo)
 {
 	int pipe = -1;
@@ -50,6 +69,9 @@ static void faux_eloop_static_sighandler(int signo)
 }
 #endif
 
+
+/** @brief Callback compare function for fd list.
+ */
 static int faux_eloop_fd_compare(const void *first, const void *second)
 {
 	const faux_eloop_fd_t *f = (const faux_eloop_fd_t *)first;
@@ -59,6 +81,8 @@ static int faux_eloop_fd_compare(const void *first, const void *second)
 }
 
 
+/** @brief Callback compare function for fd list to search by key.
+ */
 static int faux_eloop_fd_kcompare(const void *key, const void *list_item)
 {
 	int *f = (int *)key;
@@ -68,6 +92,8 @@ static int faux_eloop_fd_kcompare(const void *key, const void *list_item)
 }
 
 
+/** @brief Callback compare function for signal list.
+ */
 static int faux_eloop_signal_compare(const void *first, const void *second)
 {
 	const faux_eloop_signal_t *f = (const faux_eloop_signal_t *)first;
@@ -77,6 +103,8 @@ static int faux_eloop_signal_compare(const void *first, const void *second)
 }
 
 
+/** @brief Callback compare function for signal list to search by key.
+ */
 static int faux_eloop_signal_kcompare(const void *key, const void *list_item)
 {
 	int *f = (int *)key;
@@ -86,6 +114,14 @@ static int faux_eloop_signal_kcompare(const void *key, const void *list_item)
 }
 
 
+/** @brief Create new event loop object.
+ *
+ * Function gets default event callback as argument. It will be used for all
+ * events if private callback for event is not specified.
+ *
+ * @param [in] default_event_cb Default event callback.
+ * @return Allocated faux_eloop_t object or NULL on error.
+ */
 faux_eloop_t *faux_eloop_new(faux_eloop_cb_f default_event_cb)
 {
 	faux_eloop_t *eloop = NULL;
@@ -124,6 +160,10 @@ faux_eloop_t *faux_eloop_new(faux_eloop_cb_f default_event_cb)
 }
 
 
+/** @brief Free event loop object.
+ *
+ * @param [in] Event loop object.
+ */
 void faux_eloop_free(faux_eloop_t *eloop)
 {
 	if (!eloop)
@@ -138,6 +178,16 @@ void faux_eloop_free(faux_eloop_t *eloop)
 }
 
 
+/** @brief Event loop function.
+ *
+ * Function blocks and waits for registered events. When event occurs the
+ * correspondent callback will be called. Callback returns bool_t value. If
+ * callback returns BOOL_FALSE then loop will break and unblock the programm.
+ * On BOOL_TRUE the loop will wait for the next event.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @returns BOOL_TRUE - success, BOOL_FALSE - error.
+ */
 bool_t faux_eloop_loop(faux_eloop_t *eloop)
 {
 	bool_t retval = BOOL_TRUE;
@@ -368,6 +418,17 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 }
 
 
+/** @brief Registers file descriptor to wait for events.
+ *
+ * See poll() for explanation of possible file events ("events" argument).
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] fd File descriptor to wait on.
+ * @param [in] events File events mask like POLLIN, POLLOUT.
+ * @param [in] event_cb Callback for event.
+ * @param [in] user_data User data to pass to callback.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
 bool_t faux_eloop_add_fd(faux_eloop_t *eloop, int fd, short events,
 	faux_eloop_cb_f event_cb, void *user_data)
 {
@@ -400,6 +461,12 @@ bool_t faux_eloop_add_fd(faux_eloop_t *eloop, int fd, short events,
 }
 
 
+/** @brief Unregisters file descriptor.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] fd File descriptor to unregister.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
 bool_t faux_eloop_del_fd(faux_eloop_t *eloop, int fd)
 {
 	if (!eloop || (fd < 0))
@@ -415,6 +482,14 @@ bool_t faux_eloop_del_fd(faux_eloop_t *eloop, int fd)
 }
 
 
+/** @brief Registers signal to wait for.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] signal Signal number to wait for.
+ * @param [in] event_cb Callback for event.
+ * @param [in] user_data User data to pass to callback.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
 bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
 	faux_eloop_cb_f event_cb, void *user_data)
 {
@@ -468,6 +543,12 @@ bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
 }
 
 
+/** @brief Unregisters signal to wait for.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] signal Signal to unregister.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
 bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo)
 {
 	if (!eloop || (signo < 0))
@@ -497,6 +578,12 @@ bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo)
 }
 
 
+/** @brief Service function to create new context for event.
+ *
+ * @param [in] event_cb Callback for event.
+ * @param [in] data User data for event.
+ * @return Allocated context structure or NULL on error.
+ */
 static faux_eloop_context_t *faux_eloop_new_context(
 	faux_eloop_cb_f event_cb, void *data)
 {
@@ -514,6 +601,15 @@ static faux_eloop_context_t *faux_eloop_new_context(
 }
 
 
+/** @brief Registers scheduled time event. See faux_sched_once().
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] time See faux_sched_once().
+ * @param [in] ev_id See faux_sched_once().
+ * @param [in] event_cb See faux_sched_once().
+ * @param [in] data See faux_sched_once().
+ * @return Pointer to created faux_ev_t object or NULL on error.
+ */
 faux_ev_t *faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec *time,
 	int ev_id, faux_eloop_cb_f event_cb, void *data)
 {
@@ -539,6 +635,15 @@ faux_ev_t *faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec 
 }
 
 
+/** @brief Registers scheduled time event. See faux_sched_once_delayed().
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] interval See faux_sched_once_delayed().
+ * @param [in] ev_id See faux_sched_once_delayed().
+ * @param [in] event_cb See faux_sched_once_delayed().
+ * @param [in] data See faux_sched_once_delayed().
+ * @return Pointer to created faux_ev_t object or NULL on error.
+ */
 faux_ev_t *faux_eloop_add_sched_once_delayed(faux_eloop_t *eloop, const struct timespec *interval,
 	int ev_id, faux_eloop_cb_f event_cb, void *data)
 {
@@ -564,6 +669,17 @@ faux_ev_t *faux_eloop_add_sched_once_delayed(faux_eloop_t *eloop, const struct t
 }
 
 
+/** @brief Registers scheduled time event. See faux_sched_periodic().
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] time See faux_sched_periodic().
+ * @param [in] ev_id See faux_sched_periodic().
+ * @param [in] event_cb See faux_sched_periodic().
+ * @param [in] data See faux_sched_periodic().
+ * @param [in] period See faux_sched_periodic().
+ * @param [in] cycle_num See faux_sched_periodic().
+ * @return Pointer to created faux_ev_t object or NULL on error.
+ */
 faux_ev_t *faux_eloop_add_sched_periodic(faux_eloop_t *eloop, const struct timespec *time,
 	int ev_id, faux_eloop_cb_f event_cb, void *data,
 	const struct timespec *period, unsigned int cycle_num)
@@ -591,6 +707,16 @@ faux_ev_t *faux_eloop_add_sched_periodic(faux_eloop_t *eloop, const struct times
 }
 
 
+/** @brief Registers scheduled time event. See faux_sched_periodic_delayed().
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] ev_id See faux_sched_periodic_delayed().
+ * @param [in] event_cb See faux_sched_periodic_delayed().
+ * @param [in] data See faux_sched_periodic_delayed().
+ * @param [in] period See faux_sched_periodic_delayed().
+ * @param [in] cycle_num See faux_sched_periodic_delayed().
+ * @return Pointer to created faux_ev_t object or NULL on error.
+ */
 faux_ev_t *faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
 	int ev_id, faux_eloop_cb_f event_cb, void *data,
 	const struct timespec *period, unsigned int cycle_num)
@@ -618,6 +744,12 @@ faux_ev_t *faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
 }
 
 
+/** @brief Unregisters scheduled time event.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] ev Event object to unregister.
+ * @return Number of unregistered entries or < 0 on error.
+ */
 ssize_t faux_eloop_del_sched(faux_eloop_t *eloop, faux_ev_t *ev)
 {
 	assert(eloop);
@@ -628,6 +760,12 @@ ssize_t faux_eloop_del_sched(faux_eloop_t *eloop, faux_ev_t *ev)
 }
 
 
+/** @brief Unregisters scheduled time event by event ID.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] ev_id Event ID to unregister.
+ * @return Number of unregistered entries or < 0 on error.
+ */
 ssize_t faux_eloop_del_sched_by_id(faux_eloop_t *eloop, int ev_id)
 {
 	assert(eloop);
