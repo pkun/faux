@@ -367,78 +367,61 @@ ssize_t faux_sched_del_by_data(faux_sched_t *sched, void *data)
 }
 
 
-/** @brief Report does entry with specified ID already exist.
+/** @brief Get scheduled event by specified value.
+ *
+ * Static function.
  *
  * @param [in] sched Allocated and initialized sched object.
- * @param [in] id ID.
- * @return BOOL_TRUE - exist, BOOL_FALSE - doesn't exist.
- */
-bool_t faux_sched_id_exist(faux_sched_t *sched, int id)
-{
-	assert(sched);
-	if (!sched)
-		return -1;
-
-	if (faux_list_match_node(sched->list, faux_ev_compare_id, &id, NULL))
-		return BOOL_TRUE;
-
-	return BOOL_FALSE;
-}
-
-
-/** @brief Get sched entries with specified ID.
- *
- * @param [in] sched Allocated and initialized sched object.
- * @param [in] id ID to search for.
- * @param [out] data Return user data.
+ * @param [in] value Value to search for.
+ * @param [in] cmp_f Callback to compare key and entry.
  * @param [in,out] saved Iterator.
- * @return BOOL_TRUE - found, BOOL_FALSE - not found.
+ * @return Event (faux_ev_t) pointer or NULL on error or not found.
  */
-bool_t faux_sched_get_by_id(faux_sched_t *sched, int ev_id, void **data,
-	faux_list_node_t **saved)
+static faux_ev_t *faux_sched_get_by_something(faux_sched_t *sched, void *value,
+	faux_list_kcmp_fn cmp_f, faux_list_node_t **saved)
 {
 	faux_list_node_t *node = NULL;
 	faux_ev_t *ev = NULL;
 
 	assert(sched);
 	if (!sched)
-		return BOOL_FALSE;
+		return NULL;
 
-	node = faux_list_match_node(sched->list,
-		faux_ev_compare_id, &ev_id, saved);
+	node = faux_list_match_node(sched->list, cmp_f, value, saved);
 	if (!node)
-		return BOOL_FALSE;
+		return NULL;
 
 	ev = (faux_ev_t *)faux_list_data(node);
-	if (data)
-		*data = faux_ev_data(ev);
 
-	return BOOL_TRUE;
+	return ev;
 }
 
 
-/** @brief Get time of events with specified data pointer from list.
+/** @brief Get sched entries with specified event ID.
  *
  * @param [in] sched Allocated and initialized sched object.
- * @param [in] data Data to search entries to remove.
- * @return Number of removed entries or < 0 on error.
+ * @param [in] ev_id Event ID to search for.
+ * @param [in,out] saved Iterator.
+ * @return Event (faux_ev_t) pointer or NULL on error or not found.
  */
-const struct timespec *faux_sched_time_by_data(faux_sched_t *sched, void *data)
+faux_ev_t *faux_sched_get_by_id(faux_sched_t *sched, int ev_id,
+	faux_list_node_t **saved)
 {
-	faux_list_node_t *node = NULL;
-	faux_ev_t *ev = NULL;
+	return faux_sched_get_by_something(sched, &ev_id,
+		faux_ev_compare_id, saved);
+}
 
-	assert(sched);
-	if (!sched)
-		return NULL;
 
-	node = faux_list_match_node(sched->list, faux_ev_compare_data, data, NULL);
-	if (!node)
-		return NULL;
-
-	ev = faux_list_data(node);
-	if (!ev)
-		return NULL;
-
-	return faux_ev_time(ev);
+/** @brief Get sched entries with specified user data pointer.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @param [in] data Pointer to user data to search for.
+ * @param [in,out] saved Iterator.
+ * @return Event (faux_ev_t) pointer or NULL on error or not found.
+ */
+faux_ev_t *faux_sched_get_by_data(faux_sched_t *sched, void *data,
+	faux_list_node_t **saved)
+{
+	return faux_sched_get_by_something(sched, data,
+		faux_ev_compare_data, saved);
 }

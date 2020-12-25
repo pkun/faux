@@ -164,8 +164,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 	sigprocmask(SIG_SETMASK, &blocked_signals, &orig_sig_set);
 
 #ifdef HAVE_SIGNALFD
-	// Create Linux-specific signal file descriptor. Wait for all signals.
-	// Unneeded signals will be filtered out later.
+	// Create Linux-specific signal file descriptor. Wait for signals.
 	eloop->signal_fd = signalfd(eloop->signal_fd, &eloop->sig_set,
 		SIGNALFD_FLAGS);
 	faux_pollfd_add(eloop->pollfds, eloop->signal_fd, POLLIN);
@@ -248,14 +247,18 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 				faux_eloop_cb_f event_cb = context->event_cb;
 				void *user_data = context->user_data;
 
-				if (!faux_ev_is_busy(ev))
+				if (!faux_ev_is_busy(ev)) {
 					faux_ev_free(ev);
+					ev = NULL;
+				}
 				if (!event_cb)
 					event_cb = eloop->default_event_cb;
 				if (!event_cb) // Callback is not defined
 					continue;
 				info.ev_id = ev_id;
-
+				// Callback will get only rescheduled event object.
+				// If event is not scheduled, callback will get NULL.
+				info.ev = ev;
 				// Execute callback
 				r = event_cb(eloop, FAUX_ELOOP_SCHED, &info,
 					user_data);
@@ -265,7 +268,6 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 			}
 			continue;
 		}
-
 
 		// File descriptor
 		faux_pollfd_init_iterator(eloop->pollfds, &pollfd_iter);
@@ -314,7 +316,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 				continue; // Another fds are common, not signal
 			}
 
-			// Prepare event data
+			// File descriptor
 			entry = (faux_eloop_fd_t *)faux_list_kfind(eloop->fds, &fd);
 			assert(entry);
 			if (!entry) // Something went wrong
@@ -512,7 +514,7 @@ static faux_eloop_context_t *faux_eloop_new_context(
 }
 
 
-bool_t faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec *time,
+faux_ev_t *faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec *time,
 	int ev_id, faux_eloop_cb_f event_cb, void *data)
 {
 	faux_eloop_context_t *context = NULL;
@@ -520,27 +522,24 @@ bool_t faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec *tim
 
 	assert(eloop);
 	if (!eloop)
-		return BOOL_FALSE;
-
-	if (faux_sched_id_exist(eloop->sched, ev_id))
-		return BOOL_FALSE; // ID must be unique
+		return NULL;
 
 	context = faux_eloop_new_context(event_cb, data);
 	assert(context);
 	if (!context)
-		return BOOL_FALSE;
+		return NULL;
 
 	if (!(ev = faux_sched_once(eloop->sched, time, ev_id, context))) {
 		faux_free(context);
-		return BOOL_FALSE;
+		return NULL;
 	}
 	faux_ev_set_free_data_cb(ev, faux_free);
 
-	return BOOL_TRUE;
+	return ev;
 }
 
 
-bool_t faux_eloop_add_sched_once_delayed(faux_eloop_t *eloop, const struct timespec *interval,
+faux_ev_t *faux_eloop_add_sched_once_delayed(faux_eloop_t *eloop, const struct timespec *interval,
 	int ev_id, faux_eloop_cb_f event_cb, void *data)
 {
 	faux_eloop_context_t *context = NULL;
@@ -548,27 +547,24 @@ bool_t faux_eloop_add_sched_once_delayed(faux_eloop_t *eloop, const struct times
 
 	assert(eloop);
 	if (!eloop)
-		return BOOL_FALSE;
-
-	if (faux_sched_id_exist(eloop->sched, ev_id))
-		return BOOL_FALSE; // ID must be unique
+		return NULL;
 
 	context = faux_eloop_new_context(event_cb, data);
 	assert(context);
 	if (!context)
-		return BOOL_FALSE;
+		return NULL;
 
 	if (!(ev = faux_sched_once_delayed(eloop->sched, interval, ev_id, context))) {
 		faux_free(context);
-		return BOOL_FALSE;
+		return NULL;
 	}
 	faux_ev_set_free_data_cb(ev, faux_free);
 
-	return BOOL_TRUE;
+	return ev;
 }
 
 
-bool_t faux_eloop_add_sched_periodic(faux_eloop_t *eloop, const struct timespec *time,
+faux_ev_t *faux_eloop_add_sched_periodic(faux_eloop_t *eloop, const struct timespec *time,
 	int ev_id, faux_eloop_cb_f event_cb, void *data,
 	const struct timespec *period, unsigned int cycle_num)
 {
@@ -577,28 +573,25 @@ bool_t faux_eloop_add_sched_periodic(faux_eloop_t *eloop, const struct timespec 
 
 	assert(eloop);
 	if (!eloop)
-		return BOOL_FALSE;
-
-	if (faux_sched_id_exist(eloop->sched, ev_id))
-		return BOOL_FALSE; // ID must be unique
+		return NULL;
 
 	context = faux_eloop_new_context(event_cb, data);
 	assert(context);
 	if (!context)
-		return BOOL_FALSE;
+		return NULL;
 
 	if (!(ev = faux_sched_periodic(eloop->sched, time, ev_id, context,
 		period, cycle_num))) {
 		faux_free(context);
-		return BOOL_FALSE;
+		return NULL;
 	}
 	faux_ev_set_free_data_cb(ev, faux_free);
 
-	return BOOL_TRUE;
+	return ev;
 }
 
 
-bool_t faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
+faux_ev_t *faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
 	int ev_id, faux_eloop_cb_f event_cb, void *data,
 	const struct timespec *period, unsigned int cycle_num)
 {
@@ -607,24 +600,21 @@ bool_t faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
 
 	assert(eloop);
 	if (!eloop)
-		return BOOL_FALSE;
-
-	if (faux_sched_id_exist(eloop->sched, ev_id))
-		return BOOL_FALSE; // ID must be unique
+		return NULL;
 
 	context = faux_eloop_new_context(event_cb, data);
 	assert(context);
 	if (!context)
-		return BOOL_FALSE;
+		return NULL;
 
 	if (!(ev = faux_sched_periodic_delayed(eloop->sched, ev_id, context,
 		period, cycle_num))) {
 		faux_free(context);
-		return BOOL_FALSE;
+		return NULL;
 	}
 	faux_ev_set_free_data_cb(ev, faux_free);
 
-	return BOOL_TRUE;
+	return ev;
 }
 
 
