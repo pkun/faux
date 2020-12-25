@@ -618,13 +618,21 @@ faux_ev_t *faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
 }
 
 
-bool_t faux_eloop_del_sched(faux_eloop_t *eloop, int id)
+ssize_t faux_eloop_del_sched(faux_eloop_t *eloop, faux_ev_t *ev)
 {
 	assert(eloop);
 	if (!eloop)
-		return BOOL_FALSE;
+		return -1;
 
-	faux_sched_del_by_id(eloop->sched, id);
+	return faux_sched_del(eloop->sched, ev);
+}
 
-	return BOOL_TRUE;
+
+ssize_t faux_eloop_del_sched_by_id(faux_eloop_t *eloop, int ev_id)
+{
+	assert(eloop);
+	if (!eloop)
+		return -1;
+
+	return faux_sched_del_by_id(eloop->sched, ev_id);
 }
