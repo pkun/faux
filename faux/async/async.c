@@ -53,6 +53,14 @@ faux_async_t *faux_async_new(int fd)
 
 	// Init
 	async->fd = fd;
+	// Read
+	async->read_cb = NULL;
+	async->read_udata = NULL;
+	async->min = 1;
+	async->max = 0; // Indefinite
+	// Write
+	async->stall_cb = NULL;
+	async->stall_udata = NULL;
 
 	return async;
 }
@@ -83,4 +91,72 @@ int faux_async_fd(const faux_async_t *async)
 		return -1;
 
 	return async->fd;
+}
+
+
+/** @brief Set read callback and associated user data.
+ *
+ * If callback function pointer is NULL then class will drop all readed data.
+ *
+ * @param [in] async Allocated and initialized async I/O object.
+ * @param [in] read_cb Read callback.
+ * @param [in] user_data Associated user data.
+ */
+void faux_async_set_read_cb(faux_async_t *async,
+	faux_async_read_cb_f read_cb, void *user_data)
+{
+	assert(async);
+	if (!async)
+		return;
+
+	async->read_cb = read_cb;
+	async->read_udata = user_data;
+}
+
+
+/** @brief Set read limits.
+ *
+ * Read limits define conditions when the read callback will be executed.
+ * Buffer must contain data amount greater or equal to "min" value. Callback
+ * will not get data amount greater than "max" value. If min == max then
+ * callback will be executed with fixed data size. The "max" value can be "0".
+ * It means indefinite i.e. data transferred to callback can be really large.
+ *
+ * @param [in] async Allocated and initialized async I/O object.
+ * @param [in] min Minimal data amount.
+ * @param [in] max Maximal data amount. The "0" means indefinite.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
+bool_t faux_async_set_read_limits(faux_async_t *async, size_t min, size_t max)
+{
+	assert(async);
+	if (!async)
+		return BOOL_FALSE;
+	if (min < 1)
+		return BOOL_FALSE;
+	if ((min > max) && (max != 0))
+		return BOOL_FALSE;
+
+	async->min = min;
+	async->max = max;
+
+	return BOOL_TRUE;
+}
+
+
+/** @brief Set stall callback and associated user data.
+ *
+ * @param [in] async Allocated and initialized async I/O object.
+ * @param [in] stall_cb Stall callback.
+ * @param [in] user_data Associated user data.
+ */
+void faux_async_set_stall_cb(faux_async_t *async,
+	faux_async_stall_cb_f stall_cb, void *user_data)
+{
+	assert(async);
+	if (!async)
+		return;
+
+	async->stall_cb = stall_cb;
+	async->stall_udata = user_data;
 }
