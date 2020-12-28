@@ -25,6 +25,7 @@ nobase_include_HEADERS += \
 	faux/net.h \
 	faux/msg.h \
 	faux/eloop.h \
+	faux/async.h \
 	faux/testc_helpers.h
 
 EXTRA_DIST += \
@@ -44,6 +45,7 @@ EXTRA_DIST += \
 	faux/net/Makefile.am \
 	faux/msg/Makefile.am \
 	faux/eloop/Makefile.am \
+	faux/async/Makefile.am \
 	faux/testc_helpers/Makefile.am
 
 include $(top_srcdir)/faux/base/Makefile.am
@@ -62,6 +64,7 @@ include $(top_srcdir)/faux/sched/Makefile.am
 include $(top_srcdir)/faux/net/Makefile.am
 include $(top_srcdir)/faux/msg/Makefile.am
 include $(top_srcdir)/faux/eloop/Makefile.am
+include $(top_srcdir)/faux/async/Makefile.am
 include $(top_srcdir)/faux/testc_helpers/Makefile.am
 
 if TESTC
