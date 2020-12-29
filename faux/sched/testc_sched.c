@@ -57,7 +57,6 @@ int testc_faux_sched_once(void)
 	faux_sched_once(sched, &pol_s, id, str);
 	// Wait and get event
 	nanosleep(&pol_s, NULL); // wait
-	e_id = 0;
 	e_str = NULL;
 	if (!(ev = faux_sched_pop(sched)))
 		return -1;
