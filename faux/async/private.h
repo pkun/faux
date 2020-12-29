@@ -11,11 +11,15 @@ struct faux_async_s {
 	size_t min;
 	size_t max;
 	faux_list_t *i_list;
-	size_t i_pos;
+	size_t i_rpos;
+	size_t i_wpos;
+	size_t i_size;
 	// Write
 	faux_async_stall_cb_f stall_cb; // Stall callback
 	void *stall_udata;
 	faux_list_t *o_list;
-	size_t o_pos;
+	size_t o_rpos;
+	size_t o_wpos;
+	size_t o_size;
 	size_t overflow;
 };
