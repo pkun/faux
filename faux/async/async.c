@@ -23,6 +23,7 @@
 
 #include "private.h"
 
+#define DATA_CHUNK 4096
 
 /** @brief Create new async I/O object.
  *
@@ -53,14 +54,23 @@ faux_async_t *faux_async_new(int fd)
 
 	// Init
 	async->fd = fd;
-	// Read
+
+	// Read (Input)
 	async->read_cb = NULL;
 	async->read_udata = NULL;
 	async->min = 1;
 	async->max = 0; // Indefinite
-	// Write
+	async->i_list = faux_list_new(FAUX_LIST_UNSORTED, FAUX_LIST_NONUNIQUE,
+		NULL, NULL, faux_free);
+	async->i_pos = 0;
+
+	// Write (Output)
 	async->stall_cb = NULL;
 	async->stall_udata = NULL;
+	async->overflow = 10000000l; // ~ 10M
+	async->o_list = faux_list_new(FAUX_LIST_UNSORTED, FAUX_LIST_NONUNIQUE,
+		NULL, NULL, faux_free);
+	async->o_pos = 0;
 
 	return async;
 }
@@ -74,6 +84,9 @@ void faux_async_free(faux_async_t *async)
 {
 	if (!async)
 		return;
+
+	faux_list_free(async->i_list);
+	faux_list_free(async->o_list);
 
 	faux_free(async);
 }
@@ -159,4 +172,23 @@ void faux_async_set_stall_cb(faux_async_t *async,
 
 	async->stall_cb = stall_cb;
 	async->stall_udata = user_data;
+}
+
+
+/** @brief Set overflow value.
+ *
+ * "Overflow" is a value when engine consider data consumer as a stalled.
+ * Data gets into the async I/O object buffer but object can't write it to
+ * serviced fd for too long time. So it accumulates great amount of data.
+ *
+ * @param [in] async Allocated and initialized async I/O object.
+ * @param [in] overflow Overflow value.
+ */
+void faux_async_set_overflow(faux_async_t *async, size_t overflow)
+{
+	assert(async);
+	if (!async)
+		return;
+
+	async->overflow = overflow;
 }
