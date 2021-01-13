@@ -64,7 +64,7 @@ typedef struct opts_s opts_t;
 static opts_t *opts_parse(int argc, char *argv[]);
 static void opts_free(opts_t *opts);
 static void help(int status, const char *argv0);
-static int exec_test(int (*test_sym)(void), faux_list_t **buf_list);
+static int exec_test(int (*test_sym)(void), faux_list_t **buf_list, bool_t debug);
 static void print_test_output(faux_list_t *buf_list);
 
 
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
 			}
 
 			// Execute testing function
-			wstatus = exec_test(test_sym, &buf_list);
+			wstatus = exec_test(test_sym, &buf_list, opts->debug);
 
 			// Analyze testing function return code
 
@@ -412,7 +412,7 @@ static void print_test_output(faux_list_t *buf_list)
  * @param [in] buf_list
  * @return Testing function return value
  */
-static int exec_test(int (*test_sym)(void), faux_list_t **buf_list)
+static int exec_test(int (*test_sym)(void), faux_list_t **buf_list, bool_t debug)
 {
 	pid_t pid = -1;
 	int wstatus = -1;
@@ -438,6 +438,8 @@ static int exec_test(int (*test_sym)(void), faux_list_t **buf_list)
 
 	// Parent
 	close(pipefd[1]);
+	if (debug)
+		fprintf(stderr, "Debug: Process ID is %d\n", pid);
 	blist = read_test_output(pipefd[0], TEST_OUTPUT_LIMIT);
 	// The pipe closing can lead to test interruption when output length
 	// limit is exceeded. But it's ok because it saves us from iternal
