@@ -17,20 +17,20 @@
 #include "faux/testc_helpers.h"
 
 
-ssize_t faux_testc_file_deploy(const char *fn, const char *str)
+ssize_t faux_testc_file_deploy(const char *fn, const void *buf, size_t len)
 {
 	faux_file_t *f = NULL;
 	ssize_t bytes_written = 0;
 
 	assert(fn);
-	assert(str);
-	if (!fn || !str)
+	assert(buf);
+	if (!fn || !buf)
 		return -1;
 
 	f = faux_file_open(fn, O_WRONLY | O_CREAT | O_TRUNC, 00644);
 	if (!f)
 		return -1;
-	bytes_written = faux_file_write_block(f, str, strlen(str));
+	bytes_written = faux_file_write_block(f, buf, len);
 	faux_file_close(f);
 	if (bytes_written < 0)
 		return -1;
@@ -39,7 +39,17 @@ ssize_t faux_testc_file_deploy(const char *fn, const char *str)
 }
 
 
-char *faux_testc_tmpfile_deploy(const char *str)
+ssize_t faux_testc_file_deploy_str(const char *fn, const char *str)
+{
+	assert(str);
+	if (!str)
+		return -1;
+
+	return faux_testc_file_deploy(fn, str, strlen(str));
+}
+
+
+char *faux_testc_tmpfile_deploy(const void *buf, size_t len)
 {
 	char *template = NULL;
 	int fd = -1;
@@ -47,8 +57,8 @@ char *faux_testc_tmpfile_deploy(const char *str)
 	ssize_t bytes_written = 0;
 	char *env_tmpdir = NULL;
 
-	assert(str);
-	if (!str)
+	assert(buf);
+	if (!buf)
 		return NULL;
 
 	env_tmpdir = getenv(FAUX_TESTC_TMPDIR_ENV);
@@ -68,13 +78,24 @@ char *faux_testc_tmpfile_deploy(const char *str)
 	if (!f)
 		return NULL;
 
-	bytes_written = faux_file_write_block(f, str, strlen(str));
+	bytes_written = faux_file_write_block(f, buf, len);
 	faux_file_close(f);
 	if (bytes_written < 0)
 		return NULL;
 
 	return template;
 }
+
+
+char *faux_testc_tmpfile_deploy_str(const char *str)
+{
+	assert(str);
+	if (!str)
+		return NULL;
+
+	return faux_testc_tmpfile_deploy(str, strlen(str));
+}
+
 
 #define CHUNK_SIZE 1024
 

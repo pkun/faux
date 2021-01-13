@@ -13,8 +13,10 @@
 
 C_DECL_BEGIN
 
-ssize_t faux_testc_file_deploy(const char *fn, const char *str);
-char *faux_testc_tmpfile_deploy(const char *str);
+ssize_t faux_testc_file_deploy(const char *fn, const void *buf, size_t len);
+ssize_t faux_testc_file_deploy_str(const char *fn, const char *str);
+char *faux_testc_tmpfile_deploy(const void *buf, size_t len);
+char *faux_testc_tmpfile_deploy_str(const char *str);
 int faux_testc_file_cmp(const char *first_file, const char *second_file);
 
 C_DECL_END
