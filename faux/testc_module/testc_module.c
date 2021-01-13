@@ -41,6 +41,8 @@ const char *testc_module[][2] = {
 	// vec
 	{"testc_faux_vec", "Complex test of variable length vector"},
 
+	// async
+	{"testc_faux_async", "Async read/write operations"},
 
 	// End of list
 	{NULL, NULL}

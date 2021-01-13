@@ -109,7 +109,6 @@ bool_t faux_file_close(faux_file_t *f)
 {
 	int fd = -1;
 
-	assert(f);
 	if (!f)
 		return BOOL_FALSE;
 

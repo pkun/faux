@@ -32,13 +32,13 @@ int testc_faux_filesize(void)
 
 	// Create files and dirs
 	mkdir(dn1, 0777);
-	if ((r = faux_testc_file_deploy(fn1, fd1)) < 0)
+	if ((r = faux_testc_file_deploy_str(fn1, fd1)) < 0)
 		goto err;
 	etalon_filesize += r;
-	if ((r = faux_testc_file_deploy(fn2, fd2)) < 0)
+	if ((r = faux_testc_file_deploy_str(fn2, fd2)) < 0)
 		goto err;
 	etalon_filesize += r;
-	if ((r = faux_testc_file_deploy(fn3, fd3)) < 0)
+	if ((r = faux_testc_file_deploy_str(fn3, fd3)) < 0)
 		goto err;
 	etalon_filesize += r;
 

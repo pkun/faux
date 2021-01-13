@@ -53,8 +53,8 @@ int testc_faux_ini_parse_file(void)
 	char *etalon_fn = NULL;
 
 	// Prepare files
-	src_fn = faux_testc_tmpfile_deploy(src_file);
-	etalon_fn = faux_testc_tmpfile_deploy(etalon_file);
+	src_fn = faux_testc_tmpfile_deploy_str(src_file);
+	etalon_fn = faux_testc_tmpfile_deploy_str(etalon_file);
 	dst_fn = faux_str_sprintf("%s/dst", getenv(FAUX_TESTC_TMPDIR_ENV));
 
 	ini = faux_ini_new();
