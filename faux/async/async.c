@@ -65,11 +65,12 @@ faux_async_t *faux_async_new(int fd)
 	async->i_rpos = 0;
 	async->i_wpos = 0;
 	async->i_size = 0;
+	async->i_overflow = 10000000l; // ~ 10M
 
 	// Write (Output)
 	async->stall_cb = NULL;
 	async->stall_udata = NULL;
-	async->overflow = 10000000l; // ~ 10M
+	async->o_overflow = 10000000l; // ~ 10M
 	async->o_list = faux_list_new(FAUX_LIST_UNSORTED, FAUX_LIST_NONUNIQUE,
 		NULL, NULL, faux_free);
 	async->o_rpos = 0;
@@ -179,7 +180,7 @@ void faux_async_set_stall_cb(faux_async_t *async,
 }
 
 
-/** @brief Set overflow value.
+/** @brief Set write overflow value.
  *
  * "Overflow" is a value when engine consider data consumer as a stalled.
  * Data gets into the async I/O object buffer but object can't write it to
@@ -188,13 +189,32 @@ void faux_async_set_stall_cb(faux_async_t *async,
  * @param [in] async Allocated and initialized async I/O object.
  * @param [in] overflow Overflow value.
  */
-void faux_async_set_overflow(faux_async_t *async, size_t overflow)
+void faux_async_set_write_overflow(faux_async_t *async, size_t overflow)
 {
 	assert(async);
 	if (!async)
 		return;
 
-	async->overflow = overflow;
+	async->o_overflow = overflow;
+}
+
+
+/** @brief Set read overflow value.
+ *
+ * "Overflow" is a value when engine consider data consumer as a stalled.
+ * Data gets into the async I/O object buffer but object can't write it to
+ * serviced fd for too long time. So it accumulates great amount of data.
+ *
+ * @param [in] async Allocated and initialized async I/O object.
+ * @param [in] overflow Overflow value.
+ */
+void faux_async_set_read_overflow(faux_async_t *async, size_t overflow)
+{
+	assert(async);
+	if (!async)
+		return;
+
+	async->i_overflow = overflow;
 }
 
 
@@ -247,7 +267,7 @@ ssize_t faux_async_write(faux_async_t *async, void *data, size_t len)
 		async->o_wpos += copy_len;
 		data_left -= copy_len;
 		async->o_size += copy_len;
-		if (async->o_size >= async->overflow)
+		if (async->o_size >= async->o_overflow)
 			return -1;
 	}
 
@@ -294,7 +314,7 @@ ssize_t faux_async_out(faux_async_t *async)
 		node = faux_list_head(async->o_list);
 		if (!node) // List is empty while o_size > 0
 			return -1;
-		chunk_ptr = faux_list_data(faux_list_head(async->o_list));
+		chunk_ptr = faux_list_data(node);
 		data_to_write = data_avail(async->o_list,
 			async->o_rpos, async->o_wpos);
 		if (data_to_write <= 0) // Strange case
@@ -340,4 +360,104 @@ ssize_t faux_async_out(faux_async_t *async)
 	}
 
 	return total_written;
+}
+
+
+ssize_t faux_async_in(faux_async_t *async)
+{
+	void *new_chunk = NULL;
+	ssize_t total_readed = 0;
+	ssize_t bytes_readed = 0;
+	ssize_t bytes_free = 0; // Free space within current (last) chunk
+
+	assert(async);
+	if (!async)
+		return -1;
+
+	do {
+		char *chunk_ptr = NULL;
+
+		// Allocate new chunk if necessary
+		bytes_free = free_space(async->i_list, async->i_wpos);
+		if (bytes_free < 0)
+			return -1;
+		if (0 == bytes_free) { // We need to allocate additional chunk
+			new_chunk = faux_malloc(DATA_CHUNK);
+			assert(new_chunk);
+			faux_list_add(async->i_list, new_chunk);
+			async->i_wpos = 0;
+			bytes_free = free_space(async->i_list, async->i_wpos);
+		}
+
+		// Read data to last chunk
+		chunk_ptr = faux_list_data(faux_list_tail(async->i_list));
+		bytes_readed = read(async->fd, chunk_ptr + async->i_wpos, bytes_free);
+		if (bytes_readed < 0) {
+			if ( // Something went wrong
+				(errno != EINTR) &&
+				(errno != EAGAIN) &&
+				(errno != EWOULDBLOCK)
+			)
+				return -1;
+		}
+		if (bytes_readed > 0) {
+			async->i_wpos += bytes_readed;
+			async->i_size += bytes_readed;
+			total_readed += bytes_readed;
+		}
+		if (async->i_size >= async->i_overflow)
+			return -1;
+
+		// Check for amount of stored data
+		while (async->i_size >= async->min) {
+
+			size_t copy_len = async->min;
+			size_t full_size = 0;
+			char *buf = NULL;
+			char *buf_ptr = NULL;
+
+			if (0 == async->max) { // Indefinite
+				copy_len = async->i_size; // Take all data
+			} else {
+				copy_len = (async->i_size < async->max) ?
+					async->i_size : async->max;
+			}
+
+			full_size = copy_len; // Save full length value
+			buf = faux_malloc(full_size);
+			buf_ptr = buf;
+			while (copy_len > 0) {
+				size_t data_to_write = 0;
+				faux_list_node_t *node = faux_list_head(async->i_list);
+				char *chunk_ptr = NULL;
+
+				if (!node) // Something went wrong
+					return -1;
+				chunk_ptr = faux_list_data(node);
+				data_to_write = data_avail(async->i_list,
+					async->i_rpos, async->i_wpos);
+				if (copy_len < data_to_write)
+					data_to_write = copy_len;
+				memcpy(buf_ptr, chunk_ptr + async->i_rpos,
+					data_to_write);
+				copy_len -= data_to_write;
+				async->i_size -= data_to_write;
+				async->i_rpos += data_to_write;
+				buf_ptr += data_to_write;
+				if (data_avail(async->i_list,
+					async->i_rpos, async->i_wpos) <= 0) {
+					async->i_rpos = 0;
+					faux_list_del(async->i_list, node);
+				}
+			}
+			// Execute callback
+			if (async->read_cb)
+				async->read_cb(async, buf,
+					full_size, async->read_udata);
+
+		}
+
+	} while (bytes_readed == bytes_free);
+
+	return total_readed;
 }

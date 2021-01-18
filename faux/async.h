@@ -10,14 +10,6 @@
 
 typedef struct faux_async_s faux_async_t;
 
-/*
-typedef enum {
-	FAUX_ELOOP_NULL = 0,
-	FAUX_ELOOP_SIGNAL = 1,
-	FAUX_ELOOP_SCHED = 2,
-	FAUX_ELOOP_FD = 3
-} faux_eloop_type_e;
-*/
 
 // Callback function prototypes
 typedef bool_t (*faux_async_read_cb_f)(faux_async_t *async,
@@ -36,9 +28,11 @@ void faux_async_set_read_cb(faux_async_t *async,
 bool_t faux_async_set_read_limits(faux_async_t *async, size_t min, size_t max);
 void faux_async_set_stall_cb(faux_async_t *async,
 	faux_async_stall_cb_f stall_cb, void *user_data);
-void faux_async_set_overflow(faux_async_t *async, size_t overflow);
+void faux_async_set_write_overflow(faux_async_t *async, size_t overflow);
+void faux_async_set_read_overflow(faux_async_t *async, size_t overflow);
 ssize_t faux_async_write(faux_async_t *async, void *data, size_t len);
 ssize_t faux_async_out(faux_async_t *async);
+ssize_t faux_async_in(faux_async_t *async);
 
 C_DECL_END
 
