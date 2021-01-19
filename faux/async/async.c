@@ -1,4 +1,25 @@
 /** @file async.c
+ * @brief Asynchronous input and output.
+ *
+ * Class uses non-blocking input and output and has internal input and output
+ * buffers. Class has associated file descriptor to work with it.
+ *
+ * For async writing user uses faux_async_write() function. It writes all
+ * given data to internal buffer and then tries to really write it to file
+ * descriptor. If not all data was written in non-blocking mode then function
+ * executes special callback "stall" function to inform us about non-empty
+ * output buffer. "Stall" callback function can make programm to inspect fd
+ * for write possibility. Then programm must call faux_async_out() to really
+ * write the rest of the data to fd. Function also can execute "stall" callback.
+ *
+ * For async reading user can call faux_sync_in(). For example this function
+ * can be called after select() or poll() when data is available on interested
+ * fd. Function reads data in non-blocking mode and stores to internal buffer.
+ * User can specify read "limits" - min and max. When amount of reded data is
+ * greater or equal to "min" limit then "read" callback will be executed.
+ * The "read" callback will get allocated buffer with received data. The
+ * length of the data is greater or equal to "min" limit and less or equal to
+ * "max" limit.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -59,7 +80,7 @@ faux_async_t *faux_async_new(int fd)
 	async->read_cb = NULL;
 	async->read_udata = NULL;
 	async->min = 1;
-	async->max = 0; // Indefinite
+	async->max = FAUX_ASYNC_UNLIMITED;
 	async->i_list = faux_list_new(FAUX_LIST_UNSORTED, FAUX_LIST_NONUNIQUE,
 		NULL, NULL, faux_free);
 	async->i_rpos = 0;
@@ -218,6 +239,14 @@ void faux_async_set_read_overflow(faux_async_t *async, size_t overflow)
 }
 
 
+/** @brief Get amount of unused space within current data chunk.
+ *
+ * Inernal static function.
+ *
+ * @param [in] list Internal buffer (list of chunks) to inspect.
+ * @param [in] pos Current write position within last chunk
+ * @return Size of unused space or < 0 on error.
+ */
 static ssize_t free_space(faux_list_t *list, size_t pos)
 {
 	if (!list)
@@ -230,6 +259,20 @@ static ssize_t free_space(faux_list_t *list, size_t pos)
 }
 
 
+/** @brief Async data write.
+ *
+ * All given data will be stored to internal buffer (list of data chunks).
+ * Then function will try to write stored data to file descriptor in
+ * non-blocking mode. Note some data can be left within buffer. In this case
+ * the "stall" callback will be executed to inform about it. To try to write
+ * the rest of the data user can be call faux_async_out() function. Both
+ * functions will not block.
+ *
+ * @param [in] async Allocated and initialized async I/O object.
+ * @param [in] data Data buffer to write.
+ * @param [in] len Data length to write.
+ * @return Length of stored/writed data or < 0 on error.
+ */
 ssize_t faux_async_write(faux_async_t *async, void *data, size_t len)
 {
 	void *new_chunk = NULL;
@@ -278,6 +321,15 @@ ssize_t faux_async_write(faux_async_t *async, void *data, size_t len)
 }
 
 
+/** @brief Get amount of available data within first chunk.
+ *
+ * Inernal static function.
+ *
+ * @param [in] list Internal buffer (list of chunks) to inspect.
+ * @param [in] rpos Current read position within chunk.
+ * @param [in] wpos Current write position within chunk.
+ * @return Available data length or < 0 on error.
+ */
 static ssize_t data_avail(faux_list_t *list, size_t rpos, size_t wpos)
 {
 	size_t len = 0;
@@ -296,6 +348,18 @@ static ssize_t data_avail(faux_list_t *list, size_t rpos, size_t wpos)
 }
 
 
+/** @brief Write output buffer to fd in non-blocking mode.
+ *
+ * Previously data must be written to internal buffer by faux_async_write()
+ * function. But some data can be left within internal buffer because can't be
+ * written to fd in non-blocking mode. This function tries to write the rest of
+ * data to fd in non-blocking mode. So function doesn't block. It can be called
+ * after select() or poll() if fd is ready to be written to. If function can't
+ * to write all buffer to fd it executes "stall" callback to inform about it.
+ *
+ * @param [in] async Allocated and initialized async I/O object.
+ * @return Length of data actually written or < 0 on error.
+ */
 ssize_t faux_async_out(faux_async_t *async)
 {
 	ssize_t total_written = 0;
@@ -363,6 +427,19 @@ ssize_t faux_async_out(faux_async_t *async)
 }
 
 
+/** @brief Read data and store it to internal buffer in non-blocking mode.
+ *
+ * Reads fd and puts data to internal buffer. It can't be blocked. If length of
+ * data stored within internal buffer is greater or equal than "min" limit then
+ * function will execute "read" callback. It allocates linear buffer, copies
+ * data to it and give it to callback. Note this function will never free
+ * allocated buffer. So callback must do it or it must be done later. Function
+ * will not allocate buffer larger than "max" read limit. If "max" limit is "0"
+ * (it means indefinite) then function will pass all available data to callback.
+ *
+ * @param [in] async Allocated and initialized async I/O object.
+ * @return Length of data actually readed or < 0 on error.
+ */
 ssize_t faux_async_in(faux_async_t *async)
 {
 	void *new_chunk = NULL;
@@ -416,7 +493,7 @@ ssize_t faux_async_in(faux_async_t *async)
 			char *buf = NULL;
 			char *buf_ptr = NULL;
 
-			if (0 == async->max) { // Indefinite
+			if (FAUX_ASYNC_UNLIMITED == async->max) { // Indefinite
 				copy_len = async->i_size; // Take all data
 			} else {
 				copy_len = (async->i_size < async->max) ?

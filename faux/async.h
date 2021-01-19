@@ -8,6 +8,8 @@
 #include <faux/faux.h>
 #include <faux/sched.h>
 
+#define FAUX_ASYNC_UNLIMITED 0
+
 typedef struct faux_async_s faux_async_t;
 
 
