@@ -435,6 +435,7 @@ bool_t faux_eloop_add_fd(faux_eloop_t *eloop, int fd, short events,
 	faux_eloop_fd_t *entry = NULL;
 	faux_list_node_t *new_node = NULL;
 
+	assert(eloop);
 	if (!eloop || (fd < 0))
 		return BOOL_FALSE;
 
@@ -456,6 +457,80 @@ bool_t faux_eloop_add_fd(faux_eloop_t *eloop, int fd, short events,
 		faux_free(entry);
 		return BOOL_FALSE;
 	}
+
+	return BOOL_TRUE;
+}
+
+
+/** @brief Registers additional event for specified fd.
+ *
+ * See poll() for explanation of possible file events ("events" argument).
+ * Suppose some fd was added by faux_eloop_add_fd(). User have specified some
+ * events like POLLIN. Now user wants to track POLLOUT event too. So it's not
+ * necessary to remove fd by faux_eloop_del_fd() and then re-add it with new
+ * event mask. User can include additional events by
+ * faux_eloop_include_fd_event(). Specified event will be added to existent
+ * event mask.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] fd File descriptor to change event mask.
+ * @param [in] events File event to include (like POLLIN, POLLOUT).
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
+bool_t faux_eloop_include_fd_event(faux_eloop_t *eloop, int fd, short event)
+{
+	faux_eloop_fd_t *entry = NULL;
+
+	assert(eloop);
+	if (!eloop)
+		return BOOL_FALSE;
+	assert(fd >= 0);
+	if (fd < 0)
+		return BOOL_FALSE;
+
+	entry = (faux_eloop_fd_t *)faux_list_kfind(eloop->fds, &fd);
+	if (!entry)
+		return BOOL_FALSE;
+	entry->events = entry->events | event;
+	faux_pollfd_del_by_fd(eloop->pollfds, fd);
+	faux_pollfd_add(eloop->pollfds, fd, entry->events);
+
+	return BOOL_TRUE;
+}
+
+
+/** @brief Unregisters event for specified fd.
+ *
+ * See poll() for explanation of possible file events ("events" argument).
+ * Suppose some fd was added by faux_eloop_add_fd(). User have specified some
+ * events like POLLIN, POLLOUT. Now user doesn't wants to track one of the
+ * events (POLLOUT for example). So it's not necessary to remove fd by
+ * faux_eloop_del_fd() and then re-add it with new event mask. User can exclude
+ * event by faux_eloop_include_fd_event(). Specified event will be excluded from
+ * existent event mask.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @param [in] fd File descriptor to change event mask.
+ * @param [in] events File event to exclude (like POLLIN, POLLOUT).
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
+bool_t faux_eloop_exclude_fd_event(faux_eloop_t *eloop, int fd, short event)
+{
+	faux_eloop_fd_t *entry = NULL;
+
+	assert(eloop);
+	if (!eloop)
+		return BOOL_FALSE;
+	assert(fd >= 0);
+	if (fd < 0)
+		return BOOL_FALSE;
+
+	entry = (faux_eloop_fd_t *)faux_list_kfind(eloop->fds, &fd);
+	if (!entry)
+		return BOOL_FALSE;
+	entry->events = entry->events & (~event);
+	faux_pollfd_del_by_fd(eloop->pollfds, fd);
+	faux_pollfd_add(eloop->pollfds, fd, entry->events);
 
 	return BOOL_TRUE;
 }

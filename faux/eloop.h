@@ -62,6 +62,8 @@ faux_ev_t *faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
 	const struct timespec *period, unsigned int cycle_num);
 ssize_t faux_eloop_del_sched(faux_eloop_t *eloop, faux_ev_t *ev);
 ssize_t faux_eloop_del_sched_by_id(faux_eloop_t *eloop, int ev_id);
+bool_t faux_eloop_include_fd_event(faux_eloop_t *eloop, int fd, short event);
+bool_t faux_eloop_exclude_fd_event(faux_eloop_t *eloop, int fd, short event);
 
 C_DECL_END
 
