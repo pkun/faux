@@ -100,8 +100,11 @@ faux_phdr_t *faux_msg_get_param_by_index(const faux_msg_t *msg, unsigned int ind
 	uint16_t *param_type, void **param_data, uint32_t *param_len);
 faux_phdr_t *faux_msg_get_param_by_type(const faux_msg_t *msg,
 	uint16_t param_type, void **param_data, uint32_t *param_len);
-ssize_t faux_msg_send(faux_msg_t *msg, faux_net_t *faux_net);
+ssize_t faux_msg_send(const faux_msg_t *msg, faux_net_t *faux_net);
 faux_msg_t *faux_msg_recv(faux_net_t *faux_net);
+bool_t faux_msg_iov(const faux_msg_t *msg, struct iovec **iov_out, size_t *iov_num_out);
+bool_t faux_msg_serialize(const faux_msg_t *msg, char **buf, size_t *len);
+
 void faux_msg_debug(faux_msg_t *msg);
 
 C_DECL_END

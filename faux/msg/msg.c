@@ -565,33 +565,35 @@ faux_phdr_t *faux_msg_get_param_by_type(const faux_msg_t *msg,
 }
 
 
-/** @brief Sends message to network.
+/** @brief Create IOV of message.
  *
- * Function sends message to network using preinitialized faux_net_t object.
- * User can specify timeout, signal mask, etc while faux_net_t object creation.
- *
- * Function can return length less than whole message length in the following
- * cases:
- * - An error has occured like broken file descriptor.
- * - Interrupted by allowed signal (see signal mask).
- * - Timeout.
+ * Function creates and fills iovec structure. This iovec contains references
+ * to parts of message enough to construct message in network format.
  *
  * @param [in] msg Allocated faux_msg_t object.
- * @param [in] faux_net Preinitialized faux_net_t object.
- * @return Length of sent data or < 0 on error.
+ * @param [out] iov_out iovec structure.
+ * @param [out] iov_num_out Number of iovec entries.
+ * @return BOOL_TRUE - success, BOOL_FALSE - fail.
  */
-ssize_t faux_msg_send(faux_msg_t *msg, faux_net_t *faux_net)
+bool_t faux_msg_iov(const faux_msg_t *msg, struct iovec **iov_out, size_t *iov_num_out)
 {
-	unsigned int vec_entries_num = 0;
+	size_t vec_entries_num = 0;
 	struct iovec *iov = NULL;
 	unsigned int i = 0;
 	faux_list_node_t *iter = NULL;
-	size_t ret = 0;
 
 	assert(msg);
+	if (!msg)
+		return BOOL_FALSE;
 	assert(msg->hdr);
-	if (!msg || !msg->hdr)
-		return -1;
+	if (!msg->hdr)
+		return BOOL_FALSE;
+	assert(iov_out);
+	if (!iov_out)
+		return BOOL_FALSE;
+	assert(iov_num_out);
+	if (!iov_num_out)
+		return BOOL_FALSE;
 
 	// Calculate number if struct iovec entries.
 	// n = (msg header) + ((param hdr) + (param data)) * (param_num)
@@ -625,6 +627,37 @@ ssize_t faux_msg_send(faux_msg_t *msg, faux_net_t *faux_net)
 		i++;
 	}
 
+	*iov_out = iov;
+	*iov_num_out = vec_entries_num;
+
+	return BOOL_TRUE;
+}
+
+
+/** @brief Sends message to network.
+ *
+ * Function sends message to network using preinitialized faux_net_t object.
+ * User can specify timeout, signal mask, etc while faux_net_t object creation.
+ *
+ * Function can return length less than whole message length in the following
+ * cases:
+ * - An error has occured like broken file descriptor.
+ * - Interrupted by allowed signal (see signal mask).
+ * - Timeout.
+ *
+ * @param [in] msg Allocated faux_msg_t object.
+ * @param [in] faux_net Preinitialized faux_net_t object.
+ * @return Length of sent data or < 0 on error.
+ */
+ssize_t faux_msg_send(const faux_msg_t *msg, faux_net_t *faux_net)
+{
+	size_t vec_entries_num = 0;
+	struct iovec *iov = NULL;
+	size_t ret = 0;
+
+	if (!faux_msg_iov(msg, &iov, &vec_entries_num))
+		return -1;
+
 	ret = faux_net_sendv(faux_net, iov, vec_entries_num);
 	faux_free(iov);
 
@@ -639,6 +672,41 @@ ssize_t faux_msg_send(faux_msg_t *msg, faux_net_t *faux_net)
 	return ret;
 }
 
+
+/** @brief Serializes message.
+ *
+ * @param [in] msg Allocated faux_msg_t object.
+ * @param [out] buf Serialized message.
+ * @param [out] len Length of serialized message.
+ * @return BOOL_TRUE - success, BOOL_FALSE - fail.
+ */
+bool_t faux_msg_serialize(const faux_msg_t *msg, char **buf, size_t *len)
+{
+	size_t vec_entries_num = 0;
+	struct iovec *iov = NULL;
+	unsigned int i = 0;
+	size_t total_len = 0;
+	char *buffer = NULL;
+	char *p = NULL;
+
+	if (!faux_msg_iov(msg, &iov, &vec_entries_num))
+		return BOOL_FALSE;
+
+	for (i = 0; i < vec_entries_num; i++)
+		total_len += iov[i].iov_len;
+
+	buffer = faux_malloc(total_len);
+	p = buffer;
+	for (i = 0; i < vec_entries_num; i++) {
+		memcpy(p, iov[i].iov_base, iov[i].iov_len);
+		p += iov[i].iov_len;
+	}
+
+	*buf = buffer;
+	*len = total_len;
+
+	return BOOL_TRUE;
+}
 
 /** @brief Receives full message and allocates faux_msg_t object for it.
  *
