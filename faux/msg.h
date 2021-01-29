@@ -71,6 +71,24 @@ typedef struct faux_hdr_s {
 
 C_DECL_BEGIN
 
+// Header functions
+void faux_hdr_set_cmd(faux_hdr_t *hdr, uint16_t cmd);
+uint16_t faux_hdr_cmd(const faux_hdr_t *hdr);
+void faux_hdr_set_status(faux_hdr_t *hdr, uint32_t status);
+uint32_t faux_hdr_status(const faux_hdr_t *hdr);
+void faux_hdr_set_req_id(faux_hdr_t *hdr, uint32_t req_id);
+uint32_t faux_hdr_req_id(const faux_hdr_t *hdr);
+void faux_hdr_set_param_num(faux_hdr_t *hdr, uint32_t param_num);
+uint32_t faux_hdr_param_num(const faux_hdr_t *hdr);
+void faux_hdr_set_len(faux_hdr_t *hdr, uint32_t len);
+int faux_hdr_len(const faux_hdr_t *hdr);
+void faux_hdr_set_magic(faux_hdr_t *hdr, uint32_t magic);
+uint32_t faux_hdr_magic(const faux_hdr_t *hdr);
+void faux_hdr_set_major(faux_hdr_t *hdr, uint8_t major);
+uint8_t faux_hdr_major(const faux_hdr_t *hdr);
+void faux_hdr_set_minor(faux_hdr_t *hdr, uint8_t minor);
+uint8_t faux_hdr_minor(const faux_hdr_t *hdr);
+
 // Parameter functions
 void faux_phdr_set_type(faux_phdr_t *phdr, uint16_t param_type);
 uint16_t faux_phdr_get_type(const faux_phdr_t *phdr);
@@ -104,6 +122,9 @@ ssize_t faux_msg_send(const faux_msg_t *msg, faux_net_t *faux_net);
 faux_msg_t *faux_msg_recv(faux_net_t *faux_net);
 bool_t faux_msg_iov(const faux_msg_t *msg, struct iovec **iov_out, size_t *iov_num_out);
 bool_t faux_msg_serialize(const faux_msg_t *msg, char **buf, size_t *len);
+faux_msg_t *faux_msg_deserialize_parts(const faux_hdr_t *hdr,
+	const char *body, size_t body_len);
+faux_msg_t *faux_msg_deserialize(const char *data, size_t len);
 
 void faux_msg_debug(faux_msg_t *msg);
 

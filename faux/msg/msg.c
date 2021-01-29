@@ -708,6 +708,82 @@ bool_t faux_msg_serialize(const faux_msg_t *msg, char **buf, size_t *len)
 	return BOOL_TRUE;
 }
 
+
+faux_msg_t *faux_msg_deserialize_parts(const faux_hdr_t *hdr,
+	const char *body, size_t body_len)
+{
+	faux_msg_t *msg = NULL;
+	faux_phdr_t *phdr = NULL;
+	size_t phdr_whole_len = 0;
+	size_t params_whole_len = 0;
+	unsigned int i = 0;
+	const char *data = NULL;
+	uint32_t param_num = 0;
+
+	msg = faux_msg_allocate();
+	assert(msg);
+	if (!msg)
+		return NULL;
+
+	// Replace message header by new one
+	memcpy(msg->hdr, hdr, sizeof(*hdr));
+
+	if (0 == body_len) // Message contains header only
+		return msg;
+
+	// Process message body i.e. parameters
+	param_num = faux_msg_get_param_num(msg);
+	if (0 == param_num) { // Something went wrong
+		faux_msg_free(msg);
+		return NULL;
+	}
+
+	phdr_whole_len = param_num * sizeof(*phdr);
+	if (phdr_whole_len > body_len) { // Something went wrong
+		faux_msg_free(msg);
+		return NULL;
+	}
+	phdr = (faux_phdr_t *)body;
+	// Find out whole parameters length
+	for (i = 0; i < param_num; i++)
+		params_whole_len += faux_phdr_get_len(phdr + i);
+	if ((phdr_whole_len + params_whole_len) != body_len) { // Something went wrong
+		faux_msg_free(msg);
+		return NULL;
+	}
+
+	// Parameters
+	data = body + phdr_whole_len;
+	for (i = 0; i < param_num; i++) {
+		size_t cur_data_len = faux_phdr_get_len(phdr + i);
+		if (0 == cur_data_len)
+			continue;
+		faux_msg_add_param_internal(msg,
+			faux_phdr_get_type(phdr + i),
+			data, cur_data_len, BOOL_FALSE);
+		data += cur_data_len;
+	}
+
+	return msg;
+}
+
+
+faux_msg_t *faux_msg_deserialize(const char *data, size_t len)
+{
+	const faux_hdr_t *msg_hdr = (const faux_hdr_t *)data;
+	const char *msg_body = data + sizeof(*msg_hdr);
+	size_t msg_body_len = len - sizeof(*msg_hdr);
+
+	assert(data);
+	if (!data)
+		return NULL;
+	if (len < sizeof(*msg_hdr))
+		return NULL;
+
+	return faux_msg_deserialize_parts(msg_hdr, msg_body, msg_body_len);
+}
+
+
 /** @brief Receives full message and allocates faux_msg_t object for it.
  *
  * Function receives message from network using preinitialized faux_net_t object.
@@ -727,64 +803,25 @@ faux_msg_t *faux_msg_recv(faux_net_t *faux_net)
 {
 	faux_msg_t *msg = NULL;
 	size_t received = 0;
-	faux_phdr_t *phdr = NULL;
-	size_t phdr_whole_len = 0;
-	size_t max_data_len = 0;
-	unsigned int i = 0;
-	char *data = NULL;
-	uint32_t param_num = 0;
-
-	msg = faux_msg_allocate();
-	assert(msg);
-	if (!msg)
-		return NULL;
+	faux_hdr_t hdr = {};
+	char *body = NULL;
+	size_t body_len = 0;
 
 	// Receive message header
-	received = faux_net_recv(faux_net, msg->hdr, sizeof(*msg->hdr));
-	if (received != sizeof(*msg->hdr)) {
-		faux_msg_free(msg);
+	received = faux_net_recv(faux_net, &hdr, sizeof(hdr));
+	if (received != sizeof(hdr))
+		return NULL;
+
+	body_len = hdr.len;
+	body = faux_malloc(body_len);
+	received = faux_net_recv(faux_net, body, body_len);
+	if (received != body_len) {
+		faux_free(body);
 		return NULL;
 	}
 
-	// Receive parameter headers
-	param_num = faux_msg_get_param_num(msg);
-	if (param_num != 0) {
-		phdr_whole_len = param_num * sizeof(*phdr);
-		phdr = faux_zmalloc(phdr_whole_len);
-		received = faux_net_recv(faux_net, phdr, phdr_whole_len);
-		if (received != phdr_whole_len) {
-			faux_free(phdr);
-			faux_msg_free(msg);
-			return NULL;
-		}
-		// Find out maximum data length
-		for (i = 0; i < param_num; i++) {
-			size_t cur_data_len = faux_phdr_get_len(phdr + i);
-			if (cur_data_len > max_data_len)
-				max_data_len = cur_data_len;
-		}
-
-		// Receive parameter data
-		data = faux_zmalloc(max_data_len);
-		for (i = 0; i < param_num; i++) {
-			size_t cur_data_len = faux_phdr_get_len(phdr + i);
-			if (0 == cur_data_len)
-				continue;
-			received = faux_net_recv(faux_net, data, cur_data_len);
-			if (received != cur_data_len) {
-				faux_free(data);
-				faux_free(phdr);
-				faux_msg_free(msg);
-				return NULL;
-			}
-			faux_msg_add_param_internal(msg,
-				faux_phdr_get_type(phdr + i),
-				data, cur_data_len, BOOL_FALSE);
-		}
-
-		faux_free(data);
-		faux_free(phdr);
-	}
+	msg = faux_msg_deserialize_parts(&hdr, body, body_len);
+	faux_free(body);
 
 #ifdef DEBUG
 	// Debug
