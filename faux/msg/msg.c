@@ -102,9 +102,9 @@ faux_msg_t *faux_msg_new(uint32_t magic, uint8_t major, uint8_t minor)
 		return NULL;
 
 	// Init
-	msg->hdr->magic = htonl(magic);
-	msg->hdr->major = major;
-	msg->hdr->minor = minor;
+	faux_hdr_set_magic(msg->hdr, magic);
+	faux_hdr_set_major(msg->hdr, major);
+	faux_hdr_set_minor(msg->hdr, minor);
 	faux_msg_set_cmd(msg, 0);
 	faux_msg_set_status(msg, 0);
 	faux_msg_set_req_id(msg, 0l);
@@ -143,7 +143,8 @@ void faux_msg_set_cmd(faux_msg_t *msg, uint16_t cmd)
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
 		return;
-	msg->hdr->cmd = htons(cmd);
+
+	return faux_hdr_set_cmd(msg->hdr, cmd);
 }
 
 
@@ -161,7 +162,7 @@ uint16_t faux_msg_get_cmd(const faux_msg_t *msg)
 	if (!msg || !msg->hdr)
 		return 0;
 
-	return ntohs(msg->hdr->cmd);
+	return faux_hdr_cmd(msg->hdr);
 }
 
 
@@ -178,7 +179,8 @@ void faux_msg_set_status(faux_msg_t *msg, uint32_t status)
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
 		return;
-	msg->hdr->status = htonl(status);
+
+	return faux_hdr_set_status(msg->hdr, status);
 }
 
 
@@ -196,7 +198,7 @@ uint32_t faux_msg_get_status(const faux_msg_t *msg)
 	if (!msg || !msg->hdr)
 		return 0;
 
-	return ntohl(msg->hdr->status);
+	return faux_hdr_status(msg->hdr);
 }
 
 
@@ -211,7 +213,8 @@ void faux_msg_set_req_id(faux_msg_t *msg, uint32_t req_id)
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
 		return;
-	msg->hdr->req_id = htonl(req_id);
+
+	return faux_hdr_set_req_id(msg->hdr, req_id);
 }
 
 
@@ -227,7 +230,7 @@ uint32_t faux_msg_get_req_id(const faux_msg_t *msg)
 	if (!msg || !msg->hdr)
 		return 0;
 
-	return ntohl(msg->hdr->req_id);
+	return faux_hdr_req_id(msg->hdr);
 }
 
 
@@ -245,7 +248,8 @@ static void faux_msg_set_param_num(faux_msg_t *msg, uint32_t param_num)
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
 		return;
-	msg->hdr->param_num = htonl(param_num);
+
+	return faux_hdr_set_param_num(msg->hdr, param_num);
 }
 
 
@@ -261,7 +265,7 @@ uint32_t faux_msg_get_param_num(const faux_msg_t *msg)
 	if (!msg || !msg->hdr)
 		return -1;
 
-	return ntohl(msg->hdr->param_num);
+	return faux_hdr_param_num(msg->hdr);
 }
 
 
@@ -279,7 +283,8 @@ static void faux_msg_set_len(faux_msg_t *msg, uint32_t len)
 	assert(msg->hdr);
 	if (!msg || !msg->hdr)
 		return;
-	msg->hdr->len = htonl(len);
+
+	return faux_hdr_set_len(msg->hdr, len);
 }
 
 
@@ -295,7 +300,7 @@ int faux_msg_get_len(const faux_msg_t *msg)
 	if (!msg || !msg->hdr)
 		return 0;
 
-	return ntohl(msg->hdr->len);
+	return faux_hdr_len(msg->hdr);
 }
 
 
@@ -311,7 +316,7 @@ uint32_t faux_msg_get_magic(const faux_msg_t *msg)
 	if (!msg || !msg->hdr)
 		return 0;
 
-	return ntohl(msg->hdr->magic);
+	return faux_hdr_magic(msg->hdr);
 }
 
 
@@ -327,7 +332,7 @@ int faux_msg_get_major(const faux_msg_t *msg)
 	if (!msg || !msg->hdr)
 		return 0;
 
-	return msg->hdr->major;
+	return faux_hdr_major(msg->hdr);
 }
 
 
@@ -343,7 +348,7 @@ int faux_msg_get_minor(const faux_msg_t *msg)
 	if (!msg || !msg->hdr)
 		return 0;
 
-	return msg->hdr->minor;
+	return faux_hdr_minor(msg->hdr);
 }
 
 
