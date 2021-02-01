@@ -714,6 +714,18 @@ bool_t faux_msg_serialize(const faux_msg_t *msg, char **buf, size_t *len)
 }
 
 
+/** @brief Deserializes message header and body to faux_msg_t structure.
+ *
+ * The typical case is when message is received to two buffers. The first is
+ * a header of constant size and the second is message body with size found out
+ * from already received message header. Function gets header buffer and body
+ * buffer and deserializes them into faux_msg_t format.
+ *
+ * @param [in] hdr Message header.
+ * @param [in] body Message body.
+ * @param [in] body_len Length of message body.
+ * @return Deserialized faux_msg_t object or NULL on error.
+ */
 faux_msg_t *faux_msg_deserialize_parts(const faux_hdr_t *hdr,
 	const char *body, size_t body_len)
 {
@@ -773,6 +785,15 @@ faux_msg_t *faux_msg_deserialize_parts(const faux_hdr_t *hdr,
 }
 
 
+/* @brief Deserialized message stored in linear buffer.
+ *
+ * Message header and message body can be stored in linear buffer. Function
+ * deserializes it from network format to faux_msg_t structure.
+ *
+ * @param [in] data Message in network format.
+ * @param [in] len Message length.
+ * @return Deserialized faux_msg_t object or NULL on error.
+ */
 faux_msg_t *faux_msg_deserialize(const char *data, size_t len)
 {
 	const faux_hdr_t *msg_hdr = (const faux_hdr_t *)data;
