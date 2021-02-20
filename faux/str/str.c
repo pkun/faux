@@ -796,3 +796,19 @@ char *faux_str_nextword(const char *str, const char **saveptr,
 
 	return result;
 }
+
+
+/** @brief Indicates is string is empty.
+ *
+ * @param [in] str String to analyze.
+ * @return BOOL_TRUE if pointer is NULL or empty, BOOL_FALSE if not empty.
+ */
+bool_t faux_str_is_empty(const char *str)
+{
+	if (!str)
+		return BOOL_TRUE;
+	if ('\0' == *str)
+		return BOOL_TRUE;
+
+	return BOOL_FALSE;
+}
