@@ -20,4 +20,5 @@
 #include <faux/sched.h>
 #include <faux/msg.h>
 #include <faux/eloop.h>
+#include <faux/error.h>
 #include <faux/testc_helpers.h>
