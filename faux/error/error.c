@@ -66,6 +66,20 @@ void faux_error_reset(faux_error_t *error)
 }
 
 
+/** @brief Gets current error stack length.
+ *
+ * @param [in] error Allocated and initialized error object.
+ * @return BOOL_TRUE if object contains errors or BOOL_FALSE.
+ */
+ssize_t faux_error_len(const faux_error_t *error)
+{
+	if (!error)
+		return -1;
+
+	return faux_list_len(error->list);
+}
+
+
 /** @brief Current status of error object.
  *
  * If error list contains any entries then function returns BOOL_TRUE else
@@ -76,10 +90,7 @@ void faux_error_reset(faux_error_t *error)
  */
 bool_t faux_error(const faux_error_t *error)
 {
-	if (!error)
-		return BOOL_FALSE;
-
-	if (faux_list_len(error->list) > 0)
+	if (faux_error_len(error) > 0)
 		return BOOL_TRUE;
 
 	return BOOL_FALSE;

@@ -17,6 +17,7 @@ C_DECL_BEGIN
 faux_error_t *faux_error_new(void);
 void faux_error_free(faux_error_t *error);
 void faux_error_reset(faux_error_t *error);
+ssize_t faux_error_len(const faux_error_t *error);
 bool_t faux_error(const faux_error_t *error);
 bool_t faux_error_add(faux_error_t *error, const char *str);
 
