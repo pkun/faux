@@ -106,10 +106,9 @@ bool_t faux_error_add(faux_error_t *error, const char *str)
 {
 	char *tmp = NULL;
 
-	assert(error);
+	// If error == NULL it's not bug
 	if (!error)
 		return BOOL_FALSE;
-	assert(str);
 	if (!str)
 		return BOOL_FALSE;
 
