@@ -7,6 +7,7 @@
 #include <limits.h>
 
 #include "faux/conv.h"
+#include "faux/str.h"
 
 
 /** @brief Converts string to long int
@@ -278,4 +279,33 @@ bool_t faux_conv_atouc(const char *str, unsigned char *val, int base)
 	*val = tmp;
 
 	return BOOL_TRUE;
+}
+
+
+/** @brief Converts string to bool_t
+ *
+ * Case insensitive.
+ *
+ * @param [in] str Input string to convert.
+ * @param [out] val Pointer to result value.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
+ */
+bool_t faux_conv_str2bool(const char *str, bool_t *val)
+{
+	if (!str)
+		return BOOL_FALSE;
+
+	if (faux_str_casecmp(str, "true") == 0) {
+		if (val)
+			*val = BOOL_TRUE;
+		return BOOL_TRUE;
+	}
+
+	if (faux_str_casecmp(str, "false") == 0) {
+		if (val)
+			*val = BOOL_FALSE;
+		return BOOL_TRUE;
+	}
+
+	return BOOL_FALSE;
 }

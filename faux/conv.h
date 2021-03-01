@@ -24,6 +24,8 @@ bool_t faux_conv_atous(const char *str, unsigned short *val, int base);
 bool_t faux_conv_atoc(const char *str, char *val, int base);
 bool_t faux_conv_atouc(const char *str, unsigned char *val, int base);
 
+bool_t faux_conv_str2bool(const char *str, bool_t *val);
+
 C_DECL_END
 
 #endif
