@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include <faux/faux.h>
+#include <faux/list.h>
 
 typedef struct faux_error_s faux_error_t;
 typedef faux_list_node_t faux_error_node_t;
