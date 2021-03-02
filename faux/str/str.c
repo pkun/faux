@@ -225,6 +225,55 @@ char *faux_str_mcat(char **str, ...)
 }
 
 
+/** @brief Allocates memory and vsprintf() to it.
+ *
+ * Function tries to find out necessary amount of memory for specified format
+ * string and arguments. Format is same as for vsprintf() function. Then
+ * function allocates memory for resulting string and vsprintf() to it. So
+ * user doesn't need to allocate buffer himself. Function returns allocated
+ * string that need to be freed by faux_str_free() function later.
+ *
+ * @warning The returned pointer must be free by faux_str_free().
+ *
+ * @param [in] fmt Format string like the sprintf()'s fmt.
+ * @param [in] ap The va_list argument.
+ * @return Allocated resulting string or NULL on error.
+ */
+char *faux_str_vsprintf(const char *fmt, va_list ap)
+{
+	int size = 1;
+	char calc_buf[1] = "";
+	char *line = NULL;
+	va_list ap2;
+
+	// Calculate buffer size
+	va_copy(ap2, ap);
+	size = vsnprintf(calc_buf, size, fmt, ap2);
+	va_end(ap2);
+	// The snprintf() prior to 2.0.6 glibc version returns -1 if string
+	// was truncated. The later glibc returns required buffer size.
+	// The calc_buf can be NULL and size can be 0 for recent glibc but
+	// probably some exotic implementations can break on it. So use
+	// minimal buffer with length = 1.
+	if (size < 0)
+		return NULL;
+
+	size++; // Additional byte for '\0'
+	line = faux_zmalloc(size);
+	if (!line) // Memory problems
+		return NULL;
+
+	// Format real string
+	size = vsnprintf(line, size, fmt, ap);
+	if (size < 0) { // Some problems
+		faux_str_free(line);
+		return NULL;
+	}
+
+	return line;
+}
+
+
 /** @brief Allocates memory and sprintf() to it.
  *
  * Function tries to find out necessary amount of memory for specified format
@@ -241,36 +290,12 @@ char *faux_str_mcat(char **str, ...)
  */
 char *faux_str_sprintf(const char *fmt, ...)
 {
-	int size = 1;
-	char calc_buf[1] = "";
 	char *line = NULL;
 	va_list ap;
 
-	// Calculate buffer size
 	va_start(ap, fmt);
-	size = vsnprintf(calc_buf, size, fmt, ap);
+	line = faux_str_vsprintf(fmt, ap);
 	va_end(ap);
-	// The snprintf() prior to 2.0.6 glibc version returns -1 if string
-	// was truncated. The later glibc returns required buffer size.
-	// The calc_buf can be NULL and size can be 0 for recent glibc but
-	// probably some exotic implementations can break on it. So use
-	// minimal buffer with length = 1.
-	if (size < 0)
-		return NULL;
-
-	size++; // Additional byte for '\0'
-	line = faux_zmalloc(size);
-	if (!line) // Memory problems
-		return NULL;
-
-	// Format real string
-	va_start(ap, fmt);
-	size = vsnprintf(line, size, fmt, ap);
-	va_end(ap);
-	if (size < 0) { // Some problems
-		faux_str_free(line);
-		return NULL;
-	}
 
 	return line;
 }

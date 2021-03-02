@@ -6,6 +6,7 @@
 #define _faux_str_h
 
 #include <stddef.h>
+#include <stdarg.h>
 
 #include <faux/faux.h>
 
@@ -24,6 +25,7 @@ char *faux_str_dup(const char *str);
 char *faux_str_catn(char **str, const char *text, size_t n);
 char *faux_str_cat(char **str, const char *text);
 char *faux_str_mcat(char **str, ...);
+char *faux_str_vsprintf(const char *fmt, va_list ap);
 char *faux_str_sprintf(const char *fmt, ...);
 
 char *faux_str_tolower(const char *str);
