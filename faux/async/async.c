@@ -488,7 +488,7 @@ ssize_t faux_async_in(faux_async_t *async)
 		// Check for amount of stored data
 		while (async->i_size >= async->min) {
 
-			size_t copy_len = async->min;
+			size_t copy_len = 0;
 			size_t full_size = 0;
 			char *buf = NULL;
 			char *buf_ptr = NULL;
