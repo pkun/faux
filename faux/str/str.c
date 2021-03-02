@@ -209,7 +209,7 @@ char *faux_str_cat(char **str, const char *text)
  * @param [in] text Text to add to the first string.
  * @return Pointer to resulting string or NULL.
  */
-char *faux_str_vcat(char **str, ...)
+char *faux_str_mcat(char **str, ...)
 {
 	va_list ap;
 	const char *arg = NULL;
