@@ -124,6 +124,38 @@ bool_t faux_error_add(faux_error_t *error, const char *str)
 }
 
 
+/** @brief Add formatted error message to message stack.
+ *
+ * @param [in] error Allocated and initialized error object.
+ * @param [in] fmt Format like printf() one.
+ * @param [in] args Variable length args.
+ * @return success - BOOL_TRUE, fail - BOOL_FALSE.
+ */
+bool_t faux_error_sprintf(faux_error_t *error, const char *fmt, ...)
+{
+	char *line = NULL;
+	va_list ap;
+	bool_t retval = BOOL_TRUE;
+
+	if (!error)
+		return BOOL_FALSE;
+	if (!fmt)
+		return BOOL_FALSE;
+
+	va_start(ap, fmt);
+	line = faux_str_vsprintf(fmt, ap);
+	va_end(ap);
+
+	if (!line)
+		return BOOL_FALSE;
+
+	retval = faux_error_add(error, line);
+	faux_str_free(line);
+
+	return retval;
+}
+
+
 /** @brief Initializes iterator to iterate through the entire error object.
  *
  * Before iterating with the faux_error_each() function the iterator must be
@@ -206,7 +238,7 @@ const char *faux_error_eachr(faux_error_node_t **iter)
  * @param [in] hierarchy Print errors using hierarchy view (or peer view).
  * @return BOOL_TRUE - success, BOOL_FALSE - fail.
  */
-static bool_t faux_error_show(const faux_error_t *error, FILE *handle,
+static bool_t faux_error_show_internal(const faux_error_t *error, FILE *handle,
 	bool_t reverse, bool_t hierarchy)
 {
 	faux_error_node_t *iter = NULL;
@@ -234,9 +266,9 @@ static bool_t faux_error_show(const faux_error_t *error, FILE *handle,
  * @param [in] handle File handler to write to.
  * @return BOOL_TRUE - success, BOOL_FALSE - fail.
  */
-bool_t faux_error_fprint(const faux_error_t *error, FILE *handle)
+bool_t faux_error_fshow(const faux_error_t *error, FILE *handle)
 {
-	return faux_error_show(error, handle, BOOL_FALSE, BOOL_FALSE);
+	return faux_error_show_internal(error, handle, BOOL_FALSE, BOOL_FALSE);
 }
 
 
@@ -245,7 +277,7 @@ bool_t faux_error_fprint(const faux_error_t *error, FILE *handle)
  * @param [in] error Allocated and initialized error object.
  * @return BOOL_TRUE - success, BOOL_FALSE - fail.
  */
-bool_t faux_error_print(const faux_error_t *error)
+bool_t faux_error_show(const faux_error_t *error)
 {
-	return faux_error_fprint(error, stderr);
+	return faux_error_fshow(error, stderr);
 }
