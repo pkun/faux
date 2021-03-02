@@ -309,3 +309,17 @@ bool_t faux_conv_str2bool(const char *str, bool_t *val)
 
 	return BOOL_FALSE;
 }
+
+
+/** @brief Converts bool_t to string
+ *
+ * @param [in] val Boolean value.
+ * @return "true" or "false" strings
+ */
+const char *faux_conv_bool2str(bool_t *val)
+{
+	if (val)
+		return "true";
+
+	return "false";
+}
