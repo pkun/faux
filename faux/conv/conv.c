@@ -316,7 +316,7 @@ bool_t faux_conv_str2bool(const char *str, bool_t *val)
  * @param [in] val Boolean value.
  * @return "true" or "false" strings
  */
-const char *faux_conv_bool2str(bool_t *val)
+const char *faux_conv_bool2str(bool_t val)
 {
 	if (val)
 		return "true";
