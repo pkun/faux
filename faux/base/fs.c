@@ -90,6 +90,30 @@ bool_t faux_isdir(const char *path)
 	return BOOL_FALSE;
 }
 
+
+/** @brief If given path is regular file.
+ *
+ * @param [in] path Filesystem path.
+ * @return 0 - success, < 0 on error.
+ */
+bool_t faux_isfile(const char *path)
+{
+	struct stat statbuf = {};
+
+	assert(path);
+	if (!path)
+		return BOOL_FALSE;
+
+	if (stat(path, &statbuf) < 0)
+		return BOOL_FALSE;
+
+	if (S_ISREG(statbuf.st_mode))
+		return BOOL_TRUE;
+
+	return BOOL_FALSE;
+}
+
+
 /** @brief Removes filesystem objects recursively.
  *
  * Function can remove file or directory (recursively).
@@ -129,6 +153,7 @@ bool_t faux_rm(const char *path)
 
 	return BOOL_TRUE;
 }
+
 
 /** @brief Expand tilde within path due to HOME env var.
  *
