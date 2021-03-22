@@ -23,15 +23,15 @@ struct faux_sched_s {
 
 C_DECL_BEGIN
 
-int faux_ev_compare(const void *first, const void *second);
-int faux_ev_compare_id(const void *key, const void *list_item);
-int faux_ev_compare_data(const void *key, const void *list_item);
-int faux_ev_compare_ptr(const void *key, const void *list_item);
+FAUX_HIDDEN int faux_ev_compare(const void *first, const void *second);
+FAUX_HIDDEN int faux_ev_compare_id(const void *key, const void *list_item);
+FAUX_HIDDEN int faux_ev_compare_data(const void *key, const void *list_item);
+FAUX_HIDDEN int faux_ev_compare_ptr(const void *key, const void *list_item);
 
-void faux_ev_free_forced(void *ptr);
-void faux_ev_set_busy(faux_ev_t *ev, bool_t busy);
-bool_t faux_ev_dec_cycles(faux_ev_t *ev, unsigned int *new_cycle_num);
-bool_t faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time);
-bool_t faux_ev_reschedule_period(faux_ev_t *ev);
+FAUX_HIDDEN void faux_ev_free_forced(void *ptr);
+FAUX_HIDDEN void faux_ev_set_busy(faux_ev_t *ev, bool_t busy);
+FAUX_HIDDEN bool_t faux_ev_dec_cycles(faux_ev_t *ev, unsigned int *new_cycle_num);
+FAUX_HIDDEN bool_t faux_ev_reschedule(faux_ev_t *ev, const struct timespec *new_time);
+FAUX_HIDDEN bool_t faux_ev_reschedule_period(faux_ev_t *ev);
 
 C_DECL_END

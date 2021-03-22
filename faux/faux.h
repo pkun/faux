@@ -70,6 +70,13 @@ typedef enum {
 #define C_DECL_END
 #endif
 
+/** @def FAUX_HIDDEN
+ *
+ * Make symbol hidden within DSO (dynamic shared object). It's usefull to don't
+ * pollute library namespace.
+ */
+#define FAUX_HIDDEN __attribute__ ((visibility ("hidden")))
+
 C_DECL_BEGIN
 
 // Memory
