@@ -11,6 +11,7 @@ DEBUG_CFLAGS = -DDEBUG
 endif
 
 AM_CFLAGS = -Wall $(DEBUG_CFLAGS)
+AM_LDFLAGS = -z relro -z now
 
 bin_PROGRAMS =
 lib_LTLIBRARIES =
