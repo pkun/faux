@@ -159,6 +159,7 @@ AC_CHECK_HEADERS(dlfcn.h, [
 ################################
 # Check for pthread
 ################################
+# library's net_io.c needs pthread_sigmask()
 AX_PTHREAD
 
 ################################
