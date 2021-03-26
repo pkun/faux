@@ -142,7 +142,7 @@ int faux_async_fd(const faux_async_t *async)
  * @param [in] user_data Associated user data.
  */
 void faux_async_set_read_cb(faux_async_t *async,
-	faux_async_read_cb_f read_cb, void *user_data)
+	faux_async_read_cb_fn read_cb, void *user_data)
 {
 	assert(async);
 	if (!async)
@@ -190,7 +190,7 @@ bool_t faux_async_set_read_limits(faux_async_t *async, size_t min, size_t max)
  * @param [in] user_data Associated user data.
  */
 void faux_async_set_stall_cb(faux_async_t *async,
-	faux_async_stall_cb_f stall_cb, void *user_data)
+	faux_async_stall_cb_fn stall_cb, void *user_data)
 {
 	assert(async);
 	if (!async)

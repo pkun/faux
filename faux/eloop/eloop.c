@@ -122,7 +122,7 @@ static int faux_eloop_signal_kcompare(const void *key, const void *list_item)
  * @param [in] default_event_cb Default event callback.
  * @return Allocated faux_eloop_t object or NULL on error.
  */
-faux_eloop_t *faux_eloop_new(faux_eloop_cb_f default_event_cb)
+faux_eloop_t *faux_eloop_new(faux_eloop_cb_fn default_event_cb)
 {
 	faux_eloop_t *eloop = NULL;
 
@@ -294,7 +294,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 				int ev_id = faux_ev_id(ev);
 				faux_eloop_context_t *context =
 					(faux_eloop_context_t *)faux_ev_data(ev);
-				faux_eloop_cb_f event_cb = context->event_cb;
+				faux_eloop_cb_fn event_cb = context->event_cb;
 				void *user_data = context->user_data;
 
 				if (!faux_ev_is_busy(ev)) {
@@ -324,7 +324,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 		while ((pollfd = faux_pollfd_each_active(eloop->pollfds, &pollfd_iter))) {
 			int fd = pollfd->fd;
 			faux_eloop_info_fd_t info = {};
-			faux_eloop_cb_f event_cb = NULL;
+			faux_eloop_cb_fn event_cb = NULL;
 			faux_eloop_fd_t *entry = NULL;
 			bool_t r = BOOL_TRUE;
 
@@ -430,7 +430,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
  * @return BOOL_TRUE - success, BOOL_FALSE - error.
  */
 bool_t faux_eloop_add_fd(faux_eloop_t *eloop, int fd, short events,
-	faux_eloop_cb_f event_cb, void *user_data)
+	faux_eloop_cb_fn event_cb, void *user_data)
 {
 	faux_eloop_fd_t *entry = NULL;
 	faux_list_node_t *new_node = NULL;
@@ -566,7 +566,7 @@ bool_t faux_eloop_del_fd(faux_eloop_t *eloop, int fd)
  * @return BOOL_TRUE - success, BOOL_FALSE - error.
  */
 bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
-	faux_eloop_cb_f event_cb, void *user_data)
+	faux_eloop_cb_fn event_cb, void *user_data)
 {
 	faux_eloop_signal_t *entry = NULL;
 
@@ -660,7 +660,7 @@ bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo)
  * @return Allocated context structure or NULL on error.
  */
 static faux_eloop_context_t *faux_eloop_new_context(
-	faux_eloop_cb_f event_cb, void *data)
+	faux_eloop_cb_fn event_cb, void *data)
 {
 	faux_eloop_context_t *context = NULL;
 
@@ -686,7 +686,7 @@ static faux_eloop_context_t *faux_eloop_new_context(
  * @return Pointer to created faux_ev_t object or NULL on error.
  */
 faux_ev_t *faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec *time,
-	int ev_id, faux_eloop_cb_f event_cb, void *data)
+	int ev_id, faux_eloop_cb_fn event_cb, void *data)
 {
 	faux_eloop_context_t *context = NULL;
 	faux_ev_t *ev = NULL;
@@ -720,7 +720,7 @@ faux_ev_t *faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec 
  * @return Pointer to created faux_ev_t object or NULL on error.
  */
 faux_ev_t *faux_eloop_add_sched_once_delayed(faux_eloop_t *eloop, const struct timespec *interval,
-	int ev_id, faux_eloop_cb_f event_cb, void *data)
+	int ev_id, faux_eloop_cb_fn event_cb, void *data)
 {
 	faux_eloop_context_t *context = NULL;
 	faux_ev_t *ev = NULL;
@@ -756,7 +756,7 @@ faux_ev_t *faux_eloop_add_sched_once_delayed(faux_eloop_t *eloop, const struct t
  * @return Pointer to created faux_ev_t object or NULL on error.
  */
 faux_ev_t *faux_eloop_add_sched_periodic(faux_eloop_t *eloop, const struct timespec *time,
-	int ev_id, faux_eloop_cb_f event_cb, void *data,
+	int ev_id, faux_eloop_cb_fn event_cb, void *data,
 	const struct timespec *period, unsigned int cycle_num)
 {
 	faux_eloop_context_t *context = NULL;
@@ -793,7 +793,7 @@ faux_ev_t *faux_eloop_add_sched_periodic(faux_eloop_t *eloop, const struct times
  * @return Pointer to created faux_ev_t object or NULL on error.
  */
 faux_ev_t *faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
-	int ev_id, faux_eloop_cb_f event_cb, void *data,
+	int ev_id, faux_eloop_cb_fn event_cb, void *data,
 	const struct timespec *period, unsigned int cycle_num)
 {
 	faux_eloop_context_t *context = NULL;
