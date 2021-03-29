@@ -32,6 +32,7 @@ const faux_pair_t *faux_ini_each(faux_ini_node_t **iter);
 
 bool_t faux_ini_parse_str(faux_ini_t *ini, const char *str);
 bool_t faux_ini_parse_file(faux_ini_t *ini, const char *fn);
+char *faux_ini_write_str(const faux_ini_t *ini);
 bool_t faux_ini_write_file(const faux_ini_t *ini, const char *fn);
 
 C_DECL_END

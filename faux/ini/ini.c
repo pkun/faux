@@ -401,6 +401,59 @@ bool_t faux_ini_parse_file(faux_ini_t *ini, const char *fn)
 }
 
 
+/** Writes INI content to string.
+ *
+ * Write pairs 'name/value' to string. The source of pairs is an INI object.
+ * It's complementary operation to faux_ini_parse_str().
+ *
+ * @param [in] ini Allocated and initialized INI object.
+ * @return Allocated string with INI content or NULL on error.
+ */
+char *faux_ini_write_str(const faux_ini_t *ini)
+{
+	faux_ini_node_t *iter = NULL;
+	const faux_pair_t *pair = NULL;
+	const char *spaces = " \t"; // String with spaces needs quotes
+	char *str = NULL;
+
+	assert(ini);
+	if (!ini)
+		return NULL;
+
+	iter = faux_ini_iter(ini);
+	while ((pair = faux_ini_each(&iter))) {
+		char *quote_name = NULL;
+		char *quote_value = NULL;
+		const char *name = faux_pair_name(pair);
+		const char *value = faux_pair_value(pair);
+		char *line = NULL;
+
+		// Word with spaces needs quotes
+		quote_name = faux_str_chars(name, spaces) ? "\"" : "";
+		quote_value = faux_str_chars(value, spaces) ? "\"" : "";
+
+		// Prepare INI line
+		line = faux_str_sprintf("%s%s%s=%s%s%s\n",
+			quote_name, name, quote_name,
+			quote_value, value, quote_value);
+		if (!line) {
+			faux_str_free(str);
+			return NULL;
+		}
+
+		// Add to string
+		if (!faux_str_cat(&str, line)) {
+			faux_str_free(line);
+			faux_str_free(str);
+			return NULL;
+		}
+		faux_str_free(line);
+	}
+
+	return str;
+}
+
+
 /** Writes INI file using INI object.
  *
  * Write pairs 'name/value' to INI file. The source of pairs is an INI object.
@@ -413,53 +466,30 @@ bool_t faux_ini_parse_file(faux_ini_t *ini, const char *fn)
 bool_t faux_ini_write_file(const faux_ini_t *ini, const char *fn)
 {
 	faux_file_t *f = NULL;
-	faux_ini_node_t *iter = NULL;
-	const faux_pair_t *pair = NULL;
-	const char *spaces = " \t"; // String with spaces needs quotes
+	char *str = NULL;
+	ssize_t bytes_written = 0;
 
 	assert(ini);
 	assert(fn);
 	if (!ini)
 		return BOOL_FALSE;
-	if (!fn || '\0' == *fn)
+	if (faux_str_is_empty(fn))
+		return BOOL_FALSE;
+
+	str = faux_ini_write_str(ini);
+	if (!str)
 		return BOOL_FALSE;
 
 	f = faux_file_open(fn, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (!f)
 		return BOOL_FALSE;
 
-	iter = faux_ini_iter(ini);
-	while ((pair = faux_ini_each(&iter))) {
-		char *quote_name = NULL;
-		char *quote_value = NULL;
-		const char *name = faux_pair_name(pair);
-		const char *value = faux_pair_value(pair);
-		char *line = NULL;
-		ssize_t bytes_written = 0;
-
-		// Word with spaces needs quotes
-		quote_name = faux_str_chars(name, spaces) ? "\"" : "";
-		quote_value = faux_str_chars(value, spaces) ? "\"" : "";
-
-		// Prepare INI line
-		line = faux_str_sprintf("%s%s%s=%s%s%s\n",
-			quote_name, name, quote_name,
-			quote_value, value, quote_value);
-		if (!line) {
-			faux_file_close(f);
-			return BOOL_FALSE;
-		}
-
-		// Write to file
-		bytes_written = faux_file_write(f, line, strlen(line));
-		faux_str_free(line);
-		if (bytes_written < 0) { // Can't write to file
-			faux_file_close(f);
-			return BOOL_FALSE;
-		}
-	}
-
+	// Write to file
+	bytes_written = faux_file_write_block(f, str, strlen(str));
 	faux_file_close(f);
+	faux_str_free(str);
+	if (bytes_written < 0)  // Can't write to file
+		return BOOL_FALSE;
 
 	return BOOL_TRUE;
 }
