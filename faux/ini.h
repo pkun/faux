@@ -24,6 +24,7 @@ void faux_ini_free(faux_ini_t *ini);
 
 const faux_pair_t *faux_ini_set(faux_ini_t *ini, const char *name, const char *value);
 void faux_ini_unset(faux_ini_t *ini, const char *name);
+bool_t faux_ini_is_empty(const faux_ini_t *ini);
 
 const faux_pair_t *faux_ini_find_pair(const faux_ini_t *ini, const char *name);
 const char *faux_ini_find(const faux_ini_t *ini, const char *name);

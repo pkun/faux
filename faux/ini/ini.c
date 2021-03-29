@@ -41,6 +41,8 @@ faux_ini_t *faux_ini_new(void)
  *
  * After using the INI object must be freed. Function frees INI object itself
  * and all pairs 'name/value' stored within INI object.
+ *
+ * @param [in] ini Allocated and initialized INI object.
  */
 void faux_ini_free(faux_ini_t *ini)
 {
@@ -49,6 +51,21 @@ void faux_ini_free(faux_ini_t *ini)
 
 	faux_list_free(ini->list);
 	faux_free(ini);
+}
+
+
+/** Checks if INI object is empty.
+ *
+ * @param [in] ini Allocated and initialized INI object.
+ * @return BOOL_TRUE - empty, BOOL_FALSE - not empty.
+ */
+bool_t faux_ini_is_empty(const faux_ini_t *ini)
+{
+	assert(ini);
+	if (!ini)
+		return BOOL_TRUE;
+
+	return faux_list_is_empty(ini->list);
 }
 
 
