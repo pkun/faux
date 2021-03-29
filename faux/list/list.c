@@ -663,7 +663,7 @@ void *faux_list_kmatch(const faux_list_t *list, const void *userkey,
 
 /** @brief Search list for first matching (match function).
  *
- * Same as faux_list_match_node() but search for the fisrt matching.
+ * Same as faux_list_match_node() but search for the first matching.
  * Doesn't use saveptr iterator.
  *
  * @sa faux_list_match_node()

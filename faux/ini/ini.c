@@ -15,6 +15,50 @@
 #include "faux/ini.h"
 
 
+static int faux_ini_compare(const void *first, const void *second)
+{
+	const faux_pair_t *f = (const faux_pair_t *)first;
+	const faux_pair_t *s = (const faux_pair_t *)second;
+
+	return strcmp(f->name, s->name);
+}
+
+
+static int faux_ini_kcompare(const void *key, const void *list_item)
+{
+	const char *f = (const char *)key;
+	const faux_pair_t *s = (const faux_pair_t *)list_item;
+
+	return strcmp(f, s->name);
+}
+
+
+static int faux_ini_kcompare_prefix(const void *key, const void *list_item)
+{
+	const char *prefix = (const char *)key;
+	const faux_pair_t *s = (const faux_pair_t *)list_item;
+	int res = 0;
+	size_t prefix_len = 0;
+	size_t entry_len = 0;
+	size_t len = 0;
+
+	if (faux_str_is_empty(prefix))
+		return -1; // No chance to find anything
+
+	prefix_len = strlen(prefix);
+	entry_len = strlen(s->name);
+	len = (prefix_len < entry_len) ? prefix_len : entry_len;
+
+	res = strncmp(prefix, s->name, len);
+	// If entry name will not have any chars after prefix removing
+	// then don't include it to sub-ini. Because it will not have a name at all.
+	if ((0 == res) && (prefix_len == entry_len))
+		return 1; // Let's search for the next entry
+
+	return res;
+}
+
+
 /** @brief Allocates new INI object.
  *
  * Before working with INI object it must be allocated and initialized.
@@ -31,7 +75,7 @@ faux_ini_t *faux_ini_new(void)
 
 	// Init
 	ini->list = faux_list_new(FAUX_LIST_SORTED, FAUX_LIST_UNIQUE,
-		faux_pair_compare, faux_pair_kcompare, faux_pair_free);
+		faux_ini_compare, faux_ini_kcompare, faux_pair_free);
 
 	return ini;
 }
@@ -512,4 +556,54 @@ bool_t faux_ini_write_file(const faux_ini_t *ini, const char *fn)
 }
 
 
-//faux_ini_t *
+/** Extracts new sub-INI object including entries with given prefix.
+ *
+ * For example user has a file like this:
+ * var1=value1
+ * var2.a=value2
+ * var2.b=value3
+ * var3=value4
+ *
+ * If user specifies prefix with "var2." then function will create new INI
+ * object and put the following entries to it:
+ * a=value2
+ * b=value3
+ *
+ * Note that entry with name "var2." will not be included to resulting INI
+ * object because such entry will have empty name field (name = prefix).
+ *
+ * Note returned INI object can be empty.
+ *
+ * @param [in] ini Allocated and initialized INI object.
+ * @param [in] prefix The prefix to search for.
+ * @return New INI object or NULL on error.
+ */
+faux_ini_t *faux_ini_extract_subini(const faux_ini_t *ini, const char *prefix)
+{
+	faux_ini_t *subini = NULL;
+	faux_ini_node_t *iter = NULL;
+	const faux_pair_t *pair = NULL;
+	size_t prefix_len = 0;
+
+	assert(ini);
+	if (!ini)
+		return NULL;
+	assert(ini->list);
+	if (!ini->list)
+		return NULL;
+
+	subini = faux_ini_new();
+	assert(subini);
+	if (!subini)
+		return NULL;
+
+	prefix_len = strlen(prefix);
+	while ((pair = (faux_pair_t *)faux_list_match(ini->list,
+		faux_ini_kcompare_prefix, prefix, &iter))) {
+		const char *name = faux_pair_name(pair);
+		const char *new_name = name + prefix_len; // Remove prefix
+		faux_ini_set(subini, new_name, faux_pair_value(pair));
+	}
+
+	return subini;
+}
