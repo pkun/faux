@@ -314,6 +314,24 @@ size_t faux_list_len(const faux_list_t *list)
 }
 
 
+/** @brief Checks is list empty.
+ *
+ * @param [in] list Allocated list.
+ * @return BOOL_TRUE - empty, BOOL_FALSE - not empty.
+ */
+size_t faux_list_is_empty(const faux_list_t *list)
+{
+	assert(list);
+	if (!list)
+		return BOOL_TRUE;
+
+	if (faux_list_len(list) == 0)
+		return BOOL_TRUE;
+
+	return BOOL_FALSE;
+}
+
+
 /** @brief Generic static function for adding new list nodes.
  *
  * @param [in] list List to add node to.

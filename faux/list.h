@@ -46,6 +46,7 @@ void faux_list_free(faux_list_t *list);
 faux_list_node_t *faux_list_head(const faux_list_t *list);
 faux_list_node_t *faux_list_tail(const faux_list_t *list);
 size_t faux_list_len(const faux_list_t *list);
+size_t faux_list_is_empty(const faux_list_t *list);
 
 faux_list_node_t *faux_list_add(faux_list_t *list, void *data);
 faux_list_node_t *faux_list_add_find(faux_list_t *list, void *data);

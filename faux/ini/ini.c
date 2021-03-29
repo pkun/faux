@@ -493,3 +493,6 @@ bool_t faux_ini_write_file(const faux_ini_t *ini, const char *fn)
 
 	return BOOL_TRUE;
 }
+
+
+//faux_ini_t *
