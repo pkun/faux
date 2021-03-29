@@ -18,6 +18,7 @@ const char *testc_module[][2] = {
 
 	// ini
 	{"testc_faux_ini_parse_file", "Complex test of INI file parsing"},
+	{"testc_faux_ini_extract_subini", "Extract sub-INI from existing INI by prefix"},
 
 	// argv
 	{"testc_faux_argv_parse", "Parse string to arguments"},

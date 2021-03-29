@@ -90,3 +90,70 @@ parse_error:
 
 	return ret;
 }
+
+
+int testc_faux_ini_extract_subini(void)
+{
+	// Source INI file
+	const char *src_file =
+		"var1=value1\n"
+		"var2.a=value2\n"
+		"var2.=value3\n"
+		"var2.b=value4\n"
+		"var3=value5\n"
+		"var4=value6\n"
+		"var2.c=value7\n"
+	;
+
+	// Etalon file
+	const char *etalon_file =
+		"a=value2\n"
+		"b=value4\n"
+		"c=value7\n"
+	;
+
+	int ret = -1; // Pessimistic return value
+	faux_ini_t *ini = NULL;
+	faux_ini_t *subini = NULL;
+	char *src_fn = NULL;
+	char *dst_fn = NULL;
+	char *etalon_fn = NULL;
+
+	// Prepare files
+	src_fn = faux_testc_tmpfile_deploy_str(src_file);
+	etalon_fn = faux_testc_tmpfile_deploy_str(etalon_file);
+	dst_fn = faux_str_sprintf("%s/dst", getenv(FAUX_TESTC_TMPDIR_ENV));
+
+	ini = faux_ini_new();
+	if (!faux_ini_parse_file(ini, src_fn)) {
+		fprintf(stderr, "Can't parse INI file %s\n", src_fn);
+		goto parse_error;
+	}
+
+	if (!(subini = faux_ini_extract_subini(ini, "var2."))) {
+		fprintf(stderr, "Can't extract sub-INI file %s\n", dst_fn);
+		goto parse_error;
+	}
+
+	if (!faux_ini_write_file(subini, dst_fn)) {
+		fprintf(stderr, "Can't write sub-INI file %s\n", dst_fn);
+		goto parse_error;
+	}
+
+	if (faux_testc_file_cmp(dst_fn, etalon_fn) != 0) {
+		fprintf(stderr, "Generated file %s is not equal to etalon %s\n",
+		dst_fn, etalon_fn);
+		goto parse_error;
+	}
+
+	ret = 0; // success
+
+parse_error:
+	faux_ini_free(subini);
+	faux_ini_free(ini);
+	faux_str_free(dst_fn);
+	faux_str_free(src_fn);
+	faux_str_free(etalon_fn);
+
+	return ret;
+}

@@ -36,6 +36,8 @@ bool_t faux_ini_parse_file(faux_ini_t *ini, const char *fn);
 char *faux_ini_write_str(const faux_ini_t *ini);
 bool_t faux_ini_write_file(const faux_ini_t *ini, const char *fn);
 
+faux_ini_t *faux_ini_extract_subini(const faux_ini_t *ini, const char *prefix);
+
 C_DECL_END
 
 #endif				/* _faux_ini_h */
