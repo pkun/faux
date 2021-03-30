@@ -4,6 +4,10 @@ libfaux_la_LIBADD = $(PTHREAD_LIBS)
 libfaux_la_CFLAGS = $(PTHREAD_CFLAGS)
 libfaux_la_LDFLAGS = $(AM_LDFLAGS) $(VERSION_INFO)
 
+if HAVE_LD_VERSION_SCRIPT
+libfaux_la_LDFLAGS += -Wl,--version-script=faux/faux.map
+endif
+
 if TESTC
 libfaux_la_CFLAGS += -DTESTC
 endif
