@@ -15,7 +15,7 @@ C_DECL_BEGIN
 
 faux_argv_t *faux_argv_new(void);
 void faux_argv_free(faux_argv_t *fargv);
-void faux_argv_quotes(faux_argv_t *fargv, const char *quotes);
+void faux_argv_set_quotes(faux_argv_t *fargv, const char *quotes);
 
 faux_argv_node_t *faux_argv_iter(const faux_argv_t *fargv);
 const char *faux_argv_each(faux_argv_node_t **iter);

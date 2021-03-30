@@ -99,7 +99,7 @@ const char *faux_argv_each(faux_argv_node_t **iter)
  * @param [in] fargv Allocated fargv object.
  * @param [in] quotes String with symbols to consider as a quote.
  */
-void faux_argv_quotes(faux_argv_t *fargv, const char *quotes)
+void faux_argv_set_quotes(faux_argv_t *fargv, const char *quotes)
 {
 	assert(fargv);
 	if (!fargv)

@@ -30,7 +30,7 @@ int testc_faux_argv_parse(void)
 	printf("Line   : [%s]\n", line);
 
 	fargv = faux_argv_new();
-	faux_argv_quotes(fargv, "`");
+	faux_argv_set_quotes(fargv, "`");
 	num = faux_argv_parse(fargv, line);
 	if (num < 0) {
 		printf("Error: Can't parse line\n");
@@ -84,7 +84,7 @@ int testc_faux_argv_is_continuable(void)
 	printf("Line   : [%s]\n", line);
 
 	fargv = faux_argv_new();
-	faux_argv_quotes(fargv, "`");
+	faux_argv_set_quotes(fargv, "`");
 	num = faux_argv_parse(fargv, line);
 	if (num < 0) {
 		printf("Error: Can't parse line\n");
