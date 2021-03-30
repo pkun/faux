@@ -53,6 +53,7 @@ EXTRA_DIST += \
 	faux/async/Makefile.am \
 	faux/error/Makefile.am \
 	faux/testc_helpers/Makefile.am
+	faux/buf/Makefile.am
 
 include $(top_srcdir)/faux/base/Makefile.am
 include $(top_srcdir)/faux/ctype/Makefile.am
@@ -73,6 +74,7 @@ include $(top_srcdir)/faux/eloop/Makefile.am
 include $(top_srcdir)/faux/async/Makefile.am
 include $(top_srcdir)/faux/error/Makefile.am
 include $(top_srcdir)/faux/testc_helpers/Makefile.am
+include $(top_srcdir)/faux/buf/Makefile.am
 
 if TESTC
 include $(top_srcdir)/faux/testc_module/Makefile.am
