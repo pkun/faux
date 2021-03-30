@@ -77,6 +77,9 @@ typedef enum {
  */
 #define FAUX_HIDDEN __attribute__ ((visibility ("hidden")))
 
+// For symbol versions
+#define FAUX_SYMVER(symbol,iface,version) asm(".symver symbol,iface@version")
+
 C_DECL_BEGIN
 
 // Memory
