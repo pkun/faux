@@ -13,27 +13,28 @@
 #include "faux/str.h"
 #include "faux/buf.h"
 
+// Default chunk size
 #define DATA_CHUNK 4096
 
 struct faux_buf_s {
-	size_t limit;
-	faux_list_t *list;
-	size_t rpos;
-	size_t wpos;
-	size_t size;
+	faux_list_t *list; // List of chunks
+	faux_list_node_t *wchunk; // Chunk to write to
+	size_t rpos; // Read position within first chunk
+	size_t wpos; // Write position within wchunk (can be non-last chunk)
+	size_t chunk_size; // Size of chunk
+	size_t len; // Whole data length
+	size_t limit; // Overflow limit
+	size_t rblocked;
+	size_t wblocked;
 };
 
 
-/** @brief Create new buf I/O object.
+/** @brief Create new dynamic buffer object.
  *
- * Constructor gets associated file descriptor to operate on it. File
- * descriptor must be nonblocked. If not so then constructor will set
- * nonblock flag itself.
- *
- * @param [in] fd File descriptor.
+ * @param [in] chunk_size Chunk size. If "0" then default size will be used.
  * @return Allocated object or NULL on error.
  */
-faux_buf_t *faux_buf_new(void)
+faux_buf_t *faux_buf_new(size_t chunk_size)
 {
 	faux_buf_t *buf = NULL;
 
@@ -43,20 +44,24 @@ faux_buf_t *faux_buf_new(void)
 		return NULL;
 
 	// Init
+	buf->chunk_size = (chunk_size != 0) ? chunk_size : DATA_CHUNK;
 	buf->limit = FAUX_BUF_UNLIMITED;
 	buf->list = faux_list_new(FAUX_LIST_UNSORTED, FAUX_LIST_NONUNIQUE,
 		NULL, NULL, faux_free);
 	buf->rpos = 0;
-	buf->wpos = 0;
-	buf->size = 0;
+	buf->wpos = buf->chunk_size;
+	buf->len = 0;
+	buf->wchunk = NULL;
+	buf->rblocked = 0; // Unblocked
+	buf->wblocked = 0; // Unblocked
 
 	return buf;
 }
 
 
-/** @brief Free buf I/O object.
+/** @brief Free dynamic buffer object.
  *
- * @param [in] buf I/O object.
+ * @param [in] buf Buffer object.
  */
 void faux_buf_free(faux_buf_t *buf)
 {
@@ -68,6 +73,28 @@ void faux_buf_free(faux_buf_t *buf)
 	faux_free(buf);
 }
 
+
+ssize_t faux_buf_len(const faux_buf_t *buf)
+{
+	assert(buf);
+	if (!buf)
+		return -1;
+
+	return buf->len;
+}
+
+
+static ssize_t faux_buf_chunk_num(const faux_buf_t *buf)
+{
+	assert(buf);
+	if (!buf)
+		return -1;
+	assert(buf->list);
+	if (!buf->list)
+		return -1;
+
+	return faux_list_len(buf->list);
+}
 
 
 ssize_t faux_buf_limit(const faux_buf_t *buf)
@@ -105,9 +132,6 @@ bool_t faux_buf_set_limit(faux_buf_t *buf, size_t limit)
 }
 
 
-#if 0
-
-
 /** @brief Get amount of unused space within current data chunk.
  *
  * Inernal static function.
@@ -116,15 +140,135 @@ bool_t faux_buf_set_limit(faux_buf_t *buf, size_t limit)
  * @param [in] pos Current write position within last chunk
  * @return Size of unused space or < 0 on error.
  */
-static ssize_t free_space(faux_list_t *list, size_t pos)
+static ssize_t faux_buf_wavail(faux_buf_t *buf)
 {
-	if (!list)
+	assert(buf);
+	if (!buf)
 		return -1;
 
-	if (faux_list_len(list) == 0)
-		return 0;
+	if (faux_buf_chunk_num(buf) == 0)
+		return 0; // Empty list
 
-	return (DATA_CHUNK - pos);
+	return (buf->chunk_size - buf->wpos);
+}
+
+
+/*
+static ssize_t faux_buf_ravail(faux_buf_t *buf)
+{
+	ssize_t num = 0;
+
+	assert(buf);
+	if (!buf)
+		return -1;
+
+	num = faux_buf_chunk_num(buf);
+	if (num == 0)
+		return 0; // Empty list
+	if (num > 1)
+		return (buf->chunk_size - buf->rpos);
+
+	// Single chunk
+	return (buf->wpos - buf->rpos);
+}
+*/
+
+bool_t faux_buf_is_wblocked(const faux_buf_t *buf)
+{
+	assert(buf);
+	if (!buf)
+		return BOOL_FALSE;
+
+	if (buf->wblocked != 0)
+		return BOOL_TRUE;
+
+	return BOOL_FALSE;
+}
+
+
+bool_t faux_buf_is_rblocked(const faux_buf_t *buf)
+{
+	assert(buf);
+	if (!buf)
+		return BOOL_FALSE;
+
+	if (buf->rblocked != 0)
+		return BOOL_TRUE;
+
+	return BOOL_FALSE;
+}
+
+
+static faux_list_node_t *faux_buf_alloc_chunk(faux_buf_t *buf)
+{
+	char *chunk = NULL;
+
+	assert(buf);
+	if (!buf)
+		return NULL;
+	assert(buf->list);
+	if (!buf->list)
+		return NULL;
+
+	chunk = faux_malloc(buf->chunk_size);
+	assert(chunk);
+	if (!chunk)
+		return NULL;
+
+	return faux_list_add(buf->list, chunk);
+}
+
+
+/*
+static bool_t faux_buf_rm_trailing_empty_chunks(faux_buf_t *buf)
+{
+	faux_list_node_t *node = NULL;
+
+	assert(buf);
+	if (!buf)
+		return BOOL_FALSE;
+	assert(buf->list);
+	if (!buf->list)
+		return BOOL_FALSE;
+
+	if (faux_buf_chunk_num(buf) == 0)
+		return BOOL_TRUE; // Empty list
+
+
+	while ((node = faux_list_tail(buf->list)) != buf->wchunk)
+		faux_list_del(buf->list, node);
+	if (buf->wchunk &&
+		((buf->wpos == 0) || // Empty chunk
+		((faux_list_chunk_num(buf) == 1) && (buf->rpos == buf->wpos)))
+		) {
+		faux_list_del(buf->list, buf->wchunk);
+		buf->wchunk = NULL;
+		buf->wpos = buf->chunk_size;
+	}
+
+	return BOOL_TRUE;
+}
+*/
+
+static bool_t faux_buf_will_be_overflow(const faux_buf_t *buf, size_t add_len)
+{
+	assert(buf);
+	if (!buf)
+		return BOOL_FALSE;
+
+	if (FAUX_BUF_UNLIMITED == buf->limit)
+		return BOOL_FALSE;
+
+	if ((buf->len + add_len) > buf->limit)
+		return BOOL_TRUE;
+
+	return BOOL_FALSE;
+}
+
+
+bool_t faux_buf_is_overflow(const faux_buf_t *buf)
+{
+	return faux_buf_will_be_overflow(buf, 0);
 }
 
 
@@ -142,9 +286,8 @@ static ssize_t free_space(faux_list_t *list, size_t pos)
  * @param [in] len Data length to write.
  * @return Length of stored/writed data or < 0 on error.
  */
-ssize_t faux_buf_write(faux_buf_t *buf, void *data, size_t len)
+ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
 {
-	void *new_chunk = NULL;
 	size_t data_left = len;
 
 	assert(buf);
@@ -154,68 +297,46 @@ ssize_t faux_buf_write(faux_buf_t *buf, void *data, size_t len)
 	if (!data)
 		return -1;
 
-	while (data_left != 0) {
+	// It will be overflow after writing
+	if (faux_buf_will_be_overflow(buf, len))
+		return -1;
+
+	// Don't write to the space reserved for direct write
+	if (faux_buf_is_wblocked(buf))
+		return -1;
+
+	while (data_left > 0) {
 		ssize_t bytes_free = 0;
 		size_t copy_len = 0;
 		char *chunk_ptr = NULL;
 
 		// Allocate new chunk if necessary
-		bytes_free = free_space(buf->o_list, buf->o_wpos);
+		bytes_free = faux_buf_wavail(buf);
 		if (bytes_free < 0)
 			return -1;
 		if (0 == bytes_free) {
-			new_chunk = faux_malloc(DATA_CHUNK);
-			assert(new_chunk);
-			faux_list_add(buf->o_list, new_chunk);
-			buf->o_wpos = 0;
-			bytes_free = free_space(buf->o_list, buf->o_wpos);
+			faux_list_node_t *node = faux_buf_alloc_chunk(buf);
+			assert(node);
+			if (!node) // Something went wrong. Strange.
+				return -1;
+			buf->wpos = 0;
+			buf->wchunk = node;
+			bytes_free = faux_buf_wavail(buf);
 		}
 
 		// Copy data
-		chunk_ptr = faux_list_data(faux_list_tail(buf->o_list));
+		chunk_ptr = faux_list_data(faux_list_tail(buf->list));
 		copy_len = (data_left < (size_t)bytes_free) ? data_left : (size_t)bytes_free;
-		memcpy(chunk_ptr + buf->o_wpos, data + len - data_left,
-			copy_len);
-		buf->o_wpos += copy_len;
+		memcpy(chunk_ptr + buf->wpos, data + len - data_left, copy_len);
+		buf->wpos += copy_len;
 		data_left -= copy_len;
-		buf->o_size += copy_len;
-		if (buf->o_size >= buf->o_overflow)
-			return -1;
+		buf->len += copy_len;
 	}
-
-	// Try to real write data to fd in nonblocked mode
-	faux_buf_out(buf);
 
 	return len;
 }
 
-
-/** @brief Get amount of available data within first chunk.
- *
- * Inernal static function.
- *
- * @param [in] list Internal buffer (list of chunks) to inspect.
- * @param [in] rpos Current read position within chunk.
- * @param [in] wpos Current write position within chunk.
- * @return Available data length or < 0 on error.
- */
-static ssize_t data_avail(faux_list_t *list, size_t rpos, size_t wpos)
-{
-	size_t len = 0;
-
-	if (!list)
-		return -1;
-
-	len = faux_list_len(list);
-	if (len == 0)
-		return 0;
-	if (len > 1)
-		return (DATA_CHUNK - rpos);
-
-	// Single chunk
-	return (wpos - rpos);
-}
-
+#if 0
 
 /** @brief Write output buffer to fd in non-blocking mode.
  *
@@ -229,15 +350,21 @@ static ssize_t data_avail(faux_list_t *list, size_t rpos, size_t wpos)
  * @param [in] buf Allocated and initialized buf I/O object.
  * @return Length of data actually written or < 0 on error.
  */
-ssize_t faux_buf_out(faux_buf_t *buf)
+ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 {
 	ssize_t total_written = 0;
+	size_t must_be_read = 0;
 
 	assert(buf);
 	if (!buf)
 		return -1;
 
-	while (buf->o_size > 0) {
+	// Don't read from the space reserved for direct read
+	if (faux_buf_is_rblocked(buf))
+		return -1;
+
+	must_be_read = (len < buf->len) ? len : buf->len;
+	while (must_be_read > 0) {
 		faux_list_node_t *node = NULL;
 		char *chunk_ptr = NULL;
 		ssize_t data_to_write = 0;
@@ -293,118 +420,5 @@ ssize_t faux_buf_out(faux_buf_t *buf)
 	}
 
 	return total_written;
-}
-
-
-/** @brief Read data and store it to internal buffer in non-blocking mode.
- *
- * Reads fd and puts data to internal buffer. It can't be blocked. If length of
- * data stored within internal buffer is greater or equal than "min" limit then
- * function will execute "read" callback. It allocates linear buffer, copies
- * data to it and give it to callback. Note this function will never free
- * allocated buffer. So callback must do it or it must be done later. Function
- * will not allocate buffer larger than "max" read limit. If "max" limit is "0"
- * (it means indefinite) then function will pass all available data to callback.
- *
- * @param [in] buf Allocated and initialized buf I/O object.
- * @return Length of data actually readed or < 0 on error.
- */
-ssize_t faux_buf_in(faux_buf_t *buf)
-{
-	void *new_chunk = NULL;
-	ssize_t total_readed = 0;
-	ssize_t bytes_readed = 0;
-	ssize_t bytes_free = 0; // Free space within current (last) chunk
-
-	assert(buf);
-	if (!buf)
-		return -1;
-
-	do {
-		char *chunk_ptr = NULL;
-
-		// Allocate new chunk if necessary
-		bytes_free = free_space(buf->i_list, buf->i_wpos);
-		if (bytes_free < 0)
-			return -1;
-		if (0 == bytes_free) { // We need to allocate additional chunk
-			new_chunk = faux_malloc(DATA_CHUNK);
-			assert(new_chunk);
-			faux_list_add(buf->i_list, new_chunk);
-			buf->i_wpos = 0;
-			bytes_free = free_space(buf->i_list, buf->i_wpos);
-		}
-
-		// Read data to last chunk
-		chunk_ptr = faux_list_data(faux_list_tail(buf->i_list));
-		bytes_readed = read(buf->fd, chunk_ptr + buf->i_wpos, bytes_free);
-		if (bytes_readed < 0) {
-			if ( // Something went wrong
-				(errno != EINTR) &&
-				(errno != EAGAIN) &&
-				(errno != EWOULDBLOCK)
-			)
-				return -1;
-		}
-		if (bytes_readed > 0) {
-			buf->i_wpos += bytes_readed;
-			buf->i_size += bytes_readed;
-			total_readed += bytes_readed;
-		}
-		if (buf->i_size >= buf->i_overflow)
-			return -1;
-
-		// Check for amount of stored data
-		while (buf->i_size >= buf->min) {
-
-			size_t copy_len = 0;
-			size_t full_size = 0;
-			char *buf = NULL;
-			char *buf_ptr = NULL;
-
-			if (FAUX_buf_UNLIMITED == buf->max) { // Indefinite
-				copy_len = buf->i_size; // Take all data
-			} else {
-				copy_len = (buf->i_size < buf->max) ?
-					buf->i_size : buf->max;
-			}
-
-			full_size = copy_len; // Save full length value
-			buf = faux_malloc(full_size);
-			buf_ptr = buf;
-			while (copy_len > 0) {
-				size_t data_to_write = 0;
-				faux_list_node_t *node = faux_list_head(buf->i_list);
-				char *chunk_ptr = NULL;
-
-				if (!node) // Something went wrong
-					return -1;
-				chunk_ptr = faux_list_data(node);
-				data_to_write = data_avail(buf->i_list,
-					buf->i_rpos, buf->i_wpos);
-				if (copy_len < data_to_write)
-					data_to_write = copy_len;
-				memcpy(buf_ptr, chunk_ptr + buf->i_rpos,
-					data_to_write);
-				copy_len -= data_to_write;
-				buf->i_size -= data_to_write;
-				buf->i_rpos += data_to_write;
-				buf_ptr += data_to_write;
-				if (data_avail(buf->i_list,
-					buf->i_rpos, buf->i_wpos) <= 0) {
-					buf->i_rpos = 0;
-					faux_list_del(buf->i_list, node);
-				}
-			}
-			// Execute callback
-			if (buf->read_cb)
-				buf->read_cb(buf, buf,
-					full_size, buf->read_udata);
-
-		}
-
-	} while (bytes_readed == bytes_free);
-
-	return total_readed;
 }
 #endif
