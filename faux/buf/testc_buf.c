@@ -104,6 +104,7 @@ int testc_faux_buf_boundaries(void)
 	faux_buf_t *buf = NULL;
 	ssize_t chunk_num = 0;
 	ssize_t e_chunk_num = 0;
+	ssize_t res = 0;
 
 	// Prepare files
 	len = CHUNK * 3;
@@ -120,9 +121,29 @@ int testc_faux_buf_boundaries(void)
 	}
 
 	// Write to buffer
-	printf("faux_buf_write()\n");
-	if (faux_buf_write(buf, rnd, len) != len) {
-		fprintf(stderr, "faux_buf_write() error\n");
+	printf("faux_buf_write() len - CHUNK\n");
+	if ((res = faux_buf_write(buf, rnd, len - CHUNK)) != (len - CHUNK)) {
+		fprintf(stderr, "faux_buf_write() error %ld\n", res);
+		return -1;
+	}
+	// Buf length
+	printf("faux_buf_len()\n");
+	if (faux_buf_len(buf) != (len - CHUNK)) {
+		fprintf(stderr, "faux_buf_len() error\n");
+		return -1;
+	}
+
+	// Buf chunk num
+	printf("faux_buf_chunk_num()\n");
+	if ((chunk_num = faux_buf_chunk_num(buf)) != (e_chunk_num - 1)) {
+		fprintf(stderr, "faux_buf_chunk_num() error. num=%ld e=%ld\n",
+			chunk_num, e_chunk_num - 1);
+		return -1;
+	}
+
+	printf("faux_buf_write() CHUNK\n");
+	if (faux_buf_write(buf, rnd + len - CHUNK, CHUNK) != CHUNK) {
+		fprintf(stderr, "faux_buf_write() the rest error\n");
 		return -1;
 	}
 
