@@ -343,58 +343,29 @@ ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
  */
 ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 {
-	ssize_t total_written = 0;
-	size_t must_be_read = 0;
+	struct iovec *iov = NULL;
+	size_t iov_num;
+	ssize_t total = 0;
 	char *dst = (char *)data;
+	size_t i = 0;
 
-	assert(buf);
-	if (!buf)
-		return -1;
 	assert(data);
 	if (!data)
 		return -1;
-	if (0 == len)
-		return -1;
 
-	// Don't read from the space reserved for direct read
-	if (faux_buf_is_rblocked(buf))
-		return -1;
+	total = faux_buf_dread_block(buf, len, &iov, &iov_num);
+	if (total <= 0)
+		return total;
 
-	must_be_read = (len < buf->len) ? len : buf->len;
-	while (must_be_read > 0) {
-		faux_list_node_t *node = NULL;
-		char *chunk_ptr = NULL;
-		ssize_t data_to_write = 0;
-		size_t avail = 0;
-
-		node = faux_list_head(buf->list);
-		if (!node) // List is empty while buf->len > 0 : strange
-			return -1;
-		chunk_ptr = faux_list_data(node);
-		avail = faux_buf_ravail(buf);
-		if (avail <= 0) // Strange case
-			return -1;
-		data_to_write = (must_be_read < avail) ? must_be_read : avail;
-
-		memcpy(dst, chunk_ptr + buf->rpos, data_to_write);
-		buf->len -= data_to_write;
-		buf->rpos += data_to_write;
-		total_written += data_to_write;
-		dst += data_to_write;
-		must_be_read -= data_to_write;
-
-		// Current chunk was fully copied. So remove it from list.
-		if ((buf->rpos == buf->chunk_size) ||
-			((faux_buf_chunk_num(buf) == 1) && (buf->rpos == buf->wpos))
-			) {
-			buf->rpos = 0; // 0 position within next chunk
-			faux_list_del(buf->list, node);
-		}
-		if (faux_buf_chunk_num(buf) == 0)
-			buf->wpos = buf->chunk_size;
+	for (i = 0; i < iov_num; i++) {
+		memcpy(dst, iov[i].iov_base, iov[i].iov_len);
+		dst += iov[i].iov_len;
 	}
 
-	return total_written;
+	if (faux_buf_dread_unblock(buf, total, iov) != total)
+		return -1;
+
+	return total;
 }
 
 

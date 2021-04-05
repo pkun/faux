@@ -24,6 +24,10 @@ size_t faux_buf_is_wblocked(const faux_buf_t *buf);
 size_t faux_buf_is_rblocked(const faux_buf_t *buf);
 ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len);
 ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len);
+ssize_t faux_buf_dread_block(faux_buf_t *buf, size_t len,
+	struct iovec **iov, size_t *iov_num);
+ssize_t faux_buf_dread_unblock(faux_buf_t *buf, size_t really_readed,
+	struct iovec *iov);
 
 C_DECL_END
 
