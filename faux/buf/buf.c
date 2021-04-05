@@ -423,16 +423,17 @@ ssize_t faux_buf_dread_unblock(faux_buf_t *buf, size_t really_readed,
 	if (!faux_buf_is_rblocked(buf))
 		return -1;
 
+	if (buf->rblocked < really_readed)
+		return -1; // Something went wrong
+	if (buf->len < really_readed)
+		return -1; // Something went wrong
+
 	// Unblock whole buffer. Not 'really readed' bytes only
 	buf->rblocked = 0;
 	faux_free(iov);
 
 	if (0 == really_readed)
 		return really_readed;
-	if (buf->rblocked < really_readed)
-		return -1; // Something went wrong
-	if (buf->len < really_readed)
-		return -1; // Something went wrong
 
 	must_be_read = really_readed;
 	while (must_be_read > 0) {
@@ -453,10 +454,6 @@ ssize_t faux_buf_dread_unblock(faux_buf_t *buf, size_t really_readed,
 		if (faux_buf_chunk_num(buf) == 0)
 			buf->wpos = buf->chunk_size;
 	}
-
-	// Unblock whole buffer. Not 'really readed' bytes only
-	buf->rblocked = 0;
-	faux_free(iov);
 
 	return really_readed;
 }
