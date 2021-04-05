@@ -469,3 +469,51 @@ ssize_t faux_buf_dread_block(faux_buf_t *buf, size_t len,
 
 	return len_to_block;
 }
+
+
+ssize_t faux_buf_dread_unblock(faux_buf_t *buf, size_t really_readed,
+	struct iovec *iov)
+{
+	size_t must_be_read = 0;
+
+	assert(buf);
+	if (!buf)
+		return -1;
+	if (0 == really_readed)
+		return -1;
+
+	// Can't unblock non-blocked buffer
+	if (!faux_buf_is_rblocked(buf))
+		return -1;
+
+	if (buf->rblocked < really_readed)
+		return -1; // Something went wrong
+	if (buf->len < really_readed)
+		return -1; // Something went wrong
+
+	must_be_read = really_readed;
+	while (must_be_read > 0) {
+		size_t avail = faux_buf_ravail(buf);
+		ssize_t data_to_rm = (must_be_read < avail) ? must_be_read : avail;
+
+		buf->len -= data_to_rm;
+		buf->rpos += data_to_rm;
+		must_be_read -= data_to_rm;
+
+		// Current chunk was fully readed. So remove it from list.
+		if ((buf->rpos == buf->chunk_size) ||
+			((faux_buf_chunk_num(buf) == 1) && (buf->rpos == buf->wpos))
+			) {
+			buf->rpos = 0; // 0 position within next chunk
+			faux_list_del(buf->list, faux_list_head(buf->list));
+		}
+		if (faux_buf_chunk_num(buf) == 0)
+			buf->wpos = buf->chunk_size;
+	}
+
+	// Unblock whole buffer. Not 'really readed' bytes only
+	buf->rblocked = 0;
+	faux_free(iov);
+
+	return really_readed;
+}
