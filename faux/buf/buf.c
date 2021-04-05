@@ -24,8 +24,8 @@ struct faux_buf_s {
 	size_t chunk_size; // Size of chunk
 	size_t len; // Whole data length
 	size_t limit; // Overflow limit
-	size_t rblocked;
-	size_t wblocked;
+	size_t rlocked;
+	size_t wlocked;
 };
 
 
@@ -52,8 +52,8 @@ faux_buf_t *faux_buf_new(size_t chunk_size)
 	buf->wpos = buf->chunk_size;
 	buf->len = 0;
 	buf->wchunk = NULL;
-	buf->rblocked = 0; // Unblocked
-	buf->wblocked = 0; // Unblocked
+	buf->rlocked = 0; // Unlocked
+	buf->wlocked = 0; // Unlocked
 
 	return buf;
 }
@@ -84,7 +84,7 @@ ssize_t faux_buf_len(const faux_buf_t *buf)
 }
 
 
-static ssize_t faux_buf_chunk_num(const faux_buf_t *buf)
+FAUX_HIDDEN ssize_t faux_buf_chunk_num(const faux_buf_t *buf)
 {
 	assert(buf);
 	if (!buf)
@@ -172,23 +172,23 @@ static ssize_t faux_buf_ravail(const faux_buf_t *buf)
 }
 
 
-size_t faux_buf_is_wblocked(const faux_buf_t *buf)
+size_t faux_buf_is_wlocked(const faux_buf_t *buf)
 {
 	assert(buf);
 	if (!buf)
 		return BOOL_FALSE;
 
-	return buf->wblocked;
+	return buf->wlocked;
 }
 
 
-size_t faux_buf_is_rblocked(const faux_buf_t *buf)
+size_t faux_buf_is_rlocked(const faux_buf_t *buf)
 {
 	assert(buf);
 	if (!buf)
 		return BOOL_FALSE;
 
-	return buf->rblocked;
+	return buf->rlocked;
 }
 
 
@@ -238,10 +238,10 @@ bool_t faux_buf_is_overflow(const faux_buf_t *buf)
  *
  * All given data will be stored to internal buffer (list of data chunks).
  * Then function will try to write stored data to file descriptor in
- * non-blocking mode. Note some data can be left within buffer. In this case
+ * non-locking mode. Note some data can be left within buffer. In this case
  * the "stall" callback will be executed to inform about it. To try to write
  * the rest of the data user can be call faux_buf_out() function. Both
- * functions will not block.
+ * functions will not lock.
  *
  * @param [in] buf Allocated and initialized buf I/O object.
  * @param [in] data Data buffer to write.
@@ -250,60 +250,38 @@ bool_t faux_buf_is_overflow(const faux_buf_t *buf)
  */
 ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
 {
-	size_t data_left = len;
+	struct iovec *iov = NULL;
+	size_t iov_num = 0;
+	ssize_t total = 0;
+	char *src = (char *)data;
+	size_t i = 0;
 
-	assert(buf);
-	if (!buf)
-		return -1;
 	assert(data);
 	if (!data)
 		return -1;
 
-	// It will be overflow after writing
-	if (faux_buf_will_be_overflow(buf, len))
-		return -1;
+	total = faux_buf_dwrite_lock(buf, len, &iov, &iov_num);
+	if (total <= 0)
+		return total;
 
-	// Don't write to the space reserved for direct write
-	if (faux_buf_is_wblocked(buf))
-		return -1;
-
-	while (data_left > 0) {
-		ssize_t bytes_free = 0;
-		size_t copy_len = 0;
-		char *chunk_ptr = NULL;
-
-		// Allocate new chunk if necessary
-		bytes_free = faux_buf_wavail(buf);
-		if (bytes_free < 0)
-			return -1;
-		if (0 == bytes_free) {
-			faux_list_node_t *node = faux_buf_alloc_chunk(buf);
-			assert(node);
-			if (!node) // Something went wrong. Strange.
-				return -1;
-			buf->wpos = 0;
-			bytes_free = faux_buf_wavail(buf);
-		}
-
-		// Copy data
-		chunk_ptr = faux_list_data(faux_list_tail(buf->list));
-		copy_len = (data_left < (size_t)bytes_free) ? data_left : (size_t)bytes_free;
-		memcpy(chunk_ptr + buf->wpos, data + len - data_left, copy_len);
-		buf->wpos += copy_len;
-		data_left -= copy_len;
-		buf->len += copy_len;
+	for (i = 0; i < iov_num; i++) {
+		memcpy(iov[i].iov_base, src, iov[i].iov_len);
+		src += iov[i].iov_len;
 	}
 
-	return len;
+	if (faux_buf_dwrite_unlock(buf, total, iov) != total)
+		return -1;
+
+	return total;
 }
 
 
-/** @brief Write output buffer to fd in non-blocking mode.
+/** @brief Write output buffer to fd in non-locking mode.
  *
  * Previously data must be written to internal buffer by faux_buf_write()
  * function. But some data can be left within internal buffer because can't be
- * written to fd in non-blocking mode. This function tries to write the rest of
- * data to fd in non-blocking mode. So function doesn't block. It can be called
+ * written to fd in non-locking mode. This function tries to write the rest of
+ * data to fd in non-locking mode. So function doesn't lock. It can be called
  * after select() or poll() if fd is ready to be written to. If function can't
  * to write all buffer to fd it executes "stall" callback to inform about it.
  *
@@ -313,7 +291,7 @@ ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
 ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 {
 	struct iovec *iov = NULL;
-	size_t iov_num;
+	size_t iov_num = 0;
 	ssize_t total = 0;
 	char *dst = (char *)data;
 	size_t i = 0;
@@ -322,7 +300,7 @@ ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 	if (!data)
 		return -1;
 
-	total = faux_buf_dread_block(buf, len, &iov, &iov_num);
+	total = faux_buf_dread_lock(buf, len, &iov, &iov_num);
 	if (total <= 0)
 		return total;
 
@@ -331,21 +309,21 @@ ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 		dst += iov[i].iov_len;
 	}
 
-	if (faux_buf_dread_unblock(buf, total, iov) != total)
+	if (faux_buf_dread_unlock(buf, total, iov) != total)
 		return -1;
 
 	return total;
 }
 
 
-ssize_t faux_buf_dread_block(faux_buf_t *buf, size_t len,
+ssize_t faux_buf_dread_lock(faux_buf_t *buf, size_t len,
 	struct iovec **iov_out, size_t *iov_num_out)
 {
 	size_t vec_entries_num = 0;
 	struct iovec *iov = NULL;
 	unsigned int i = 0;
 	faux_list_node_t *iter = NULL;
-	size_t len_to_block = 0;
+	size_t len_to_lock = 0;
 	size_t avail = 0;
 	size_t must_be_read = 0;
 
@@ -359,13 +337,13 @@ ssize_t faux_buf_dread_block(faux_buf_t *buf, size_t len,
 	if (!iov_num_out)
 		return -1;
 
-	// Don't use already blocked buffer
-	if (faux_buf_is_rblocked(buf))
+	// Don't use already locked buffer
+	if (faux_buf_is_rlocked(buf))
 		return -1;
 
-	len_to_block = (len < buf->len) ? len : buf->len;
-	// Nothing to block
-	if (0 == len_to_block) {
+	len_to_lock = (len < buf->len) ? len : buf->len;
+	// Nothing to lock
+	if (0 == len_to_lock) {
 		*iov_out = NULL;
 		*iov_num_out = 0;
 		return 0;
@@ -374,7 +352,7 @@ ssize_t faux_buf_dread_block(faux_buf_t *buf, size_t len,
 	// Calculate number of struct iovec entries
 	avail = faux_buf_ravail(buf);
 	vec_entries_num = 1; // Guaranteed
-	if (avail < len_to_block) {
+	if (avail < len_to_lock) {
 		size_t l = buf->len - avail; // length wo first chunk
 		vec_entries_num += l / buf->chunk_size;
 		if ((l % buf->chunk_size) > 0)
@@ -383,7 +361,7 @@ ssize_t faux_buf_dread_block(faux_buf_t *buf, size_t len,
 	iov = faux_zmalloc(vec_entries_num * sizeof(*iov));
 
 	// Iterate chunks
-	must_be_read = len_to_block;
+	must_be_read = len_to_lock;
 	iter = faux_list_head(buf->list);
 	while ((must_be_read > 0) && (iter)) {
 		char *p = (char *)faux_list_data(iter);
@@ -405,13 +383,13 @@ ssize_t faux_buf_dread_block(faux_buf_t *buf, size_t len,
 
 	*iov_out = iov;
 	*iov_num_out = vec_entries_num;
-	buf->rblocked = len_to_block;
+	buf->rlocked = len_to_lock;
 
-	return len_to_block;
+	return len_to_lock;
 }
 
 
-ssize_t faux_buf_dread_unblock(faux_buf_t *buf, size_t really_readed,
+ssize_t faux_buf_dread_unlock(faux_buf_t *buf, size_t really_readed,
 	struct iovec *iov)
 {
 	size_t must_be_read = 0;
@@ -419,21 +397,17 @@ ssize_t faux_buf_dread_unblock(faux_buf_t *buf, size_t really_readed,
 	assert(buf);
 	if (!buf)
 		return -1;
-	// Can't unblock non-blocked buffer
-	if (!faux_buf_is_rblocked(buf))
+	// Can't unlock non-locked buffer
+	if (!faux_buf_is_rlocked(buf))
 		return -1;
 
-	if (buf->rblocked < really_readed)
+	if (buf->rlocked < really_readed)
 		return -1; // Something went wrong
 	if (buf->len < really_readed)
 		return -1; // Something went wrong
 
-	// Unblock whole buffer. Not 'really readed' bytes only
-	buf->rblocked = 0;
-	faux_free(iov);
-
 	if (0 == really_readed)
-		return really_readed;
+		goto unlock;
 
 	must_be_read = really_readed;
 	while (must_be_read > 0) {
@@ -455,11 +429,16 @@ ssize_t faux_buf_dread_unblock(faux_buf_t *buf, size_t really_readed,
 			buf->wpos = buf->chunk_size;
 	}
 
+unlock:
+	// Unlock whole buffer. Not 'really readed' bytes only
+	buf->rlocked = 0;
+	faux_free(iov);
+
 	return really_readed;
 }
 
 
-ssize_t faux_buf_dwrite_block(faux_buf_t *buf, size_t len,
+ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 	struct iovec **iov_out, size_t *iov_num_out)
 {
 	size_t vec_entries_num = 0;
@@ -480,15 +459,15 @@ ssize_t faux_buf_dwrite_block(faux_buf_t *buf, size_t len,
 	if (!iov_num_out)
 		return -1;
 
-	// Don't use already blocked buffer
-	if (faux_buf_is_wblocked(buf))
+	// Don't use already locked buffer
+	if (faux_buf_is_wlocked(buf))
 		return -1;
 
 	// It will be overflow after writing
 	if (faux_buf_will_be_overflow(buf, len))
 		return -1;
 
-	// Nothing to block
+	// Nothing to lock
 	if (0 == len) {
 		*iov_out = NULL;
 		*iov_num_out = 0;
@@ -497,7 +476,7 @@ ssize_t faux_buf_dwrite_block(faux_buf_t *buf, size_t len,
 
 	// Save wchunk
 	buf->wchunk = faux_list_tail(buf->list); // Can be NULL
-	buf->wblocked = len;
+	buf->wlocked = len;
 
 	// Calculate number of struct iovec entries
 	avail = faux_buf_wavail(buf);
@@ -578,7 +557,7 @@ static bool_t faux_buf_rm_trailing_empty_chunks(faux_buf_t *buf)
 }
 
 
-ssize_t faux_buf_dwrite_unblock(faux_buf_t *buf, size_t really_written,
+ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 	struct iovec *iov)
 {
 	size_t must_be_write = 0;
@@ -586,39 +565,43 @@ ssize_t faux_buf_dwrite_unblock(faux_buf_t *buf, size_t really_written,
 	assert(buf);
 	if (!buf)
 		return -1;
-	// Can't unblock non-blocked buffer
-	if (!faux_buf_is_wblocked(buf))
+	// Can't unlock non-locked buffer
+	if (!faux_buf_is_wlocked(buf))
 		return -1;
 	// Empty wchunk - strange
 	if (!buf->wchunk)
 		return -1;
 
 	if (0 == really_written)
-		return really_written;
+		goto unlock;
 
-	// Unblock whole buffer. Not 'really written' bytes only
-	buf->wblocked = 0;
-	faux_free(iov);
-
-	if (buf->wblocked < really_written)
+	if (buf->wlocked < really_written)
 		return -1; // Something went wrong
 
 	must_be_write = really_written;
 	while (must_be_write > 0) {
-		size_t avail = faux_buf_wavail(buf);
-		ssize_t data_to_add = (must_be_write < avail) ? must_be_write : avail;
-
-		buf->len += data_to_add;
-		buf->wpos += data_to_add;
-		must_be_write -= data_to_add;
+		size_t avail = 0;
+		ssize_t data_to_add = 0;
 
 		// Current chunk was fully written. So move to next one
 		if (buf->wpos == buf->chunk_size) {
 			buf->wpos = 0; // 0 position within next chunk
 			buf->wchunk = faux_list_next_node(buf->wchunk);
 		}
+		avail = faux_buf_wavail(buf);
+		data_to_add = (must_be_write < avail) ? must_be_write : avail;
+
+		buf->len += data_to_add;
+		buf->wpos += data_to_add;
+		must_be_write -= data_to_add;
 	}
 	faux_buf_rm_trailing_empty_chunks(buf);
+
+unlock:
+	// Unlock whole buffer. Not 'really written' bytes only
+	buf->wchunk = NULL; // Because buffer is unlocked now
+	buf->wlocked = 0;
+	faux_free(iov);
 
 	return really_written;
 }

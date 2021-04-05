@@ -20,17 +20,17 @@ void faux_buf_free(faux_buf_t *buf);
 ssize_t faux_buf_len(const faux_buf_t *buf);
 ssize_t faux_buf_limit(const faux_buf_t *buf);
 bool_t faux_buf_set_limit(faux_buf_t *buf, size_t limit);
-size_t faux_buf_is_wblocked(const faux_buf_t *buf);
-size_t faux_buf_is_rblocked(const faux_buf_t *buf);
+size_t faux_buf_is_wlocked(const faux_buf_t *buf);
+size_t faux_buf_is_rlocked(const faux_buf_t *buf);
 ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len);
 ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len);
-ssize_t faux_buf_dread_block(faux_buf_t *buf, size_t len,
+ssize_t faux_buf_dread_lock(faux_buf_t *buf, size_t len,
 	struct iovec **iov, size_t *iov_num);
-ssize_t faux_buf_dread_unblock(faux_buf_t *buf, size_t really_readed,
+ssize_t faux_buf_dread_unlock(faux_buf_t *buf, size_t really_readed,
 	struct iovec *iov);
-ssize_t faux_buf_dwrite_block(faux_buf_t *buf, size_t len,
+ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 	struct iovec **iov_out, size_t *iov_num_out);
-ssize_t faux_buf_dwrite_unblock(faux_buf_t *buf, size_t really_written,
+ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 	struct iovec *iov);
 
 C_DECL_END

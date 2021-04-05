@@ -325,10 +325,14 @@ FAUX_2.0 {
 		faux_buf_len;
 		faux_buf_limit;
 		faux_buf_set_limit;
-		faux_buf_is_wblocked;
-		faux_buf_is_rblocked;
+		faux_buf_is_wlocked;
+		faux_buf_is_rlocked;
 		faux_buf_write;
 		faux_buf_read;
+		faux_buf_dread_lock;
+		faux_buf_dread_unlock;
+		faux_buf_dwrite_lock;
+		faux_buf_dwrite_unlock;
 
 		testc_version_major;
 		testc_version_minor;
