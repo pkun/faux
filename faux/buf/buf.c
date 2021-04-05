@@ -140,7 +140,7 @@ bool_t faux_buf_set_limit(faux_buf_t *buf, size_t limit)
  * @param [in] pos Current write position within last chunk
  * @return Size of unused space or < 0 on error.
  */
-static ssize_t faux_buf_wavail(faux_buf_t *buf)
+static ssize_t faux_buf_wavail(const faux_buf_t *buf)
 {
 	assert(buf);
 	if (!buf)
@@ -153,7 +153,7 @@ static ssize_t faux_buf_wavail(faux_buf_t *buf)
 }
 
 
-static ssize_t faux_buf_ravail(faux_buf_t *buf)
+static ssize_t faux_buf_ravail(const faux_buf_t *buf)
 {
 	ssize_t num = 0;
 
@@ -172,29 +172,23 @@ static ssize_t faux_buf_ravail(faux_buf_t *buf)
 }
 
 
-bool_t faux_buf_is_wblocked(const faux_buf_t *buf)
+size_t faux_buf_is_wblocked(const faux_buf_t *buf)
 {
 	assert(buf);
 	if (!buf)
 		return BOOL_FALSE;
 
-	if (buf->wblocked != 0)
-		return BOOL_TRUE;
-
-	return BOOL_FALSE;
+	return buf->wblocked;
 }
 
 
-bool_t faux_buf_is_rblocked(const faux_buf_t *buf)
+size_t faux_buf_is_rblocked(const faux_buf_t *buf)
 {
 	assert(buf);
 	if (!buf)
 		return BOOL_FALSE;
 
-	if (buf->rblocked != 0)
-		return BOOL_TRUE;
-
-	return BOOL_FALSE;
+	return buf->rblocked;
 }
 
 
@@ -238,7 +232,7 @@ static bool_t faux_buf_rm_trailing_empty_chunks(faux_buf_t *buf)
 		faux_list_del(buf->list, node);
 	if (buf->wchunk &&
 		((buf->wpos == 0) || // Empty chunk
-		((faux_list_chunk_num(buf) == 1) && (buf->rpos == buf->wpos)))
+		((faux_buf_chunk_num(buf) == 1) && (buf->rpos == buf->wpos)))
 		) {
 		faux_list_del(buf->list, buf->wchunk);
 		buf->wchunk = NULL;
@@ -319,7 +313,6 @@ ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
 			if (!node) // Something went wrong. Strange.
 				return -1;
 			buf->wpos = 0;
-			buf->wchunk = node;
 			bytes_free = faux_buf_wavail(buf);
 		}
 
@@ -391,11 +384,88 @@ ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 		must_be_read -= data_to_write;
 
 		// Current chunk was fully copied. So remove it from list.
-		if (buf->rpos == buf->chunk_size) {
-			buf->rpos = 0; // 0 position of next chunk
+		if ((buf->rpos == buf->chunk_size) ||
+			((faux_buf_chunk_num(buf) == 1) && (buf->rpos == buf->wpos))
+			) {
+			buf->rpos = 0; // 0 position within next chunk
 			faux_list_del(buf->list, node);
 		}
+		if (faux_buf_chunk_num(buf) == 0)
+			buf->wpos = buf->chunk_size;
 	}
 
 	return total_written;
+}
+
+
+ssize_t faux_buf_dread_block(faux_buf_t *buf, size_t len,
+	struct iovec **iov_out, size_t *iov_num_out)
+{
+	size_t vec_entries_num = 0;
+	struct iovec *iov = NULL;
+	unsigned int i = 0;
+	faux_list_node_t *iter = NULL;
+	size_t len_to_block = 0;
+	size_t avail = 0;
+	size_t must_be_read = 0;
+
+	assert(buf);
+	if (!buf)
+		return -1;
+	assert(iov_out);
+	if (!iov_out)
+		return -1;
+	assert(iov_num_out);
+	if (!iov_num_out)
+		return -1;
+
+	// Don't use already blocked buffer
+	if (faux_buf_is_rblocked(buf))
+		return -1;
+
+	len_to_block = (len < buf->len) ? len : buf->len;
+	// Nothing to block
+	if (0 == len_to_block) {
+		*iov_out = NULL;
+		*iov_num_out = 0;
+		return 0;
+	}
+
+	// Calculate number of struct iovec entries
+	avail = faux_buf_ravail(buf);
+	vec_entries_num = 1; // Guaranteed
+	if (avail < len_to_block) {
+		size_t l = buf->len - avail; // length wo first chunk
+		vec_entries_num += l / buf->chunk_size;
+		if ((l % buf->chunk_size) > 0)
+			vec_entries_num++;
+	}
+	iov = faux_zmalloc(vec_entries_num * sizeof(*iov));
+
+	// Iterate chunks
+	must_be_read = len_to_block;
+	iter = faux_list_head(buf->list);
+	while ((must_be_read > 0) && (iter)) {
+		char *p = (char *)faux_list_data(iter);
+		size_t l = buf->chunk_size;
+		size_t p_len = 0;
+
+		if (iter == faux_list_head(buf->list)) { // First chunk
+			p += buf->rpos;
+			l = avail;
+		}
+		p_len = (must_be_read < l) ? must_be_read : l;
+
+		iov[i].iov_base = p;
+		iov[i].iov_len = p_len;
+		i++;
+		must_be_read -= p_len;
+		iter = faux_list_next_node(iter);
+	}
+
+	*iov_out = iov;
+	*iov_num_out = vec_entries_num;
+	buf->rblocked = len_to_block;
+
+	return len_to_block;
 }
