@@ -28,6 +28,10 @@ ssize_t faux_buf_dread_block(faux_buf_t *buf, size_t len,
 	struct iovec **iov, size_t *iov_num);
 ssize_t faux_buf_dread_unblock(faux_buf_t *buf, size_t really_readed,
 	struct iovec *iov);
+ssize_t faux_buf_dwrite_block(faux_buf_t *buf, size_t len,
+	struct iovec **iov_out, size_t *iov_num_out);
+ssize_t faux_buf_dwrite_unblock(faux_buf_t *buf, size_t really_written,
+	struct iovec *iov);
 
 C_DECL_END
 

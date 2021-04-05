@@ -419,13 +419,16 @@ ssize_t faux_buf_dread_unblock(faux_buf_t *buf, size_t really_readed,
 	assert(buf);
 	if (!buf)
 		return -1;
-	if (0 == really_readed)
-		return -1;
-
 	// Can't unblock non-blocked buffer
 	if (!faux_buf_is_rblocked(buf))
 		return -1;
 
+	// Unblock whole buffer. Not 'really readed' bytes only
+	buf->rblocked = 0;
+	faux_free(iov);
+
+	if (0 == really_readed)
+		return really_readed;
 	if (buf->rblocked < really_readed)
 		return -1; // Something went wrong
 	if (buf->len < really_readed)
@@ -519,8 +522,9 @@ ssize_t faux_buf_dwrite_block(faux_buf_t *buf, size_t len,
 	iov = faux_zmalloc(vec_entries_num * sizeof(*iov));
 
 	// Iterate chunks
-	if ((iter = buf->wchunk) == NULL)
-		iter = faux_list_head(buf->list);
+	if (NULL == buf->wchunk)
+		buf->wchunk = faux_list_head(buf->list);
+	iter = buf->wchunk;
 	first_node = iter;
 	while ((must_be_write > 0) && (iter)) {
 		char *p = (char *)faux_list_data(iter);
@@ -547,7 +551,7 @@ ssize_t faux_buf_dwrite_block(faux_buf_t *buf, size_t len,
 }
 
 
-/*
+
 static bool_t faux_buf_rm_trailing_empty_chunks(faux_buf_t *buf)
 {
 	faux_list_node_t *node = NULL;
@@ -562,7 +566,6 @@ static bool_t faux_buf_rm_trailing_empty_chunks(faux_buf_t *buf)
 	if (faux_buf_chunk_num(buf) == 0)
 		return BOOL_TRUE; // Empty list
 
-
 	while ((node = faux_list_tail(buf->list)) != buf->wchunk)
 		faux_list_del(buf->list, node);
 	if (buf->wchunk &&
@@ -576,52 +579,49 @@ static bool_t faux_buf_rm_trailing_empty_chunks(faux_buf_t *buf)
 
 	return BOOL_TRUE;
 }
-*/
 
 
-ssize_t faux_buf_dwrite_unblock(faux_buf_t *buf, size_t really_readed,
+ssize_t faux_buf_dwrite_unblock(faux_buf_t *buf, size_t really_written,
 	struct iovec *iov)
 {
-	size_t must_be_read = 0;
+	size_t must_be_write = 0;
 
 	assert(buf);
 	if (!buf)
 		return -1;
-	if (0 == really_readed)
-		return -1;
-
 	// Can't unblock non-blocked buffer
-	if (!faux_buf_is_rblocked(buf))
+	if (!faux_buf_is_wblocked(buf))
+		return -1;
+	// Empty wchunk - strange
+	if (!buf->wchunk)
 		return -1;
 
-	if (buf->rblocked < really_readed)
-		return -1; // Something went wrong
-	if (buf->len < really_readed)
-		return -1; // Something went wrong
+	if (0 == really_written)
+		return really_written;
 
-	must_be_read = really_readed;
-	while (must_be_read > 0) {
-		size_t avail = faux_buf_ravail(buf);
-		ssize_t data_to_rm = (must_be_read < avail) ? must_be_read : avail;
-
-		buf->len -= data_to_rm;
-		buf->rpos += data_to_rm;
-		must_be_read -= data_to_rm;
-
-		// Current chunk was fully readed. So remove it from list.
-		if ((buf->rpos == buf->chunk_size) ||
-			((faux_buf_chunk_num(buf) == 1) && (buf->rpos == buf->wpos))
-			) {
-			buf->rpos = 0; // 0 position within next chunk
-			faux_list_del(buf->list, faux_list_head(buf->list));
-		}
-		if (faux_buf_chunk_num(buf) == 0)
-			buf->wpos = buf->chunk_size;
-	}
-
-	// Unblock whole buffer. Not 'really readed' bytes only
-	buf->rblocked = 0;
+	// Unblock whole buffer. Not 'really written' bytes only
+	buf->wblocked = 0;
 	faux_free(iov);
 
-	return really_readed;
+	if (buf->wblocked < really_written)
+		return -1; // Something went wrong
+
+	must_be_write = really_written;
+	while (must_be_write > 0) {
+		size_t avail = faux_buf_wavail(buf);
+		ssize_t data_to_add = (must_be_write < avail) ? must_be_write : avail;
+
+		buf->len += data_to_add;
+		buf->wpos += data_to_add;
+		must_be_write -= data_to_add;
+
+		// Current chunk was fully written. So move to next one
+		if (buf->wpos == buf->chunk_size) {
+			buf->wpos = 0; // 0 position within next chunk
+			buf->wchunk = faux_list_next_node(buf->wchunk);
+		}
+	}
+	faux_buf_rm_trailing_empty_chunks(buf);
+
+	return really_written;
 }
