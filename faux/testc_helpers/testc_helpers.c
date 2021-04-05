@@ -140,3 +140,43 @@ cmp_error:
 
 	return ret;
 }
+
+
+bool_t faux_testc_fill_rnd(void *buf, size_t len)
+{
+	char *b = (char *)buf;
+	size_t pos = 0;
+
+	assert(buf);
+	if (!buf)
+		return BOOL_FALSE;
+	if (0 == len)
+		return BOOL_FALSE;
+
+	for (pos = 0; pos < len; pos++) {
+		b[pos] = (char)random();
+	}
+
+	return BOOL_TRUE;
+}
+
+
+char *faux_testc_rnd_buf(size_t len)
+{
+	char *buf = NULL;
+
+	if (0 == len)
+		return NULL;
+
+	buf = faux_malloc(len);
+	assert(buf);
+	if (!buf)
+		return NULL;
+
+	if (!faux_testc_fill_rnd(buf, len)) {
+		faux_free(buf);
+		return NULL;
+	}
+
+	return buf;
+}

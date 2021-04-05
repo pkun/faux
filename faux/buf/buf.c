@@ -357,6 +357,11 @@ ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 	assert(buf);
 	if (!buf)
 		return -1;
+	assert(data);
+	if (!data)
+		return -1;
+	if (0 == len)
+		return -1;
 
 	// Don't read from the space reserved for direct read
 	if (faux_buf_is_rblocked(buf))

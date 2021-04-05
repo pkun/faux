@@ -6,182 +6,159 @@
 #include <unistd.h>
 
 #include "faux/str.h"
-#include "faux/async.h"
+#include "faux/buf.h"
 #include "faux/testc_helpers.h"
 
 
-static bool_t stall_cb(faux_async_t *async, size_t len, void *user_data)
+#define CHUNK 100
+
+int testc_faux_buf(void)
 {
-	bool_t *o_flag = (bool_t *)user_data;
-
-	if (!o_flag)
-		return BOOL_FALSE;
-	*o_flag = BOOL_TRUE;
-
-	async = async; // Happy compiler
-	len = len; // Happy compiler
-
-	return BOOL_TRUE;
-}
-
-
-int testc_faux_async_write(void)
-{
-	const size_t len = 9000000l;
-	const size_t read_chunk = 1000;
-	char *read_buf = NULL;
-	ssize_t readed = 0;
-	char *src_file = NULL;
-	int ret = -1; // Pessimistic return value
 	char *src_fn = NULL;
 	char *dst_fn = NULL;
-	unsigned int i = 0;
-	unsigned char counter = 0;
-	int fd = -1;
-	faux_async_t *out = NULL;
-	bool_t o_flag = BOOL_FALSE;
-	int pipefd[2] = {-1, -1};
+	ssize_t len = 0;
+	char *rnd = NULL;
+	char *dst = NULL;
+	faux_buf_t *buf = NULL;
 
 	// Prepare files
-	src_file = faux_zmalloc(len);
-	for (i = 0; i < len; i++) {
-		src_file[i] = counter;
-		counter++;
-	}
-	src_fn = faux_testc_tmpfile_deploy(src_file, len);
+	len = CHUNK * 3 + 15;
+	rnd = faux_testc_rnd_buf(len);
+	src_fn = faux_testc_tmpfile_deploy(rnd, len);
 
-	if (pipe(pipefd) < 0)
-		goto parse_error;
-	read_buf = faux_malloc(read_chunk);
-
-	dst_fn = faux_str_sprintf("%s/dst", getenv(FAUX_TESTC_TMPDIR_ENV));
-	fd = open(dst_fn, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-
-	out = faux_async_new(pipefd[1]);
-	faux_async_set_stall_cb(out, stall_cb, &o_flag);
-	faux_async_set_write_overflow(out, len + 1);
-	if (faux_async_write(out, src_file, len) < 0) {
-		fprintf(stderr, "faux_async_write() error\n");
-		goto parse_error;
+	// Create buf
+	buf = faux_buf_new(CHUNK);
+	if (!buf) {
+		fprintf(stderr, "faux_buf_new() error\n");
+		return -1;
 	}
 
-	// "Async" pipe write and sync pipe read
-	while (o_flag) {
-		o_flag = BOOL_FALSE;
-		faux_async_out(out);
-		readed = read(pipefd[0], read_buf, read_chunk);
-		if (readed < 0)
-			continue;
-		if (write(fd, read_buf, readed) < 0)
-			continue;
+	// Write to buffer
+	if (faux_buf_write(buf, rnd, len - 5) != (len - 5)) {
+		fprintf(stderr, "faux_buf_write() error\n");
+		return -1;
+	}
+	if (faux_buf_write(buf, rnd + len - 5, 5) != 5) {
+		fprintf(stderr, "faux_buf_write() the rest error\n");
+		return -1;
 	}
 
-	// Read the rest data
-	close(pipefd[1]);
-	pipefd[1] = -1;
-	while ((readed = read(pipefd[0], read_buf, read_chunk)) > 0)
-		if (write(fd, read_buf, readed) < 0)
-			continue;
+	// Buf length
+	if (faux_buf_len(buf) != len) {
+		fprintf(stderr, "faux_buf_len() error\n");
+		return -1;
+	}
 
-	// Compare etalon file and generated file
+	// Buf read
+	dst = faux_malloc(len);
+	if (!dst) {
+		fprintf(stderr, "faux_malloc() error\n");
+		return -1;
+	}
+	if (faux_buf_read(buf, dst, len) != len) {
+		fprintf(stderr, "faux_buf_read() error\n");
+		return -1;
+	}
+	dst_fn = faux_testc_tmpfile_deploy(dst, len);
+
+	// Buf length == 0
+	if (faux_buf_len(buf) != 0) {
+		fprintf(stderr, "faux_buf_len() is not 0: error\n");
+		return -1;
+	}
+
+	// Compare files
 	if (faux_testc_file_cmp(dst_fn, src_fn) != 0) {
 		fprintf(stderr, "Destination file %s is not equal to source %s\n",
 			dst_fn, src_fn);
-		goto parse_error;
+		return -1;
 	}
 
-	ret = 0; // success
+	faux_free(dst);
+	faux_buf_free(buf);
 
-parse_error:
-	if (pipefd[0] >= 0)
-		close(pipefd[0]);
-	if (pipefd[1] >= 0)
-		close(pipefd[1]);
-	faux_async_free(out);
-	faux_str_free(dst_fn);
-	faux_str_free(src_fn);
-
-	return ret;
+	return 0;
 }
 
 
-static bool_t read_cb(faux_async_t *async, void *data, size_t len, void *user_data)
+int testc_faux_buf_boundaries(void)
 {
-	int fd = *((int *)user_data);
-
-	faux_write_block(fd, data, len);
-	faux_free(data);
-
-	async = async; // Happy compiler
-
-	return BOOL_TRUE;
-}
-
-
-int testc_faux_async_read(void)
-{
-	const size_t len = 9000000l;
-	const size_t write_chunk = 2000;
-	const size_t read_chunk = 5000;
-	size_t left = 0;
-	char *src_file = NULL;
-	int ret = -1; // Pessimistic return value
 	char *src_fn = NULL;
 	char *dst_fn = NULL;
-	unsigned int i = 0;
-	unsigned char counter = 0;
-	faux_async_t *out = NULL;
-	int pipefd[2] = {-1, -1};
-	int fd = -1;
+	ssize_t len = 0;
+	char *rnd = NULL;
+	char *dst = NULL;
+	faux_buf_t *buf = NULL;
 
 	// Prepare files
-	src_file = faux_zmalloc(len);
-	for (i = 0; i < len; i++) {
-		src_file[i] = counter;
-		counter++;
-	}
-	src_fn = faux_testc_tmpfile_deploy(src_file, len);
+	len = CHUNK * 3;
+	rnd = faux_testc_rnd_buf(len);
+	src_fn = faux_testc_tmpfile_deploy(rnd, len);
 
-	if (pipe(pipefd) < 0)
-		goto parse_error;
-
-	dst_fn = faux_str_sprintf("%s/dst", getenv(FAUX_TESTC_TMPDIR_ENV));
-	fd = open(dst_fn, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-
-	out = faux_async_new(pipefd[0]);
-	faux_async_set_read_cb(out, read_cb, &fd);
-	faux_async_set_read_limits(out, read_chunk, read_chunk);
-
-	// Sync pipe write and async pipe read
-	left = len;
-	while (left > 0) {
-		ssize_t bytes_written = 0;
-
-		bytes_written = write(pipefd[1], src_file + len - left,
-			left < write_chunk ? left : write_chunk);
-		if (bytes_written < 0)
-			continue;
-		left -= bytes_written;
-		faux_async_in(out);
+	// Create buf
+	buf = faux_buf_new(CHUNK);
+	if (!buf) {
+		fprintf(stderr, "faux_buf_new() error\n");
+		return -1;
 	}
 
-	// Compare etalon file and generated file
+	// Write to buffer
+	if (faux_buf_write(buf, rnd, len) != len) {
+		fprintf(stderr, "faux_buf_write() error\n");
+		return -1;
+	}
+
+	// Buf length
+	if (faux_buf_len(buf) != len) {
+		fprintf(stderr, "faux_buf_len() error\n");
+		return -1;
+	}
+
+	// Buf read
+	dst = faux_malloc(len);
+	if (!dst) {
+		fprintf(stderr, "faux_malloc() error\n");
+		return -1;
+	}
+	if (faux_buf_read(buf, dst, len) != len) {
+		fprintf(stderr, "faux_buf_read() error\n");
+		return -1;
+	}
+	dst_fn = faux_testc_tmpfile_deploy(dst, len);
+
+	// Buf length == 0
+	if (faux_buf_len(buf) != 0) {
+		fprintf(stderr, "faux_buf_len() is not 0: error\n");
+		return -1;
+	}
+
+	// Compare files
 	if (faux_testc_file_cmp(dst_fn, src_fn) != 0) {
 		fprintf(stderr, "Destination file %s is not equal to source %s\n",
 			dst_fn, src_fn);
-		goto parse_error;
+		return -1;
 	}
 
-	ret = 0; // success
+	// Write to buffer anoter time
+	if (faux_buf_write(buf, rnd, len) != len) {
+		fprintf(stderr, "another faux_buf_write() error\n");
+		return -1;
+	}
+	if (faux_buf_read(buf, dst, len) != len) {
+		fprintf(stderr, "another faux_buf_read() error\n");
+		return -1;
+	}
+	dst_fn = faux_testc_tmpfile_deploy(dst, len);
 
-parse_error:
-	if (pipefd[0] >= 0)
-		close(pipefd[0]);
-	if (pipefd[1] >= 0)
-		close(pipefd[1]);
-	faux_async_free(out);
-	faux_str_free(dst_fn);
-	faux_str_free(src_fn);
+	// Compare files another time
+	if (faux_testc_file_cmp(dst_fn, src_fn) != 0) {
+		fprintf(stderr, "Destination file %s is not equal to source %s\n",
+			dst_fn, src_fn);
+		return -1;
+	}
 
-	return ret;
+	faux_free(dst);
+	faux_buf_free(buf);
+
+	return 0;
 }

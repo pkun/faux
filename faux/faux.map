@@ -320,5 +320,21 @@ FAUX_2.0 {
 		faux_vec_find_fn;
 		faux_vec_find;
 
+		faux_buf_new;
+		faux_buf_free;
+		faux_buf_len;
+		faux_buf_limit;
+		faux_buf_set_limit;
+		faux_buf_is_wblocked;
+		faux_buf_is_rblocked;
+		faux_buf_write;
+		faux_buf_read;
+
+		testc_version_major;
+		testc_version_minor;
+		testc_module;
+		testc_faux_*;
+
+
 	local: *;
 };

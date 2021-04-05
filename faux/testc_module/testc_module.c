@@ -46,6 +46,10 @@ const char *testc_module[][2] = {
 	{"testc_faux_async_write", "Async write operations"},
 	{"testc_faux_async_read", "Async read operations"},
 
+	// buf
+	{"testc_faux_buf", "Dynamic buffer"},
+	{"testc_faux_buf_boundaries", "Dynamic buffer. Check boundaries case"},
+
 	// End of list
 	{NULL, NULL}
 	};
