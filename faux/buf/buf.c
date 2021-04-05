@@ -153,7 +153,6 @@ static ssize_t faux_buf_wavail(faux_buf_t *buf)
 }
 
 
-/*
 static ssize_t faux_buf_ravail(faux_buf_t *buf)
 {
 	ssize_t num = 0;
@@ -171,7 +170,7 @@ static ssize_t faux_buf_ravail(faux_buf_t *buf)
 	// Single chunk
 	return (buf->wpos - buf->rpos);
 }
-*/
+
 
 bool_t faux_buf_is_wblocked(const faux_buf_t *buf)
 {
@@ -336,7 +335,6 @@ ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
 	return len;
 }
 
-#if 0
 
 /** @brief Write output buffer to fd in non-blocking mode.
  *
@@ -354,6 +352,7 @@ ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 {
 	ssize_t total_written = 0;
 	size_t must_be_read = 0;
+	char *dst = (char *)data;
 
 	assert(buf);
 	if (!buf)
@@ -368,57 +367,30 @@ ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 		faux_list_node_t *node = NULL;
 		char *chunk_ptr = NULL;
 		ssize_t data_to_write = 0;
-		ssize_t bytes_written = 0;
-		bool_t postpone = BOOL_FALSE;
+		size_t avail = 0;
 
-		node = faux_list_head(buf->o_list);
-		if (!node) // List is empty while o_size > 0
+		node = faux_list_head(buf->list);
+		if (!node) // List is empty while buf->len > 0 : strange
 			return -1;
 		chunk_ptr = faux_list_data(node);
-		data_to_write = data_avail(buf->o_list,
-			buf->o_rpos, buf->o_wpos);
-		if (data_to_write <= 0) // Strange case
+		avail = faux_buf_ravail(buf);
+		if (avail <= 0) // Strange case
 			return -1;
+		data_to_write = (must_be_read < avail) ? must_be_read : avail;
 
-		bytes_written = write(buf->fd, chunk_ptr + buf->o_rpos,
-			data_to_write);
-		if (bytes_written > 0) {
-			buf->o_size -= bytes_written;
-			total_written += bytes_written;
+		memcpy(dst, chunk_ptr + buf->rpos, data_to_write);
+		buf->len -= data_to_write;
+		buf->rpos += data_to_write;
+		total_written += data_to_write;
+		dst += data_to_write;
+		must_be_read -= data_to_write;
+
+		// Current chunk was fully copied. So remove it from list.
+		if (buf->rpos == buf->chunk_size) {
+			buf->rpos = 0; // 0 position of next chunk
+			faux_list_del(buf->list, node);
 		}
-
-		if (bytes_written < 0) {
-			if ( // Something went wrong
-				(errno != EINTR) &&
-				(errno != EAGAIN) &&
-				(errno != EWOULDBLOCK)
-			)
-				return -1;
-			// Postpone next read
-			postpone = BOOL_TRUE;
-
-		// Not whole data block was written
-		} else if (bytes_written != data_to_write) {
-			buf->o_rpos += bytes_written;
-			// Postpone next read
-			postpone = BOOL_TRUE;
-		}
-
-		// Postponed
-		if (postpone) {
-			// Execute callback
-			if (buf->stall_cb)
-				buf->stall_cb(buf, buf->o_size,
-					buf->stall_udata);
-			break;
-		}
-
-		// Not postponed. Current chunk was fully written. So
-		// remove it from list.
-		buf->o_rpos = 0;
-		faux_list_del(buf->o_list, node);
 	}
 
 	return total_written;
 }
-#endif
