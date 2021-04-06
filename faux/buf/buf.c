@@ -344,7 +344,8 @@ ssize_t faux_buf_dread_lock(faux_buf_t *buf, size_t len,
 
 	// Calculate number of struct iovec entries
 	avail = faux_buf_ravail(buf);
-	vec_entries_num = 1; // Guaranteed
+	if (avail > 0)
+		vec_entries_num++;
 	if (avail < len_to_lock) {
 		size_t l = buf->len - avail; // length wo first chunk
 		vec_entries_num += l / buf->chunk_size;
@@ -492,7 +493,8 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 	if (!iter)
 		iter = faux_list_head(buf->list);
 	i = 0;
-	while ((must_be_write > 0) && (iter)) {
+	while ((must_be_write > 0) && (iter) && (i < vec_entries_num)) {
+//	while ((must_be_write > 0) && (iter)) {
 		char *p = (char *)faux_list_data(iter);
 		size_t l = buf->chunk_size;
 		size_t p_len = 0;
@@ -502,12 +504,16 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 			l = faux_buf_wavail(buf);
 		}
 		p_len = (must_be_write < l) ? must_be_write : l;
-
+printf("num=%lu i=%u must=%lu plen=%lu\n", vec_entries_num, i, must_be_write, p_len);
+		iter = faux_list_next_node(iter);
+		// If wpos == chunk_size then p_len = 0
+		// So go to next iteration without iov filling
+		if (0 == p_len)
+			continue;
 		iov[i].iov_base = p;
 		iov[i].iov_len = p_len;
 		i++;
 		must_be_write -= p_len;
-		iter = faux_list_next_node(iter);
 	}
 
 	*iov_out = iov;
@@ -533,11 +539,13 @@ ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 	if (buf->wlocked < really_written)
 		return -1; // Something went wrong
 
+
 	must_be_write = really_written;
 	while (must_be_write > 0) {
 		size_t avail = 0;
 		ssize_t data_to_add = 0;
 
+printf("must=%lu\n", must_be_write);
 		// Current chunk was fully written. So move to next one
 		if (buf->wpos == buf->chunk_size) {
 			buf->wpos = 0; // 0 position within next chunk
