@@ -324,6 +324,7 @@ FAUX_2.0 {
 		faux_buf_free;
 		faux_buf_len;
 		faux_buf_limit;
+		faux_buf_will_be_overflow;
 		faux_buf_set_limit;
 		faux_buf_is_wlocked;
 		faux_buf_is_rlocked;

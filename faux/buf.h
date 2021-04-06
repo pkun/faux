@@ -20,6 +20,7 @@ void faux_buf_free(faux_buf_t *buf);
 ssize_t faux_buf_len(const faux_buf_t *buf);
 ssize_t faux_buf_limit(const faux_buf_t *buf);
 bool_t faux_buf_set_limit(faux_buf_t *buf, size_t limit);
+bool_t faux_buf_will_be_overflow(const faux_buf_t *buf, size_t add_len);
 size_t faux_buf_is_wlocked(const faux_buf_t *buf);
 size_t faux_buf_is_rlocked(const faux_buf_t *buf);
 ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len);

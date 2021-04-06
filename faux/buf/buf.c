@@ -146,7 +146,7 @@ static ssize_t faux_buf_wavail(const faux_buf_t *buf)
 	if (!buf)
 		return -1;
 
-	if (faux_buf_chunk_num(buf) == 0)
+	if (!buf->wchunk)
 		return 0; // Empty list
 
 	return (buf->chunk_size - buf->wpos);
@@ -155,20 +155,19 @@ static ssize_t faux_buf_wavail(const faux_buf_t *buf)
 
 static ssize_t faux_buf_ravail(const faux_buf_t *buf)
 {
-	ssize_t num = 0;
-
 	assert(buf);
 	if (!buf)
 		return -1;
 
-	num = faux_buf_chunk_num(buf);
-	if (num == 0)
-		return 0; // Empty list
-	if (num > 1)
-		return (buf->chunk_size - buf->rpos);
+	// Empty list
+	if (buf->len == 0)
+		return 0;
+	// Read and write within the same chunk
+	if (faux_list_head(buf->list) == buf->wchunk)
+		return (buf->wpos - buf->rpos);
 
-	// Single chunk
-	return (buf->wpos - buf->rpos);
+	// Write pointer is far away from read pointer (more than chunk)
+	return (buf->chunk_size - buf->rpos);
 }
 
 
@@ -212,7 +211,7 @@ static faux_list_node_t *faux_buf_alloc_chunk(faux_buf_t *buf)
 }
 
 
-static bool_t faux_buf_will_be_overflow(const faux_buf_t *buf, size_t add_len)
+bool_t faux_buf_will_be_overflow(const faux_buf_t *buf, size_t add_len)
 {
 	assert(buf);
 	if (!buf)
@@ -225,12 +224,6 @@ static bool_t faux_buf_will_be_overflow(const faux_buf_t *buf, size_t add_len)
 		return BOOL_TRUE;
 
 	return BOOL_FALSE;
-}
-
-
-bool_t faux_buf_is_overflow(const faux_buf_t *buf)
-{
-	return faux_buf_will_be_overflow(buf, 0);
 }
 
 
