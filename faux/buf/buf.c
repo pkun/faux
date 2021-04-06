@@ -438,7 +438,6 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 	struct iovec *iov = NULL;
 	unsigned int i = 0;
 	faux_list_node_t *iter = NULL;
-	faux_list_node_t *first_node = NULL;
 	size_t avail = 0;
 	size_t must_be_write = len;
 
@@ -477,7 +476,7 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 	if (avail < len) {
 		size_t i = 0;
 		size_t new_chunk_num = 0;
-		size_t l = len - avail; // length wo first chunk
+		size_t l = len - avail; // length w/o first chunk
 		new_chunk_num += l / buf->chunk_size;
 		if ((l % buf->chunk_size) > 0)
 			new_chunk_num++;
@@ -486,18 +485,19 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 			faux_buf_alloc_chunk(buf);
 	}
 	iov = faux_zmalloc(vec_entries_num * sizeof(*iov));
+	assert(iov);
 
 	// Iterate chunks
 	iter = buf->wchunk;
 	if (!iter)
 		iter = faux_list_head(buf->list);
-	first_node = iter;
+	i = 0;
 	while ((must_be_write > 0) && (iter)) {
 		char *p = (char *)faux_list_data(iter);
 		size_t l = buf->chunk_size;
 		size_t p_len = 0;
 
-		if (iter == first_node) {
+		if (iter == buf->wchunk) {
 			p += buf->wpos;
 			l = faux_buf_wavail(buf);
 		}
@@ -517,40 +517,11 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 }
 
 
-
-static bool_t faux_buf_rm_trailing_empty_chunks(faux_buf_t *buf)
-{
-	faux_list_node_t *node = NULL;
-
-	assert(buf);
-	if (!buf)
-		return BOOL_FALSE;
-	assert(buf->list);
-	if (!buf->list)
-		return BOOL_FALSE;
-
-	if (faux_buf_chunk_num(buf) == 0)
-		return BOOL_TRUE; // Empty list
-
-	while ((node = faux_list_tail(buf->list)) != buf->wchunk)
-		faux_list_del(buf->list, node);
-	if (buf->wchunk &&
-		((buf->wpos == 0) || // Empty chunk
-		((faux_buf_chunk_num(buf) == 1) && (buf->rpos == buf->wpos)))
-		) {
-		faux_list_del(buf->list, buf->wchunk);
-		buf->wchunk = NULL;
-		buf->wpos = buf->chunk_size;
-	}
-
-	return BOOL_TRUE;
-}
-
-
 ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 	struct iovec *iov)
 {
 	size_t must_be_write = 0;
+	faux_list_node_t *iter = NULL;
 
 	assert(buf);
 	if (!buf)
@@ -558,12 +529,6 @@ ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 	// Can't unlock non-locked buffer
 	if (!faux_buf_is_wlocked(buf))
 		return -1;
-	// Empty wchunk - strange
-	if (!buf->wchunk)
-		return -1;
-
-	if (0 == really_written)
-		goto unlock;
 
 	if (buf->wlocked < really_written)
 		return -1; // Something went wrong
@@ -576,7 +541,10 @@ ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 		// Current chunk was fully written. So move to next one
 		if (buf->wpos == buf->chunk_size) {
 			buf->wpos = 0; // 0 position within next chunk
-			buf->wchunk = faux_list_next_node(buf->wchunk);
+			if (buf->wchunk)
+				buf->wchunk = faux_list_next_node(buf->wchunk);
+			else
+				buf->wchunk = faux_list_head(buf->list);
 		}
 		avail = faux_buf_wavail(buf);
 		data_to_add = (must_be_write < avail) ? must_be_write : avail;
@@ -585,11 +553,22 @@ ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 		buf->wpos += data_to_add;
 		must_be_write -= data_to_add;
 	}
-	faux_buf_rm_trailing_empty_chunks(buf);
 
-unlock:
+	if (buf->wchunk) {
+		// Remove trailing empty chunks after wchunk
+		while ((iter = faux_list_next_node(buf->wchunk)))
+			faux_list_del(buf->list, iter);
+		// When really_written == 0 then all data can be read after
+		// dwrite_lock() and dwrite_unlock() so chunk can be empty.
+		if ((faux_list_head(buf->list) == buf->wchunk) &&
+			(buf->wpos == buf->rpos)) {
+			faux_list_del(buf->list, buf->wchunk);
+			buf->wchunk = NULL;
+			buf->wpos = buf->chunk_size;
+		}
+	}
+
 	// Unlock whole buffer. Not 'really written' bytes only
-	buf->wchunk = NULL; // Because buffer is unlocked now
 	buf->wlocked = 0;
 	faux_free(iov);
 
