@@ -467,16 +467,13 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 		return 0;
 	}
 
-	// Save wchunk
-	buf->wchunk = faux_list_tail(buf->list); // Can be NULL
+	// Write lock
 	buf->wlocked = len;
 
 	// Calculate number of struct iovec entries
 	avail = faux_buf_wavail(buf);
 	if (avail > 0)
-		vec_entries_num += 1;
-	else
-		buf->wpos = 0; // New chunk will be created when avail == 0
+		vec_entries_num++;
 	if (avail < len) {
 		size_t i = 0;
 		size_t new_chunk_num = 0;
@@ -491,9 +488,9 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 	iov = faux_zmalloc(vec_entries_num * sizeof(*iov));
 
 	// Iterate chunks
-	if (NULL == buf->wchunk)
-		buf->wchunk = faux_list_head(buf->list);
 	iter = buf->wchunk;
+	if (!iter)
+		iter = faux_list_head(buf->list);
 	first_node = iter;
 	while ((must_be_write > 0) && (iter)) {
 		char *p = (char *)faux_list_data(iter);
