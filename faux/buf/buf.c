@@ -227,46 +227,6 @@ bool_t faux_buf_will_be_overflow(const faux_buf_t *buf, size_t add_len)
 }
 
 
-/** @brief buf data write.
- *
- * All given data will be stored to internal buffer (list of data chunks).
- * Then function will try to write stored data to file descriptor in
- * non-locking mode. Note some data can be left within buffer. In this case
- * the "stall" callback will be executed to inform about it. To try to write
- * the rest of the data user can be call faux_buf_out() function. Both
- * functions will not lock.
- *
- * @param [in] buf Allocated and initialized buf I/O object.
- * @param [in] data Data buffer to write.
- * @param [in] len Data length to write.
- * @return Length of stored/writed data or < 0 on error.
- */
-ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
-{
-	struct iovec *iov = NULL;
-	size_t iov_num = 0;
-	ssize_t total = 0;
-	char *src = (char *)data;
-	size_t i = 0;
-
-	assert(data);
-	if (!data)
-		return -1;
-
-	total = faux_buf_dwrite_lock(buf, len, &iov, &iov_num);
-	if (total <= 0)
-		return total;
-
-	for (i = 0; i < iov_num; i++) {
-		memcpy(iov[i].iov_base, src, iov[i].iov_len);
-		src += iov[i].iov_len;
-	}
-
-	if (faux_buf_dwrite_unlock(buf, total, iov) != total)
-		return -1;
-
-	return total;
-}
 
 
 /** @brief Write output buffer to fd in non-locking mode.
@@ -347,32 +307,43 @@ ssize_t faux_buf_dread_lock(faux_buf_t *buf, size_t len,
 	if (avail > 0)
 		vec_entries_num++;
 	if (avail < len_to_lock) {
-		size_t l = buf->len - avail; // length wo first chunk
+		size_t l = buf->len - avail; // length w/o first chunk
 		vec_entries_num += l / buf->chunk_size;
 		if ((l % buf->chunk_size) > 0)
 			vec_entries_num++;
 	}
 	iov = faux_zmalloc(vec_entries_num * sizeof(*iov));
 
-	// Iterate chunks
+	// Iterate chunks. Suppose list is not empty
 	must_be_read = len_to_lock;
-	iter = faux_list_head(buf->list);
-	while ((must_be_read > 0) && (iter)) {
-		char *p = (char *)faux_list_data(iter);
-		size_t l = buf->chunk_size;
+	iter = NULL;
+	while (must_be_read > 0) {
+		char *data = NULL;
+		off_t data_offset = 0;
+		size_t data_len = buf->chunk_size;
 		size_t p_len = 0;
 
-		if (iter == faux_list_head(buf->list)) { // First chunk
-			p += buf->rpos;
-			l = avail;
+		// First chunk
+		if (!iter) {
+			iter = faux_list_head(buf->list);
+			if (avail > 0) {
+				data_offset = buf->rpos;
+				data_len = avail; // Calculated earlier
+			} else { // Empty chunk. Go to next
+				iter = faux_list_next_node(iter);
+			}
+		// Not-first chunks
+		} else {
+			iter = faux_list_next_node(iter);
 		}
-		p_len = (must_be_read < l) ? must_be_read : l;
 
-		iov[i].iov_base = p;
+		data = (char *)faux_list_data(iter) + data_offset;
+		p_len = (must_be_read < data_len) ? must_be_read : data_len;
+
+		must_be_read -= p_len;
+		iov[i].iov_base = data;
 		iov[i].iov_len = p_len;
 		i++;
-		must_be_read -= p_len;
-		iter = faux_list_next_node(iter);
 	}
 
 	*iov_out = iov;
@@ -386,7 +357,7 @@ ssize_t faux_buf_dread_lock(faux_buf_t *buf, size_t len,
 ssize_t faux_buf_dread_unlock(faux_buf_t *buf, size_t really_readed,
 	struct iovec *iov)
 {
-	size_t must_be_read = 0;
+	size_t must_be_read = really_readed;
 
 	assert(buf);
 	if (!buf)
@@ -403,24 +374,33 @@ ssize_t faux_buf_dread_unlock(faux_buf_t *buf, size_t really_readed,
 	if (0 == really_readed)
 		goto unlock;
 
-	must_be_read = really_readed;
+	// Suppose list is not empty
 	while (must_be_read > 0) {
 		size_t avail = faux_buf_ravail(buf);
 		ssize_t data_to_rm = (must_be_read < avail) ? must_be_read : avail;
+		faux_list_node_t *iter = faux_list_head(buf->list);
 
 		buf->len -= data_to_rm;
 		buf->rpos += data_to_rm;
 		must_be_read -= data_to_rm;
 
 		// Current chunk was fully readed. So remove it from list.
-		if ((buf->rpos == buf->chunk_size) ||
-			((faux_buf_chunk_num(buf) == 1) && (buf->rpos == buf->wpos))
+		if (
+			// Chunk is not wchunk
+			((iter != buf->wchunk) &&
+			(buf->rpos == buf->chunk_size)) ||
+			// Chunk is wchunk
+			((iter == buf->wchunk) &&
+			(buf->rpos == buf->wpos) &&
+			(!buf->wlocked)) // Chunk can be locked for writing
 			) {
 			buf->rpos = 0; // 0 position within next chunk
-			faux_list_del(buf->list, faux_list_head(buf->list));
+			faux_list_del(buf->list, iter);
 		}
-		if (faux_buf_chunk_num(buf) == 0)
+		if (faux_buf_chunk_num(buf) == 0) { // Empty list w/o locks
+			buf->wchunk = NULL;
 			buf->wpos = buf->chunk_size;
+		}
 	}
 
 unlock:
@@ -429,6 +409,48 @@ unlock:
 	faux_free(iov);
 
 	return really_readed;
+}
+
+
+/** @brief buf data write.
+ *
+ * All given data will be stored to internal buffer (list of data chunks).
+ * Then function will try to write stored data to file descriptor in
+ * non-locking mode. Note some data can be left within buffer. In this case
+ * the "stall" callback will be executed to inform about it. To try to write
+ * the rest of the data user can be call faux_buf_out() function. Both
+ * functions will not lock.
+ *
+ * @param [in] buf Allocated and initialized buf I/O object.
+ * @param [in] data Data buffer to write.
+ * @param [in] len Data length to write.
+ * @return Length of stored/writed data or < 0 on error.
+ */
+ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
+{
+	struct iovec *iov = NULL;
+	size_t iov_num = 0;
+	ssize_t total = 0;
+	char *src = (char *)data;
+	size_t i = 0;
+
+	assert(data);
+	if (!data)
+		return -1;
+
+	total = faux_buf_dwrite_lock(buf, len, &iov, &iov_num);
+	if (total <= 0)
+		return total;
+
+	for (i = 0; i < iov_num; i++) {
+		memcpy(iov[i].iov_base, src, iov[i].iov_len);
+		src += iov[i].iov_len;
+	}
+
+	if (faux_buf_dwrite_unlock(buf, total, iov) != total)
+		return -1;
+
+	return total;
 }
 
 
@@ -490,30 +512,36 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 
 	// Iterate chunks
 	iter = buf->wchunk;
-	if (!iter)
-		iter = faux_list_head(buf->list);
 	i = 0;
-	while ((must_be_write > 0) && (iter) && (i < vec_entries_num)) {
-//	while ((must_be_write > 0) && (iter)) {
-		char *p = (char *)faux_list_data(iter);
-		size_t l = buf->chunk_size;
+	while ((must_be_write > 0)) {
+		char *data = NULL;
+		off_t data_offset = 0;
+		size_t data_len = buf->chunk_size;
 		size_t p_len = 0;
 
-		if (iter == buf->wchunk) {
-			p += buf->wpos;
-			l = faux_buf_wavail(buf);
+		// List was empty before writing
+		if (!iter) {
+			iter = faux_list_head(buf->list);
+		// Not empty list. First element
+		} else if (iter == buf->wchunk) {
+			size_t l = faux_buf_wavail(buf);
+			if (0 == l) { // Not enough space within current chunk
+				iter = faux_list_next_node(iter);
+			} else {
+				data_offset = buf->wpos;
+				data_len = l;
+			}
+		// Not empty list. Fully free chunk
+		} else {
+			iter = faux_list_next_node(iter);
 		}
-		p_len = (must_be_write < l) ? must_be_write : l;
-printf("num=%lu i=%u must=%lu plen=%lu\n", vec_entries_num, i, must_be_write, p_len);
-		iter = faux_list_next_node(iter);
-		// If wpos == chunk_size then p_len = 0
-		// So go to next iteration without iov filling
-		if (0 == p_len)
-			continue;
-		iov[i].iov_base = p;
+
+		p_len = (must_be_write < data_len) ? must_be_write : data_len;
+		data = (char *)faux_list_data(iter) + data_offset;
+		must_be_write -= p_len;
+		iov[i].iov_base = data;
 		iov[i].iov_len = p_len;
 		i++;
-		must_be_write -= p_len;
 	}
 
 	*iov_out = iov;
@@ -526,8 +554,7 @@ printf("num=%lu i=%u must=%lu plen=%lu\n", vec_entries_num, i, must_be_write, p_
 ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 	struct iovec *iov)
 {
-	size_t must_be_write = 0;
-	faux_list_node_t *iter = NULL;
+	size_t must_be_write = really_written;
 
 	assert(buf);
 	if (!buf)
@@ -539,22 +566,20 @@ ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 	if (buf->wlocked < really_written)
 		return -1; // Something went wrong
 
-
-	must_be_write = really_written;
 	while (must_be_write > 0) {
 		size_t avail = 0;
 		ssize_t data_to_add = 0;
 
-printf("must=%lu\n", must_be_write);
+		avail = faux_buf_wavail(buf);
 		// Current chunk was fully written. So move to next one
-		if (buf->wpos == buf->chunk_size) {
+		if (0 == avail) {
 			buf->wpos = 0; // 0 position within next chunk
 			if (buf->wchunk)
 				buf->wchunk = faux_list_next_node(buf->wchunk);
 			else
 				buf->wchunk = faux_list_head(buf->list);
+			avail = faux_buf_wavail(buf);
 		}
-		avail = faux_buf_wavail(buf);
 		data_to_add = (must_be_write < avail) ? must_be_write : avail;
 
 		buf->len += data_to_add;
@@ -563,6 +588,7 @@ printf("must=%lu\n", must_be_write);
 	}
 
 	if (buf->wchunk) {
+		faux_list_node_t *iter = NULL;
 		// Remove trailing empty chunks after wchunk
 		while ((iter = faux_list_next_node(buf->wchunk)))
 			faux_list_del(buf->list, iter);

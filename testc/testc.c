@@ -386,7 +386,7 @@ static faux_list_t *read_test_output(int fd, size_t limit)
 		iov->iov_len = bytes_readed;
 		faux_list_add(buf_list, iov);
 		total_len += iov->iov_len;
-write(1, iov->iov_base, iov->iov_len);
+//write(1, iov->iov_base, iov->iov_len);
 	} while (total_len < limit);
 
 	return buf_list;
