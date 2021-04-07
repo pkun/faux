@@ -418,6 +418,21 @@ ssize_t faux_buf_dread_lock(faux_buf_t *buf, size_t len,
 }
 
 
+/** @brief Frees "struct iovec" array and unlocks read data.
+ *
+ * The length of actually readed data can be less than length of locked data.
+ * In this case all the data will be unlocked but only actually readed length
+ * will be removed from buffer.
+ *
+ * Function gets "struct iovec" array to free it. It was previously allocated
+ * by faux_dread_lock() function.
+ *
+ * @param [in] buf Allocated and initialized dynamic buffer object.
+ * @param [in] really_readed Length of data actually read.
+ * @param [out] iov "struct iovec" array to free.
+ * @param [out] iov_num_out Number of "struct iovec" array elements.
+ * @return Length of data actually unlocked or < 0 on error.
+ */
 ssize_t faux_buf_dread_unlock(faux_buf_t *buf, size_t really_readed,
 	struct iovec *iov)
 {
@@ -511,6 +526,14 @@ ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
 }
 
 
+/** @brief Gets "struct iovec" array for direct writing and locks data.
+ *
+ * @param [in] buf Allocated and initialized dynamic buffer object.
+ * @param [in] len Length of data to lock.
+ * @param [out] iov_out "struct iovec" array to direct write to.
+ * @param [out] iov_num_out Number of "struct iovec" array elements.
+ * @return Length of data actually locked or < 0 on error.
+ */
 ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 	struct iovec **iov_out, size_t *iov_num_out)
 {
@@ -608,6 +631,21 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 }
 
 
+/** @brief Frees "struct iovec" array and unlocks written data.
+ *
+ * The length of actually written data can be less than length of locked data.
+ * In this case all the data will be unlocked but only actually written length
+ * will be stored within buffer.
+ *
+ * Function gets "struct iovec" array to free it. It was previously allocated
+ * by faux_dwrite_lock() function.
+ *
+ * @param [in] buf Allocated and initialized dynamic buffer object.
+ * @param [in] really_written Length of data actually written.
+ * @param [out] iov "struct iovec" array to free.
+ * @param [out] iov_num_out Number of "struct iovec" array elements.
+ * @return Length of data actually unlocked or < 0 on error.
+ */
 ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 	struct iovec *iov)
 {
