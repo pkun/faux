@@ -1,6 +1,15 @@
 /** @file buf.c
  * @brief Dynamic buffer.
  *
+ * Dynamic buffer can be written to and readed from. It grows while write
+ * commands.
+ *
+ * User can get direct access to this buffer. For example we need to
+ * read from file some data and save it to dynamic buffer. We pre-allocate
+ * necessary space within buffer and lock it. Lock function returns a
+ * "struct iovec" array to write to. After that we unlock buffer. So we don't
+ * need additional temporary buffer beetween file's read() and dynamic buffer.
+ * Dynamic buffer has the same functionality for reading from it.
  */
 
 #include <stdlib.h>
@@ -18,14 +27,14 @@
 
 struct faux_buf_s {
 	faux_list_t *list; // List of chunks
-	faux_list_node_t *wchunk; // Chunk to write to
+	faux_list_node_t *wchunk; // Chunk to write to. NULL if list is empty
 	size_t rpos; // Read position within first chunk
 	size_t wpos; // Write position within wchunk (can be non-last chunk)
 	size_t chunk_size; // Size of chunk
 	size_t len; // Whole data length
 	size_t limit; // Overflow limit
-	size_t rlocked;
-	size_t wlocked;
+	size_t rlocked; // How much space is locked for reading
+	size_t wlocked; // How much space is locked for writing
 };
 
 
@@ -74,6 +83,11 @@ void faux_buf_free(faux_buf_t *buf)
 }
 
 
+/** @brief Returns length of buffer.
+ *
+ * @param [in] buf Allocated and initialized buffer object.
+ * @return Length of buffer or < 0 on error.
+ */
 ssize_t faux_buf_len(const faux_buf_t *buf)
 {
 	assert(buf);
@@ -84,6 +98,13 @@ ssize_t faux_buf_len(const faux_buf_t *buf)
 }
 
 
+/** @brief Returns number of allocated data chunks.
+ *
+ * Function is not exported to DSO.
+ *
+ * @param [in] buf Allocated and initialized buffer object.
+ * @return Number of allocated chunks or < 0 on error.
+ */
 FAUX_HIDDEN ssize_t faux_buf_chunk_num(const faux_buf_t *buf)
 {
 	assert(buf);
@@ -97,6 +118,13 @@ FAUX_HIDDEN ssize_t faux_buf_chunk_num(const faux_buf_t *buf)
 }
 
 
+/** @brief Returns limit of buffer length.
+ *
+ * The returned "0" means unlimited.
+ *
+ * @param [in] buf Allocated and initialized buffer object.
+ * @return Maximum buffer length or < 0 on error.
+ */
 ssize_t faux_buf_limit(const faux_buf_t *buf)
 {
 	assert(buf);
@@ -107,17 +135,13 @@ ssize_t faux_buf_limit(const faux_buf_t *buf)
 }
 
 
-/** @brief Set size limit.
+/** @brief Set buffer length limit.
  *
- * Read limits define conditions when the read callback will be executed.
- * Buffer must contain data amount greater or equal to "min" value. Callback
- * will not get data amount greater than "max" value. If min == max then
- * callback will be executed with fixed data size. The "max" value can be "0".
- * It means indefinite i.e. data transferred to callback can be really large.
+ * Writing more data than this limit will lead to error. The "0" value means
+ * unlimited buffer. Default is unlimited.
  *
- * @param [in] buf Allocated and initialized buf I/O object.
- * @param [in] min Minimal data amount.
- * @param [in] max Maximal data amount. The "0" means indefinite.
+ * @param [in] buf Allocated and initialized buffer object.
+ * @param [in] limit Maximum buffer length.
  * @return BOOL_TRUE - success, BOOL_FALSE - error.
  */
 bool_t faux_buf_set_limit(faux_buf_t *buf, size_t limit)
@@ -134,10 +158,9 @@ bool_t faux_buf_set_limit(faux_buf_t *buf, size_t limit)
 
 /** @brief Get amount of unused space within current data chunk.
  *
- * Inernal static function.
+ * Inernal static function. Current chunk is "wchunk".
  *
- * @param [in] list Internal buffer (list of chunks) to inspect.
- * @param [in] pos Current write position within last chunk
+ * @param [in] buf Allocated and initialized buffer object.
  * @return Size of unused space or < 0 on error.
  */
 static ssize_t faux_buf_wavail(const faux_buf_t *buf)
@@ -153,6 +176,13 @@ static ssize_t faux_buf_wavail(const faux_buf_t *buf)
 }
 
 
+/** @brief Get amount of available data within current data chunk.
+ *
+ * Inernal static function. Current chunk first chunk.
+ *
+ * @param [in] buf Allocated and initialized buffer object.
+ * @return Size of available data or < 0 on error.
+ */
 static ssize_t faux_buf_ravail(const faux_buf_t *buf)
 {
 	assert(buf);
@@ -171,6 +201,13 @@ static ssize_t faux_buf_ravail(const faux_buf_t *buf)
 }
 
 
+/** @brief Get amount of locked space for writing.
+ *
+ * The "0" means that buffer is not locked for writing.
+ *
+ * @param [in] buf Allocated and initialized buffer object.
+ * @return Size of locked space or "0" if unlocked.
+ */
 size_t faux_buf_is_wlocked(const faux_buf_t *buf)
 {
 	assert(buf);
@@ -181,6 +218,13 @@ size_t faux_buf_is_wlocked(const faux_buf_t *buf)
 }
 
 
+/** @brief Get amount of locked space for reading.
+ *
+ * The "0" means that buffer is not locked for reading.
+ *
+ * @param [in] buf Allocated and initialized buffer object.
+ * @return Size of locked data or "0" if unlocked.
+ */
 size_t faux_buf_is_rlocked(const faux_buf_t *buf)
 {
 	assert(buf);
@@ -191,6 +235,13 @@ size_t faux_buf_is_rlocked(const faux_buf_t *buf)
 }
 
 
+/** @brief Allocates new chunk and adds it to the end of chunk list.
+ *
+ * Static internal function.
+ *
+ * @param [in] buf Allocated and initialized buffer object.
+ * @return Newly created list node or NULL on error.
+ */
 static faux_list_node_t *faux_buf_alloc_chunk(faux_buf_t *buf)
 {
 	char *chunk = NULL;
@@ -211,6 +262,14 @@ static faux_list_node_t *faux_buf_alloc_chunk(faux_buf_t *buf)
 }
 
 
+/** @brief Checks if it will be overflow while writing some data.
+ *
+ * It uses previously set "limit" value for calculations.
+ *
+ * @param [in] buf Allocated and initialized buffer object.
+ * @param [in] add_len Length of data we want to write to buffer.
+ * @return BOOL_TRUE - it will be overflow, BOOL_FALSE - enough space.
+ */
 bool_t faux_buf_will_be_overflow(const faux_buf_t *buf, size_t add_len)
 {
 	assert(buf);
@@ -227,19 +286,12 @@ bool_t faux_buf_will_be_overflow(const faux_buf_t *buf, size_t add_len)
 }
 
 
-
-
-/** @brief Write output buffer to fd in non-locking mode.
+/** @brief Reads dynamic buffer data to specified linear buffer.
  *
- * Previously data must be written to internal buffer by faux_buf_write()
- * function. But some data can be left within internal buffer because can't be
- * written to fd in non-locking mode. This function tries to write the rest of
- * data to fd in non-locking mode. So function doesn't lock. It can be called
- * after select() or poll() if fd is ready to be written to. If function can't
- * to write all buffer to fd it executes "stall" callback to inform about it.
- *
- * @param [in] buf Allocated and initialized buf I/O object.
- * @return Length of data actually written or < 0 on error.
+ * @param [in] buf Allocated and initialized dynamic buffer object.
+ * @param [in] data Linear buffer to read data to.
+ * @param [in] len Length of data to read.
+ * @return Length of data actually readed or < 0 on error.
  */
 ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 {
@@ -269,6 +321,18 @@ ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 }
 
 
+/** @brief Gets "struct iovec" array for direct reading and locks data.
+ *
+ * The length of actually locked data can differ from length specified by user.
+ * When buffer length is less than specified length then return value will be
+ * equal to buffer length.
+ *
+ * @param [in] buf Allocated and initialized dynamic buffer object.
+ * @param [in] len Length of data to read.
+ * @param [out] iov_out "struct iovec" array to direct read from.
+ * @param [out] iov_num_out Number of "struct iovec" array elements.
+ * @return Length of data actually locked or < 0 on error.
+ */
 ssize_t faux_buf_dread_lock(faux_buf_t *buf, size_t len,
 	struct iovec **iov_out, size_t *iov_num_out)
 {
@@ -412,19 +476,12 @@ unlock:
 }
 
 
-/** @brief buf data write.
+/** @brief Write data from linear buffer to dynamic buffer.
  *
- * All given data will be stored to internal buffer (list of data chunks).
- * Then function will try to write stored data to file descriptor in
- * non-locking mode. Note some data can be left within buffer. In this case
- * the "stall" callback will be executed to inform about it. To try to write
- * the rest of the data user can be call faux_buf_out() function. Both
- * functions will not lock.
- *
- * @param [in] buf Allocated and initialized buf I/O object.
- * @param [in] data Data buffer to write.
- * @param [in] len Data length to write.
- * @return Length of stored/writed data or < 0 on error.
+ * @param [in] buf Allocated and initialized dynamic buffer object.
+ * @param [in] data Linear buffer. Source of data.
+ * @param [in] len Length of data to write.
+ * @return Length of data actually written or < 0 on error.
  */
 ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
 {
