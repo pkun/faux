@@ -266,7 +266,8 @@ int testc_faux_buf_direct(void)
 	// Lock buffer for writing
 	printf("faux_buf_dwrite_lock()\n");
 	if ((wlocked = faux_buf_dwrite_lock(buf, len + 15, &iov, &iov_num)) != (len + 15)) {
-		fprintf(stderr, "faux_buf_dwrite_lock() error\n");
+		fprintf(stderr, "faux_buf_dwrite_lock() error %ld\n",
+			wlocked);
 		return -1;
 	}
 
@@ -325,7 +326,8 @@ int testc_faux_buf_direct(void)
 	// Unlock buffer for writing
 	printf("faux_buf_dwrite_unlock()\n");
 	if ((wlocked = faux_buf_dwrite_unlock(buf, len, iov)) != (len)) {
-		fprintf(stderr, "faux_buf_dwrite_unlock() error\n");
+		fprintf(stderr, "faux_buf_dwrite_unlock() error %ld\n",
+			wlocked);
 		return -1;
 	}
 
@@ -450,7 +452,8 @@ int testc_faux_buf_dwrite_unlock0(void)
 	// Lock buffer for writing
 	printf("faux_buf_dwrite_lock()\n");
 	if ((wlocked = faux_buf_dwrite_lock(buf, len, &iov, &iov_num)) != len) {
-		fprintf(stderr, "faux_buf_dwrite_lock() error\n");
+		fprintf(stderr, "faux_buf_dwrite_lock() error %ld\n",
+			wlocked);
 		return -1;
 	}
 
