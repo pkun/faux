@@ -464,21 +464,24 @@ ssize_t faux_buf_dread_unlock(faux_buf_t *buf, size_t really_readed,
 		must_be_read -= data_to_rm;
 
 		// Current chunk was fully readed. So remove it from list.
-		if (
-			// Chunk is not wchunk
-			((iter != buf->wchunk) &&
-			(buf->rpos == buf->chunk_size)) ||
-			// Chunk is wchunk
-			((iter == buf->wchunk) &&
-			(buf->rpos == buf->wpos) &&
-			(!buf->wlocked)) // Chunk can be locked for writing
-			) {
+		// Chunk is not wchunk
+		if ((iter != buf->wchunk) &&
+			(buf->rpos == buf->chunk_size)) {
 			buf->rpos = 0; // 0 position within next chunk
 			faux_list_del(buf->list, iter);
-		}
-		if (faux_buf_chunk_num(buf) == 0) { // Empty list w/o locks
+			if (faux_buf_chunk_num(buf) == 0) { // Empty list w/o locks
+				buf->wchunk = NULL;
+				buf->wpos = buf->chunk_size;
+			}
+		// Chunk is wchunk
+		} else if ((iter == buf->wchunk) &&
+			(buf->rpos == buf->wpos) &&
+			(!buf->wlocked ||  // Chunk can be locked for writing
+			(buf->wpos == buf->chunk_size))) { // Chunk can be filled
+			buf->rpos = 0; // 0 position within next chunk
 			buf->wchunk = NULL;
 			buf->wpos = buf->chunk_size;
+			faux_list_del(buf->list, iter);
 		}
 	}
 

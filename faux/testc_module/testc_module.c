@@ -10,6 +10,7 @@ const char *testc_module[][2] = {
 //	{"testc_faux_ini_signal", "Interrupted by signal"}, // demo
 //	{"testc_faux_ini_good", "INI subsystem good"}, // demo
 
+#if 0
 	// base
 	{"testc_faux_filesize", "Get size of filesystem object"},
 
@@ -45,10 +46,13 @@ const char *testc_module[][2] = {
 	// async
 	{"testc_faux_async_write", "Async write operations"},
 	{"testc_faux_async_read", "Async read operations"},
+#endif
 
 	// buf
 	{"testc_faux_buf", "Dynamic buffer"},
 	{"testc_faux_buf_boundaries", "Dynamic buffer. Check boundaries case"},
+	{"testc_faux_buf_direct", "Dynamic buffer. Direct access"},
+	{"testc_faux_buf_dwrite_unlock0", "Dynamic buffer. Chunk removing"},
 
 	// End of list
 	{NULL, NULL}
