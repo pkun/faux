@@ -508,8 +508,9 @@ int testc_faux_buf_dwrite_unlock0(void)
 
 	// Unlock buffer for writing
 	printf("faux_buf_dwrite_unlock() with 0 len\n");
-	if ((wlocked = faux_buf_dwrite_unlock(buf, 0, iov)) != (len)) {
-		fprintf(stderr, "faux_buf_dwrite_unlock() error\n");
+	if ((wlocked = faux_buf_dwrite_unlock(buf, 0, iov)) != 0) {
+		fprintf(stderr, "faux_buf_dwrite_unlock() error %ld\n",
+			wlocked);
 		return -1;
 	}
 
