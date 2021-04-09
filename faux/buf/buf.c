@@ -418,6 +418,65 @@ ssize_t faux_buf_dread_lock(faux_buf_t *buf, size_t len,
 }
 
 
+/** @brief Locks data for reading.
+ *
+ * The complimentary function is faux_buf_dread_unlock_easy().
+ * This function has the same functionality as faux_buf_dread_lock() but
+ * chooses the lentgh of locked space itself to return single continuous buffer.
+ *
+ * @param [in] buf Allocated and initialized dynamic buffer object.
+ * @param [out] data Continuous buffer for direct reading.
+ * @return Length of data actually locked or < 0 on error.
+ */
+ssize_t faux_buf_dread_lock_easy(faux_buf_t *buf, void **data)
+{
+	struct iovec *iov = NULL;
+	size_t iov_num = 0;
+	ssize_t len_to_lock = 0;
+	ssize_t avail = 0;
+	ssize_t locked_len = 0;
+
+	assert(buf);
+	if (!buf)
+		return -1;
+	assert(data);
+	if (!data)
+		return -1;
+
+	// Don't use already locked buffer
+	if (faux_buf_is_rlocked(buf))
+		return -1;
+
+	avail = faux_buf_ravail(buf);
+	if (avail < 0)
+		return -1;
+	if (0 == avail)
+		avail = buf->chunk_size; // Next chunk
+
+	len_to_lock = ((size_t)avail < buf->len) ? (size_t)avail : buf->len;
+	// Nothing to lock
+	if (0 == len_to_lock) {
+		*data = NULL;
+		return 0;
+	}
+
+	locked_len = faux_buf_dread_lock(buf, len_to_lock, &iov, &iov_num);
+	if (locked_len <= 0)
+		return -1;
+	if (iov_num < 1) {
+		faux_free(iov);
+		return -1;
+	}
+
+	*data = iov[0].iov_base;
+	locked_len = iov[0].iov_len;
+
+	faux_free(iov);
+
+	return locked_len;
+}
+
+
 /** @brief Frees "struct iovec" array and unlocks read data.
  *
  * The length of actually readed data can be less than length of locked data.
@@ -634,6 +693,57 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 }
 
 
+/** @brief Gets a data buffer for direct writing and locks it.
+ *
+ * The complimentary function is faux_buf_dwrite_unlock_easy().
+ * This function has the same functionality as faux_buf_dwrite_lock() but
+ * choose the lentgh of locked space itself to return single continuous buffer.
+ *
+ * @param [in] buf Allocated and initialized dynamic buffer object.
+ * @param [out] data Continuous buffer for direct writting.
+ * @return Length of data actually locked or < 0 on error.
+ */
+ssize_t faux_buf_dwrite_lock_easy(faux_buf_t *buf, void **data)
+{
+	struct iovec *iov = NULL;
+	size_t iov_num = 0;
+	ssize_t len = 0;
+	ssize_t locked_len = 0;
+
+	assert(buf);
+	if (!buf)
+		return -1;
+	assert(data);
+	if (!data)
+		return -1;
+
+	// Don't use already locked buffer
+	if (faux_buf_is_wlocked(buf))
+		return -1;
+
+	len = faux_buf_wavail(buf);
+	if (len < 0)
+		return -1;
+	if (0 == len)
+		len = buf->chunk_size; // It will use next chunk
+
+	locked_len = faux_buf_dwrite_lock(buf, len, &iov, &iov_num);
+	if (locked_len <= 0)
+		return -1;
+	if (iov_num < 1) {
+		faux_free(iov);
+		return -1;
+	}
+
+	*data = iov[0].iov_base;
+	locked_len = iov[0].iov_len;
+
+	faux_free(iov);
+
+	return locked_len;
+}
+
+
 /** @brief Frees "struct iovec" array and unlocks written data.
  *
  * The length of actually written data can be less than length of locked data.
@@ -646,7 +756,6 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
  * @param [in] buf Allocated and initialized dynamic buffer object.
  * @param [in] really_written Length of data actually written.
  * @param [out] iov "struct iovec" array to free.
- * @param [out] iov_num_out Number of "struct iovec" array elements.
  * @return Length of data actually unlocked or < 0 on error.
  */
 ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
@@ -705,4 +814,20 @@ ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 	faux_free(iov);
 
 	return really_written;
+}
+
+
+/** @brief Unlocks written data.
+ *
+ * It's a function complementary to faux_buf_dwrite_lock_easy().
+ * It has the same functionality as faux_dwrite_lock() but doesn't free
+ * "struct iovec" array.
+ *
+ * @param [in] buf Allocated and initialized dynamic buffer object.
+ * @param [in] really_written Length of data actually written.
+ * @return Length of data actually unlocked or < 0 on error.
+ */
+ssize_t faux_buf_dwrite_unlock_easy(faux_buf_t *buf, size_t really_written)
+{
+	return faux_buf_dwrite_unlock(buf, really_written, NULL);
 }

@@ -10,6 +10,12 @@
 
 #define FAUX_ASYNC_UNLIMITED 0
 
+// Default overflow limit for out buffer ~ 10M
+#define FAUX_ASYNC_OUT_OVERFLOW 10000000l
+// Default overflow limit for in buffer ~ 10M
+#define FAUX_ASYNC_IN_OVERFLOW 10000000l
+
+
 typedef struct faux_async_s faux_async_t;
 
 

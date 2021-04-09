@@ -334,6 +334,8 @@ FAUX_2.0 {
 		faux_buf_dread_unlock;
 		faux_buf_dwrite_lock;
 		faux_buf_dwrite_unlock;
+		faux_buf_dwrite_lock_easy;
+		faux_buf_dwrite_unlock_easy;
 
 		testc_version_major;
 		testc_version_minor;
