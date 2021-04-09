@@ -266,33 +266,6 @@ ssize_t faux_async_write(faux_async_t *async, void *data, size_t len)
 }
 
 
-/** @brief Get amount of available data within first chunk.
- *
- * Inernal static function.
- *
- * @param [in] list Internal buffer (list of chunks) to inspect.
- * @param [in] rpos Current read position within chunk.
- * @param [in] wpos Current write position within chunk.
- * @return Available data length or < 0 on error.
- */
-static ssize_t data_avail(faux_list_t *list, size_t rpos, size_t wpos)
-{
-	size_t len = 0;
-
-	if (!list)
-		return -1;
-
-	len = faux_list_len(list);
-	if (len == 0)
-		return 0;
-	if (len > 1)
-		return (DATA_CHUNK - rpos);
-
-	// Single chunk
-	return (wpos - rpos);
-}
-
-
 /** @brief Write output buffer to fd in non-blocking mode.
  *
  * Previously data must be written to internal buffer by faux_async_write()
@@ -308,47 +281,40 @@ static ssize_t data_avail(faux_list_t *list, size_t rpos, size_t wpos)
 ssize_t faux_async_out(faux_async_t *async)
 {
 	ssize_t total_written = 0;
+	ssize_t avail = 0;
 
 	assert(async);
 	if (!async)
 		return -1;
 
-	while (async->o_size > 0) {
-		faux_list_node_t *node = NULL;
-		char *chunk_ptr = NULL;
+	while ((avail = faux_buf_len(async->obuf)) > 0) {
 		ssize_t data_to_write = 0;
 		ssize_t bytes_written = 0;
 		bool_t postpone = BOOL_FALSE;
+		void *data = NULL;
 
-		node = faux_list_head(async->o_list);
-		if (!node) // List is empty while o_size > 0
-			return -1;
-		chunk_ptr = faux_list_data(node);
-		data_to_write = data_avail(async->o_list,
-			async->o_rpos, async->o_wpos);
-		if (data_to_write <= 0) // Strange case
+		data_to_write = faux_buf_dread_lock_easy(async->obuf, &data);
+		if (data_to_write <= 0)
 			return -1;
 
-		bytes_written = write(async->fd, chunk_ptr + async->o_rpos,
-			data_to_write);
+		bytes_written = write(async->fd, data, data_to_write);
 		if (bytes_written > 0) {
-			async->o_size -= bytes_written;
 			total_written += bytes_written;
+			faux_buf_dread_unlock_easy(async->obuf, bytes_written);
+		} else {
+			faux_buf_dread_unlock_easy(async->obuf, 0);
 		}
-
 		if (bytes_written < 0) {
 			if ( // Something went wrong
 				(errno != EINTR) &&
 				(errno != EAGAIN) &&
 				(errno != EWOULDBLOCK)
-			)
+				)
 				return -1;
 			// Postpone next read
 			postpone = BOOL_TRUE;
-
 		// Not whole data block was written
 		} else if (bytes_written != data_to_write) {
-			async->o_rpos += bytes_written;
 			// Postpone next read
 			postpone = BOOL_TRUE;
 		}
@@ -357,15 +323,11 @@ ssize_t faux_async_out(faux_async_t *async)
 		if (postpone) {
 			// Execute callback
 			if (async->stall_cb)
-				async->stall_cb(async, async->o_size,
+				async->stall_cb(async,
+					faux_buf_len(async->obuf),
 					async->stall_udata);
 			break;
 		}
-
-		// Not postponed. Current chunk was fully written. So
-		// remove it from list.
-		async->o_rpos = 0;
-		faux_list_del(async->o_list, node);
 	}
 
 	return total_written;

@@ -35,7 +35,8 @@ ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 	struct iovec *iov);
 ssize_t faux_buf_dwrite_lock_easy(faux_buf_t *buf, void **data);
 ssize_t faux_buf_dwrite_unlock_easy(faux_buf_t *buf, size_t really_written);
-
+ssize_t faux_buf_dread_lock_easy(faux_buf_t *buf, void **data);
+ssize_t faux_buf_dread_unlock_easy(faux_buf_t *buf, size_t really_readed);
 
 C_DECL_END
 

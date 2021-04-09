@@ -553,6 +553,22 @@ unlock:
 }
 
 
+/** @brief Unlocks read data.
+ *
+ * It's a function complementary to faux_buf_dread_lock_easy().
+ * It has the same functionality as faux_dread_unlock() but doesn't free
+ * "struct iovec" array.
+ *
+ * @param [in] buf Allocated and initialized dynamic buffer object.
+ * @param [in] really_readed Length of data actually readed.
+ * @return Length of data actually unlocked or < 0 on error.
+ */
+ssize_t faux_buf_dread_unlock_easy(faux_buf_t *buf, size_t really_readed)
+{
+	return faux_buf_dread_unlock(buf, really_readed, NULL);
+}
+
+
 /** @brief Write data from linear buffer to dynamic buffer.
  *
  * @param [in] buf Allocated and initialized dynamic buffer object.
@@ -820,7 +836,7 @@ ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 /** @brief Unlocks written data.
  *
  * It's a function complementary to faux_buf_dwrite_lock_easy().
- * It has the same functionality as faux_dwrite_lock() but doesn't free
+ * It has the same functionality as faux_dwrite_unlock() but doesn't free
  * "struct iovec" array.
  *
  * @param [in] buf Allocated and initialized dynamic buffer object.
