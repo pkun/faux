@@ -281,13 +281,12 @@ ssize_t faux_async_write(faux_async_t *async, void *data, size_t len)
 ssize_t faux_async_out(faux_async_t *async)
 {
 	ssize_t total_written = 0;
-	ssize_t avail = 0;
 
 	assert(async);
 	if (!async)
 		return -1;
 
-	while ((avail = faux_buf_len(async->obuf)) > 0) {
+	while (faux_buf_len(async->obuf) > 0) {
 		ssize_t data_to_write = 0;
 		ssize_t bytes_written = 0;
 		bool_t postpone = BOOL_FALSE;
