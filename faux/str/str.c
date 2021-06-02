@@ -372,6 +372,15 @@ int faux_str_casecmp(const char *str1, const char *str2)
 	const char *p1 = str1;
 	const char *p2 = str2;
 
+	if (!p1 && !p2) // Empty strings are equal
+		return 0;
+
+	if (!p1) // Consider NULL string to be less then empty string
+		return -1;
+
+	if (!p2) // Consider NULL string to be less then empty string
+		return 1;
+
 	while (*p1 != '\0' && *p2 != '\0') {
 		int res = faux_str_cmp_chars(
 			faux_ctype_tolower(*p1), faux_ctype_tolower(*p2));
