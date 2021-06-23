@@ -319,7 +319,7 @@ size_t faux_list_len(const faux_list_t *list)
  * @param [in] list Allocated list.
  * @return BOOL_TRUE - empty, BOOL_FALSE - not empty.
  */
-size_t faux_list_is_empty(const faux_list_t *list)
+bool_t faux_list_is_empty(const faux_list_t *list)
 {
 	assert(list);
 	if (!list)
