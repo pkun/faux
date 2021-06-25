@@ -92,6 +92,23 @@ const char *faux_argv_each(faux_argv_node_t **iter)
 }
 
 
+/** @brief Get current argument by iterator.
+ *
+ * Before iteration the iterator must be initialized by faux_argv_iter()
+ * function. Doesn't use faux_argv_current() with uninitialized iterator.
+ *
+ * Function doesn't modify iterator.
+ *
+ * @param [in] iter Iterator.
+ * @return String.
+ * @sa faux_argv_iter()
+ */
+const char *faux_argv_current(faux_argv_node_t *iter)
+{
+	return (const char *)faux_list_data((faux_list_node_t *)iter);
+}
+
+
 /** @brief Sets alternative quotes list.
  *
  * Any character from specified string becomes alternative quote.
