@@ -165,6 +165,21 @@ ssize_t faux_argv_parse(faux_argv_t *fargv, const char *str)
 }
 
 
+/** @brief Get number of arguments.
+ *
+ * @param [in] fargv Allocated fargv object.
+ * @return Number of words and substrings or < 0 on error.
+ */
+ssize_t faux_argv_len(faux_argv_t *fargv)
+{
+	assert(fargv);
+	if (!fargv)
+		return -1;
+
+	return faux_list_len(fargv->list);
+}
+
+
 /** @brief Returns continuable flag.
  *
  * Can be used after faux_argv_parse() only.
