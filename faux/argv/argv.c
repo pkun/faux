@@ -196,3 +196,21 @@ bool_t faux_argv_is_continuable(faux_argv_t *fargv)
 
 	return fargv->continuable;
 }
+
+
+/** @brief If given node is last one.
+ *
+ * @param [in] iter Iterator/Node.
+ * @return BOOL_TRUE if last, BOOL_FALSE - not last or error.
+ */
+bool_t faux_argv_is_last(faux_argv_node_t *iter)
+{
+	faux_list_node_t *node = (faux_list_node_t *)iter;
+
+	if (!node)
+		return BOOL_FALSE;
+	if (faux_list_next_node(node) == NULL)
+		return BOOL_TRUE;
+
+	return BOOL_FALSE;
+}
