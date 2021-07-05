@@ -45,10 +45,12 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop);
 bool_t faux_eloop_add_fd(faux_eloop_t *eloop, int fd, short events,
 	faux_eloop_cb_fn event_cb, void *user_data);
 bool_t faux_eloop_del_fd(faux_eloop_t *eloop, int fd);
+bool_t faux_eloop_del_fd_all(faux_eloop_t *eloop);
 
 bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
 	faux_eloop_cb_fn event_cb, void *user_data);
 bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo);
+bool_t faux_eloop_del_signal_all(faux_eloop_t *eloop);
 
 faux_ev_t *faux_eloop_add_sched_once(faux_eloop_t *eloop, const struct timespec *time,
 	int ev_id, faux_eloop_cb_fn event_cb, void *data);
@@ -62,6 +64,7 @@ faux_ev_t *faux_eloop_add_sched_periodic_delayed(faux_eloop_t *eloop,
 	const struct timespec *period, unsigned int cycle_num);
 ssize_t faux_eloop_del_sched(faux_eloop_t *eloop, faux_ev_t *ev);
 ssize_t faux_eloop_del_sched_by_id(faux_eloop_t *eloop, int ev_id);
+bool_t faux_eloop_del_sched_all(faux_eloop_t *eloop);
 bool_t faux_eloop_include_fd_event(faux_eloop_t *eloop, int fd, short event);
 bool_t faux_eloop_exclude_fd_event(faux_eloop_t *eloop, int fd, short event);
 

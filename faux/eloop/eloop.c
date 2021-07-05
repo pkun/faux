@@ -557,6 +557,31 @@ bool_t faux_eloop_del_fd(faux_eloop_t *eloop, int fd)
 }
 
 
+/** @brief Unregisters all file descriptors.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
+bool_t faux_eloop_del_fd_all(faux_eloop_t *eloop)
+{
+	faux_list_node_t *iter = NULL;
+
+	if (!eloop)
+		return BOOL_FALSE;
+
+	// "Del all" function is so complex because pollfd object
+	// contains not user added fds only. It contains special fd for signals,
+	// service pipe and may be something else. So del all fds one by one.
+	while ((iter = faux_list_tail(eloop->fds))) {
+		faux_eloop_fd_t *entry = NULL;
+		entry = (faux_eloop_fd_t *)faux_list_data(iter);
+		faux_eloop_del_fd(eloop, entry->fd);
+	}
+
+	return BOOL_TRUE;
+}
+
+
 /** @brief Registers signal to wait for.
  *
  * @param [in] eloop Allocated and initialized event loop object.
@@ -648,6 +673,31 @@ bool_t faux_eloop_del_signal(faux_eloop_t *eloop, int signo)
 	}
 
 	faux_list_kdel(eloop->signals, &signo);
+
+	return BOOL_TRUE;
+}
+
+
+/** @brief Unregisters all signals to wait for.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
+bool_t faux_eloop_del_signal_all(faux_eloop_t *eloop)
+{
+	faux_list_node_t *iter = NULL;
+
+	if (!eloop)
+		return BOOL_FALSE;
+
+	// "Del all" function is so complex because signals can be set now
+	// and deletion is not only removing from list.
+	// So del all signals one by one.
+	while ((iter = faux_list_tail(eloop->signals))) {
+		faux_eloop_signal_t *entry = NULL;
+		entry = (faux_eloop_signal_t *)faux_list_data(iter);
+		faux_eloop_del_signal(eloop, entry->signo);
+	}
 
 	return BOOL_TRUE;
 }
@@ -832,6 +882,23 @@ ssize_t faux_eloop_del_sched(faux_eloop_t *eloop, faux_ev_t *ev)
 		return -1;
 
 	return faux_sched_del(eloop->sched, ev);
+}
+
+
+/** @brief Unregisters all scheduled time events.
+ *
+ * @param [in] eloop Allocated and initialized event loop object.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
+bool_t faux_eloop_del_sched_all(faux_eloop_t *eloop)
+{
+	assert(eloop);
+	if (!eloop)
+		return BOOL_FALSE;
+
+	faux_sched_del_all(eloop->sched);
+
+	return BOOL_TRUE;
 }
 
 

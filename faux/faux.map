@@ -48,14 +48,17 @@ FAUX_2.0 {
 		faux_eloop_loop;
 		faux_eloop_add_fd;
 		faux_eloop_del_fd;
+		faux_eloop_del_fd_all;
 		faux_eloop_add_signal;
 		faux_eloop_del_signal;
+		faux_eloop_del_signal_all;
 		faux_eloop_add_sched_once;
 		faux_eloop_add_sched_once_delayed;
 		faux_eloop_add_sched_periodic;
 		faux_eloop_add_sched_periodic_delayed;
 		faux_eloop_del_sched;
 		faux_eloop_del_sched_by_id;
+		faux_eloop_del_sched_all;
 		faux_eloop_include_fd_event;
 		faux_eloop_exclude_fd_event;
 
