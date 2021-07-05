@@ -294,3 +294,20 @@ struct pollfd *faux_pollfd_each_active(faux_pollfd_t *faux_pollfd, faux_pollfd_i
 
 	return NULL;
 }
+
+
+/** @brief Deletes all items from pollfd object.
+ *
+ * @param [in] faux_pollfd Allocated faux_pollfd_t object.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
+ */
+bool_t faux_pollfd_del_all(faux_pollfd_t *faux_pollfd)
+{
+	assert(faux_pollfd);
+	if (!faux_pollfd)
+		return BOOL_FALSE;
+
+	faux_vec_del_all(faux_pollfd->vec);
+
+	return BOOL_TRUE;
+}

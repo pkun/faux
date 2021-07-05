@@ -69,6 +69,7 @@ bool_t faux_pollfd_del_by_index(faux_pollfd_t *faux_pollfd, unsigned int index);
 void faux_pollfd_init_iterator(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_t *iterator);
 struct pollfd *faux_pollfd_each(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_t *iterator);
 struct pollfd *faux_pollfd_each_active(faux_pollfd_t *faux_pollfd, faux_pollfd_iterator_t *iterator);
+bool_t faux_pollfd_del_all(faux_pollfd_t *faux_pollfd);
 
 C_DECL_END
 

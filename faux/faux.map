@@ -235,6 +235,7 @@ FAUX_2.0 {
 		faux_pollfd_init_iterator;
 		faux_pollfd_each;
 		faux_pollfd_each_active;
+		faux_pollfd_del_all;
 
 		faux_ev_new;
 		faux_ev_free;
