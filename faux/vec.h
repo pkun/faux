@@ -27,6 +27,7 @@ int faux_vec_find_fn(const faux_vec_t *faux_vec, faux_vec_kcmp_fn matchFn,
 	const void *userkey, unsigned int start_index);
 int faux_vec_find(const faux_vec_t *faux_vec, const void *userkey,
 	unsigned int start_index);
+void faux_vec_del_all(faux_vec_t *faux_vec);
 
 C_DECL_END
 

@@ -322,6 +322,7 @@ FAUX_2.0 {
 		faux_vec_del;
 		faux_vec_find_fn;
 		faux_vec_find;
+		faux_vec_del_all;
 
 		faux_buf_new;
 		faux_buf_free;

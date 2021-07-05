@@ -258,3 +258,17 @@ int faux_vec_find(const faux_vec_t *faux_vec, const void *userkey,
 	return faux_vec_find_fn(faux_vec, faux_vec->kcmpFn,
 		userkey, start_index);
 }
+
+
+/** @brief Deletes all vector's items.
+ *
+ * @param [in] faux_vec Allocated vector object.
+ */
+void faux_vec_del_all(faux_vec_t *faux_vec)
+{
+	if (!faux_vec)
+		return;
+	faux_free(faux_vec->data);
+	faux_vec->data = NULL;
+	faux_vec->len = 0;
+}
