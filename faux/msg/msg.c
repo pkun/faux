@@ -838,7 +838,7 @@ faux_msg_t *faux_msg_recv(faux_net_t *faux_net)
 	if (received != sizeof(hdr))
 		return NULL;
 
-	body_len = hdr.len;
+	body_len = faux_hdr_len(&hdr) - sizeof(hdr);
 	body = faux_malloc(body_len);
 	received = faux_net_recv(faux_net, body, body_len);
 	if (received != body_len) {
