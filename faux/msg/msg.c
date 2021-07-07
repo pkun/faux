@@ -886,11 +886,13 @@ faux_msg_t *faux_msg_recv(faux_net_t *faux_net)
 		return NULL;
 
 	body_len = faux_hdr_len(&hdr) - sizeof(hdr);
-	body = faux_malloc(body_len);
-	received = faux_net_recv(faux_net, body, body_len);
-	if (received != body_len) {
-		faux_free(body);
-		return NULL;
+	if (body_len > 0) {
+		body = faux_malloc(body_len);
+		received = faux_net_recv(faux_net, body, body_len);
+		if (received != body_len) {
+			faux_free(body);
+			return NULL;
+		}
 	}
 
 	msg = faux_msg_deserialize_parts(&hdr, body, body_len);
