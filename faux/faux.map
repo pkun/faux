@@ -194,6 +194,7 @@ FAUX_2.0 {
 		faux_msg_get_param_by_index;
 		faux_msg_get_param_by_type;
 		faux_msg_send;
+		faux_msg_send_async;
 		faux_msg_recv;
 		faux_msg_iov;
 		faux_msg_serialize;

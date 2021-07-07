@@ -30,6 +30,7 @@
 #include <faux/str.h>
 #include <faux/list.h>
 #include <faux/net.h>
+#include <faux/async.h>
 #include <faux/msg.h>
 
 // Global variable to switch debug on/off (true/false)
@@ -660,10 +661,56 @@ ssize_t faux_msg_send(const faux_msg_t *msg, faux_net_t *faux_net)
 	struct iovec *iov = NULL;
 	size_t ret = 0;
 
+	assert(msg);
+	if (!msg)
+		return -1;
+	assert(faux_net);
+	if (!faux_net)
+		return -1;
+
 	if (!faux_msg_iov(msg, &iov, &vec_entries_num))
 		return -1;
 
 	ret = faux_net_sendv(faux_net, iov, vec_entries_num);
+	faux_free(iov);
+
+#ifdef DEBUG
+	// Debug
+	if (msg && ret > 0 && faux_msg_debug_flag) {
+		printf("(o) ");
+		faux_msg_debug(msg);
+	}
+#endif
+
+	return ret;
+}
+
+
+/** @brief Sends message to network in async mode.
+ *
+ * Function sends message to network using preinitialized faux_async_t object.
+ *
+ * @param [in] msg Allocated faux_msg_t object.
+ * @param [in] async Preinitialized faux_async_t object.
+ * @return Length of sent data or < 0 on error.
+ */
+ssize_t faux_msg_send_async(const faux_msg_t *msg, faux_async_t *async)
+{
+	size_t vec_entries_num = 0;
+	struct iovec *iov = NULL;
+	size_t ret = 0;
+
+	assert(msg);
+	if (!msg)
+		return -1;
+	assert(async);
+	if (!async)
+		return -1;
+
+	if (!faux_msg_iov(msg, &iov, &vec_entries_num))
+		return -1;
+
+	ret = faux_async_writev(async, iov, vec_entries_num);
 	faux_free(iov);
 
 #ifdef DEBUG
