@@ -22,6 +22,7 @@ FAUX_2.0 {
 		faux_async_set_write_overflow;
 		faux_async_set_read_overflow;
 		faux_async_write;
+		faux_async_writev;
 		faux_async_out;
 		faux_async_in;
 

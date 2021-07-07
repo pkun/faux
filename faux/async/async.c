@@ -266,6 +266,54 @@ ssize_t faux_async_write(faux_async_t *async, void *data, size_t len)
 }
 
 
+/** @brief Async "struct iovec" write.
+ *
+ * This function is like a faux_async_write() function but uses scatter/gather.
+ *
+ * @see faux_async_write().
+ * @param [in] async Allocated and initialized async I/O object.
+ * @param [in] iov Array of "struct iovec" structures.
+ * @param [in] iovcnt Number of iov array members.
+ * @return Length of stored/writed data or < 0 on error.
+ */
+ssize_t faux_async_writev(faux_async_t *async,
+	const struct iovec *iov, int iovcnt)
+{
+	size_t total_written = 0;
+	int i = 0;
+
+	assert(async);
+	if (!async)
+		return -1;
+	if (!iov)
+		return -1;
+	if (iovcnt == 0)
+		return 0;
+
+	for (i = 0; i < iovcnt; i++) {
+		ssize_t bytes_written = 0;
+		if (iov[i].iov_len == 0)
+			continue;
+		bytes_written = faux_buf_write(async->obuf,
+			iov[i].iov_base, iov[i].iov_len);
+		if (bytes_written < 0) { // Error
+			if (total_written != 0)
+				break;
+			return -1;
+		}
+		if (0 == bytes_written) // Insufficient space
+			break;
+		total_written += bytes_written;
+	}
+
+	// Try to real write data to fd in nonblocked mode
+	if (total_written > 0)
+		faux_async_out(async);
+
+	return total_written;
+}
+
+
 /** @brief Write output buffer to fd in non-blocking mode.
  *
  * Previously data must be written to internal buffer by faux_async_write()

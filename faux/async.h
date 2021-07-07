@@ -39,6 +39,8 @@ void faux_async_set_stall_cb(faux_async_t *async,
 void faux_async_set_write_overflow(faux_async_t *async, size_t overflow);
 void faux_async_set_read_overflow(faux_async_t *async, size_t overflow);
 ssize_t faux_async_write(faux_async_t *async, void *data, size_t len);
+ssize_t faux_async_writev(faux_async_t *async,
+	const struct iovec *iov, int iovcnt);
 ssize_t faux_async_out(faux_async_t *async);
 ssize_t faux_async_in(faux_async_t *async);
 
