@@ -88,6 +88,12 @@ int testc_faux_vec(void)
 		goto err;
 	}
 
+	// Remove all items one by one. Note current len is (VEC_LEN - 1).
+	// Checks for case when length of vector is 1 and we delete this
+	// left item.
+	for (i = 0; i < (VEC_LEN - 1); i++)
+		faux_vec_del(vec, 0);
+
 	ret = 0;
 err:
 	faux_vec_free(vec);

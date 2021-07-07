@@ -174,6 +174,15 @@ ssize_t faux_vec_del(faux_vec_t *faux_vec, unsigned int index)
 	if ((index + 1) > faux_vec_len(faux_vec))
 		return -1;
 
+	// It's special case when the only one item left within vector. In this
+	// case we don't need to realloc() but free() the vector.
+	if (faux_vec_len(faux_vec) == 1) {
+		free(faux_vec->data);
+		faux_vec->data = NULL;
+		faux_vec->len = 0;
+		return 0;
+	}
+
 	// Move following items to fill the space of deleted item
 	if (index != (faux_vec_len(faux_vec) - 1)) { // Is it last item?
 		void *item_to_del = faux_vec_item(faux_vec, index);
