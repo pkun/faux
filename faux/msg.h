@@ -126,7 +126,7 @@ faux_msg_t *faux_msg_deserialize_parts(const faux_hdr_t *hdr,
 	const char *body, size_t body_len);
 faux_msg_t *faux_msg_deserialize(const char *data, size_t len);
 
-void faux_msg_debug(faux_msg_t *msg);
+void faux_msg_debug(const faux_msg_t *msg);
 
 C_DECL_END
 

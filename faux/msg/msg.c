@@ -867,7 +867,7 @@ faux_msg_t *faux_msg_recv(faux_net_t *faux_net)
  *
  * @param [in] msg Allocated faux_msg_t object.
  */
-void faux_msg_debug(faux_msg_t *msg)
+void faux_msg_debug(const faux_msg_t *msg)
 #ifdef DEBUG
 {
 	faux_list_node_t *iter = 0;
@@ -881,7 +881,7 @@ void faux_msg_debug(faux_msg_t *msg)
 		return;
 
 	// Header
-	printf("%lx(%u.%u): c%04x s%08x i%08x p%u l%u |%lub\n",
+	printf("%x(%u.%u): c%04x s%08x i%08x p%u l%u |%lub\n",
 		faux_msg_get_magic(msg),
 		faux_msg_get_major(msg),
 		faux_msg_get_minor(msg),
