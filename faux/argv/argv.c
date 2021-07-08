@@ -214,3 +214,24 @@ bool_t faux_argv_is_last(faux_argv_node_t *iter)
 
 	return BOOL_FALSE;
 }
+
+
+/** @brief Adds argument to fargv object.
+ *
+ * @param [in] fargv Allocated argv object.
+ * @param [in] arg Argument to add.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
+bool_t faux_argv_add(faux_argv_t *fargv, const char *arg)
+{
+	assert(fargv);
+	if (!fargv)
+		return BOOL_FALSE;
+	assert(arg);
+	if (!arg)
+		return BOOL_FALSE;
+
+	faux_list_add(fargv->list, faux_str_dup(arg));
+
+	return BOOL_TRUE;
+}
