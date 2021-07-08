@@ -198,6 +198,21 @@ bool_t faux_argv_is_continuable(faux_argv_t *fargv)
 }
 
 
+/** @brief Sets continuable flag.
+ *
+ * @param [in] fargv Allocated fargv object.
+ * @param [in] continuable Continuable flag to set.
+ */
+void faux_argv_set_continuable(faux_argv_t *fargv, bool_t continuable)
+{
+	assert(fargv);
+	if (!fargv)
+		return;
+
+	fargv->continuable = continuable;
+}
+
+
 /** @brief If given node is last one.
  *
  * @param [in] iter Iterator/Node.

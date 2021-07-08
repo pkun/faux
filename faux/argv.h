@@ -26,6 +26,8 @@ ssize_t faux_argv_parse(faux_argv_t *fargv, const char *str);
 bool_t faux_argv_add(faux_argv_t *fargv, const char *arg);
 
 bool_t faux_argv_is_continuable(faux_argv_t *fargv);
+void faux_argv_set_continuable(faux_argv_t *fargv, bool_t continuable);
+
 bool_t faux_argv_is_last(faux_argv_node_t *iter);
 
 C_DECL_END
