@@ -110,6 +110,7 @@ int faux_msg_get_len(const faux_msg_t *msg);
 uint32_t faux_msg_get_magic(const faux_msg_t *msg);
 int faux_msg_get_major(const faux_msg_t *msg);
 int faux_msg_get_minor(const faux_msg_t *msg);
+
 ssize_t faux_msg_add_param(faux_msg_t *msg, uint16_t type,
 	const void *buf, size_t len);
 faux_list_node_t *faux_msg_init_param_iter(const faux_msg_t *msg);
@@ -119,6 +120,9 @@ faux_phdr_t *faux_msg_get_param_by_index(const faux_msg_t *msg, unsigned int ind
 	uint16_t *param_type, void **param_data, uint32_t *param_len);
 faux_phdr_t *faux_msg_get_param_by_type(const faux_msg_t *msg,
 	uint16_t param_type, void **param_data, uint32_t *param_len);
+char *faux_msg_get_str_param_by_type(const faux_msg_t *msg,
+	uint16_t param_type);
+
 ssize_t faux_msg_send(const faux_msg_t *msg, faux_net_t *faux_net);
 ssize_t faux_msg_send_async(const faux_msg_t *msg, faux_async_t *async);
 faux_msg_t *faux_msg_recv(faux_net_t *faux_net);

@@ -571,6 +571,34 @@ faux_phdr_t *faux_msg_get_param_by_type(const faux_msg_t *msg,
 }
 
 
+/** @brief Gets message string parameter by parameter's type.
+ *
+ * It's the same as faux_msg_get_param_by_type() but it's supposed
+ * the parameter contains text string without ending '\0'. Function
+ * will create C-string dup of this parameter. The resulting line must be freed
+ * later with faux_str_free().
+ *
+ * @sa faux_msg_get_param_by_type()
+ * @param [in] msg Allocated faux_msg_t object.
+ * @param [in] param_type Type of parameter.
+ * @return Pointer to allocated C-string or NULL on error.
+ */
+char *faux_msg_get_str_param_by_type(const faux_msg_t *msg,
+	uint16_t param_type)
+{
+	const char *raw = NULL;
+	uint32_t raw_len = 0;
+	char *line = NULL;
+
+	if (!faux_msg_get_param_by_type(msg, param_type,
+		(void **)&raw, &raw_len))
+		return NULL;
+	line = faux_str_dupn(raw, raw_len);
+
+	return line;
+}
+
+
 /** @brief Create IOV of message.
  *
  * Function creates and fills iovec structure. This iovec contains references
