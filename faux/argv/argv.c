@@ -188,7 +188,7 @@ ssize_t faux_argv_len(faux_argv_t *fargv)
  * @param [in] fargv Allocated fargv object.
  * @return Boolean continuable flag.
  */
-bool_t faux_argv_is_continuable(faux_argv_t *fargv)
+bool_t faux_argv_is_continuable(const faux_argv_t *fargv)
 {
 	assert(fargv);
 	if (!fargv)
