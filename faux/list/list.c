@@ -89,7 +89,6 @@ faux_list_node_t *faux_list_next_node(const faux_list_node_t *node)
  */
 void *faux_list_data(const faux_list_node_t *node)
 {
-	assert(node);
 	if (!node)
 		return NULL;
 
