@@ -323,3 +323,54 @@ const char *faux_conv_bool2str(bool_t val)
 
 	return "false";
 }
+
+
+/** @brief Converts string to tri_t
+ *
+ * Case insensitive.
+ *
+ * @param [in] str Input string to convert.
+ * @param [out] val Pointer to result value.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error
+ */
+bool_t faux_conv_str2tri(const char *str, tri_t *val)
+{
+	if (!str)
+		return BOOL_FALSE;
+
+	if (faux_str_casecmp(str, "true") == 0) {
+		if (val)
+			*val = TRI_TRUE;
+		return BOOL_TRUE;
+	}
+
+	if (faux_str_casecmp(str, "false") == 0) {
+		if (val)
+			*val = TRI_FALSE;
+		return BOOL_TRUE;
+	}
+
+	if (faux_str_casecmp(str, "undefined") == 0) {
+		if (val)
+			*val = TRI_UNDEFINED;
+		return BOOL_TRUE;
+	}
+
+	return BOOL_FALSE;
+}
+
+
+/** @brief Converts tri_t to string
+ *
+ * @param [in] val tri_t value.
+ * @return "true"/"false"/"undefined" strings
+ */
+const char *faux_conv_tri2str(tri_t val)
+{
+	if (TRI_TRUE == val)
+		return "true";
+	if (TRI_FALSE == val)
+		return "false";
+
+	return "undefined";
+}

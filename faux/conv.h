@@ -27,6 +27,9 @@ bool_t faux_conv_atouc(const char *str, unsigned char *val, int base);
 bool_t faux_conv_str2bool(const char *str, bool_t *val);
 const char *faux_conv_bool2str(bool_t val);
 
+bool_t faux_conv_str2tri(const char *str, tri_t *val);
+const char *faux_conv_tri2str(tri_t val);
+
 C_DECL_END
 
 #endif
