@@ -29,6 +29,7 @@ const char *faux_error_each(faux_error_node_t **iter);
 const char *faux_error_eachr(faux_error_node_t **iter);
 bool_t faux_error_fshow(const faux_error_t *error, FILE *handle);
 bool_t faux_error_show(const faux_error_t *error);
+char *faux_error_cstr(const faux_error_t *error);
 
 C_DECL_END
 

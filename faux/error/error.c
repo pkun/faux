@@ -281,3 +281,30 @@ bool_t faux_error_show(const faux_error_t *error)
 {
 	return faux_error_fshow(error, stderr);
 }
+
+
+/** @brief Print error stack to C-string.
+ *
+ * Result must be freed by faux_str_free() later.
+ *
+ * @param [in] error Allocated and initialized error object.
+ * @return Allocated C-string or NULL on error.
+ */
+char *faux_error_cstr(const faux_error_t *error)
+{
+	faux_error_node_t *iter = NULL;
+	const char *s = NULL;
+	char *cstr = NULL;
+
+	if (!error)
+		return NULL;
+
+	iter = faux_error_iter(error);
+	while ((s = faux_error_each(&iter))) {
+		faux_str_cat(&cstr, s);
+		if (iter)
+			faux_str_cat(&cstr, "\n");
+	}
+
+	return cstr;
+}

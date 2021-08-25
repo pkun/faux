@@ -80,6 +80,7 @@ FAUX_2.0 {
 		faux_error_eachr;
 		faux_error_fshow;
 		faux_error_show;
+		faux_error_cstr;
 
 		faux_free;
 		faux_malloc;
