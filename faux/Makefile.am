@@ -8,6 +8,10 @@ if HAVE_LD_VERSION_SCRIPT
 libfaux_la_LDFLAGS += -Wl,--version-script=faux/faux.map
 endif
 
+if DEBUG
+libfaux_la_CFLAGS += -DDEBUG
+endif
+
 if TESTC
 libfaux_la_CFLAGS += -DTESTC
 endif
