@@ -200,6 +200,7 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 #ifndef HAVE_SIGNALFD
 	int signal_pipe[2];
 	int fflags = 0;
+	void *saved_static_user_data = NULL;
 #endif // not HAVE_SIGNALFD
 
 	// If event loop is active already and we try to start nested loop
@@ -232,6 +233,10 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 	fcntl(signal_pipe[1], F_SETFD, FD_CLOEXEC);
 	fflags = fcntl(signal_pipe[1], F_GETFL);
 	fcntl(signal_pipe[1], F_SETFL, fflags | O_NONBLOCK);
+	// Save previous value of static user data. It can be a nested
+	// invocation of faux_eloop_loop() (i.e. same function but different
+	// faux_eloop_t objects). So it need to be restored after loop.
+	saved_static_user_data = faux_eloop_static_user_data;
 	faux_eloop_static_user_data = &signal_pipe[1];
 	faux_pollfd_add(eloop->pollfds, signal_pipe[0], POLLIN);
 
@@ -395,6 +400,9 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 	eloop->signal_fd = -1;
 
 #else // Standard signals. Restore signal handlers
+	// Restore saved static_user_data. It must be done before sigaction()
+	// that restores old signal handlers.
+	faux_eloop_static_user_data = saved_static_user_data;
 	if (faux_list_len(eloop->signals) != 0) {
 		faux_list_node_t *iter = faux_list_head(eloop->signals);
 		faux_eloop_signal_t *sig = NULL;
