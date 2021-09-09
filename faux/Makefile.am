@@ -35,7 +35,8 @@ nobase_include_HEADERS += \
 	faux/eloop.h \
 	faux/async.h \
 	faux/error.h \
-	faux/testc_helpers.h
+	faux/testc_helpers.h \
+	faux/buf.h
 
 EXTRA_DIST += \
 	faux/base/Makefile.am \
