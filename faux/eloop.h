@@ -6,6 +6,7 @@
 #define _faux_eloop_h
 
 #include <poll.h>
+#include <signal.h>
 
 #include <faux/faux.h>
 #include <faux/sched.h>
