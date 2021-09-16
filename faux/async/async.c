@@ -418,12 +418,16 @@ ssize_t faux_async_in(faux_async_t *async)
 				(errno != EINTR) &&
 				(errno != EAGAIN) &&
 				(errno != EWOULDBLOCK)
-			)
+			) {
+				faux_buf_dwrite_unlock_easy(async->ibuf, 0);
 				return -1;
+			}
 		}
 		faux_buf_dwrite_unlock_easy(async->ibuf, bytes_readed);
 		total_readed += bytes_readed;
 
+		if (!async->read_cb) // No read callback
+			continue;
 		// Check for amount of stored data
 		while ((bytes_stored = faux_buf_len(async->ibuf)) >= async->min) {
 			size_t copy_len = 0;
@@ -440,9 +444,8 @@ ssize_t faux_async_in(faux_async_t *async)
 			faux_buf_read(async->ibuf, buf, copy_len);
 
 			// Execute callback
-			if (async->read_cb)
-				async->read_cb(async, buf,
-					copy_len, async->read_udata);
+			async->read_cb(async, buf,
+				copy_len, async->read_udata);
 		}
 	} while (bytes_readed == locked_len);
 
