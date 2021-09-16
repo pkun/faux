@@ -385,10 +385,8 @@ ssize_t faux_async_out(faux_async_t *async)
  *
  * Reads fd and puts data to internal buffer. It can't be blocked. If length of
  * data stored within internal buffer is greater or equal than "min" limit then
- * function will execute "read" callback. It allocates linear buffer, copies
- * data to it and give it to callback. Note this function will never free
- * allocated buffer. So callback must do it or it must be done later. Function
- * will not allocate buffer larger than "max" read limit. If "max" limit is "0"
+ * function will execute "read" callback. It gives faux_buf_t object to callback.
+ * If "max" limit is "0"
  * (it means indefinite) then function will pass all available data to callback.
  *
  * @param [in] async Allocated and initialized async I/O object.
@@ -431,20 +429,17 @@ ssize_t faux_async_in(faux_async_t *async)
 		// Check for amount of stored data
 		while ((bytes_stored = faux_buf_len(async->ibuf)) >= async->min) {
 			size_t copy_len = 0;
-			char *buf = NULL;
 
+			// Calculate length of user-requested block
 			if (FAUX_ASYNC_UNLIMITED == async->max) { // Indefinite
 				copy_len = bytes_stored; // Take all data
 			} else {
 				copy_len = (bytes_stored < async->max) ?
 					bytes_stored : async->max;
 			}
-			buf = faux_malloc(copy_len);
-			assert(buf);
-			faux_buf_read(async->ibuf, buf, copy_len);
 
 			// Execute callback
-			async->read_cb(async, buf,
+			async->read_cb(async, async->ibuf,
 				copy_len, async->read_udata);
 		}
 	} while (bytes_readed == locked_len);

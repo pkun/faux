@@ -105,10 +105,14 @@ parse_error:
 }
 
 
-static bool_t read_cb(faux_async_t *async, void *data, size_t len, void *user_data)
+static bool_t read_cb(faux_async_t *async, faux_buf_t *buf, size_t len,
+	void *user_data)
 {
 	int fd = *((int *)user_data);
+	char *data = NULL;
 
+	data = malloc(len);
+	faux_buf_read(buf, data, len);
 	faux_write_block(fd, data, len);
 	faux_free(data);
 

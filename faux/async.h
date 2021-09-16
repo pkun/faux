@@ -6,6 +6,7 @@
 #define _faux_async_h
 
 #include <faux/faux.h>
+#include <faux/buf.h>
 #include <faux/sched.h>
 
 #define FAUX_ASYNC_UNLIMITED 0
@@ -21,7 +22,7 @@ typedef struct faux_async_s faux_async_t;
 
 // Callback function prototypes
 typedef bool_t (*faux_async_read_cb_fn)(faux_async_t *async,
-	void *data, size_t len, void *user_data);
+	faux_buf_t *buf, size_t len, void *user_data);
 typedef bool_t (*faux_async_stall_cb_fn)(faux_async_t *async,
 	size_t len, void *user_data);
 
