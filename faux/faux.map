@@ -14,6 +14,7 @@ FAUX_2.0 {
 		faux_argv_set_continuable;
 		faux_argv_is_last;
 		faux_argv_add;
+		faux_argv_index;
 
 		faux_async_new;
 		faux_async_free;
@@ -156,6 +157,8 @@ FAUX_2.0 {
 		faux_list_kfind_node;
 		faux_list_find;
 		faux_list_kfind;
+		faux_list_index_node;
+		faux_list_index;
 
 		faux_log_facility_id;
 		faux_log_facility_str;
