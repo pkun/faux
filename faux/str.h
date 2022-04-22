@@ -43,26 +43,7 @@ char *faux_str_c_bin(const char *src, size_t n);
 
 char *faux_str_nextword(const char *str, const char **saveptr,
 	const char *alt_quotes, bool_t *qclosed);
-
-
-//const char *faux_str_suffix(const char *string);
-/*
- * These are the escape characters which are used by default when 
- * expanding variables. These characters will be backslash escaped
- * to prevent them from being interpreted in a script.
- *
- * This is a security feature to prevent users from arbitarily setting
- * parameters to contain special sequences.
- */
-//extern const char *faux_str_esc_default;
-//extern const char *faux_str_esc_regex;
-//extern const char *faux_str_esc_quoted;
-
-//char *faux_str_decode(const char *string);
-//char *faux_str_ndecode(const char *string, unsigned int len);
-//char *faux_str_encode(const char *string, const char *escape_chars);
-//unsigned int faux_str_equal_part(const char *str1, const char *str2,
-//	bool_t utf8);
+char *faux_str_getline(const char *str, const char **saveptr);
 
 C_DECL_END
 

@@ -846,3 +846,43 @@ bool_t faux_str_is_empty(const char *str)
 
 	return BOOL_FALSE;
 }
+
+
+/** @brief Gets line from multiline string.
+ *
+ * @param [in] str String to analyze.
+ * @param [out] saveptr Pointer to the position after found EOL.
+ * @return Allocated line or NULL if string is empty.
+ */
+char *faux_str_getline(const char *str, const char **saveptr)
+{
+	const char *find_pos = NULL;
+	const char *eol = "\n\r";
+
+	assert(str);
+	if (!str)
+		return NULL;
+	if ('\0' == *str) {
+		if (saveptr)
+			*saveptr = str;
+		return NULL;
+	}
+
+	find_pos = faux_str_chars(str, eol);
+	if (find_pos) {
+		size_t len = find_pos - str;
+		char *res = NULL;
+		res = faux_zmalloc(len + 1);
+		if (len > 0)
+			memcpy(res, str, len);
+		if (saveptr)
+			*saveptr = find_pos + 1;
+		return res;
+	}
+
+	// Line without EOL
+	if (saveptr)
+		*saveptr = str + strlen(str);
+
+	return faux_str_dup(str);
+}
