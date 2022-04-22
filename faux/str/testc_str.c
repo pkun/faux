@@ -55,3 +55,41 @@ int testc_faux_str_nextword(void)
 
 	return retval;
 }
+
+
+int testc_faux_str_getline(void)
+{
+	const char* line = "arg 0\narg 1\narg 2";
+	const char* etalon[] = {
+		"arg 0",
+		"arg 1",
+		"arg 2",
+		NULL
+		 };
+	ssize_t num_etalon = 3;
+	size_t index = 0;
+	char *str = NULL;
+	const char *saveptr = NULL;
+
+	printf("Line   : [%s]\n", line);
+
+	saveptr = line;
+	while ((str = faux_str_getline(saveptr, &saveptr)) && (index < num_etalon)) {
+		int r = -1;
+		const char *res = NULL;
+		printf("Etalon %ld : [%s]\n", index, etalon[index]);
+		r = strcmp(etalon[index], str);
+		if (r < 0) {
+			printf("Not equal %ld [%s]\n", index, str);
+			return -1;
+		}
+		faux_str_free(str);
+		index++;
+	}
+	if (index != num_etalon) {
+		printf("Number of args is not equal real=%ld etalon=%ld\n", index, num_etalon);
+		return -1;
+	}
+
+	return 0;
+}
