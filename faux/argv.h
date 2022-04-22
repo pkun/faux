@@ -17,10 +17,11 @@ faux_argv_t *faux_argv_new(void);
 void faux_argv_free(faux_argv_t *fargv);
 void faux_argv_set_quotes(faux_argv_t *fargv, const char *quotes);
 
+ssize_t faux_argv_len(faux_argv_t *fargv);
 faux_argv_node_t *faux_argv_iter(const faux_argv_t *fargv);
 const char *faux_argv_each(faux_argv_node_t **iter);
 const char *faux_argv_current(faux_argv_node_t *iter);
-ssize_t faux_argv_len(faux_argv_t *fargv);
+const char *faux_argv_index(const faux_argv_t *fargv, size_t index);
 
 ssize_t faux_argv_parse(faux_argv_t *fargv, const char *str);
 bool_t faux_argv_add(faux_argv_t *fargv, const char *arg);

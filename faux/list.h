@@ -73,6 +73,8 @@ void *faux_list_find(const faux_list_t *list,
 	faux_list_kcmp_fn matchFn, const void *userkey);
 void *faux_list_kfind(const faux_list_t *list,
 	const void *userkey);
+faux_list_node_t *faux_list_index_node(const faux_list_t *list, size_t index);
+void *faux_list_index(const faux_list_t *list, size_t index);
 
 C_DECL_END
 

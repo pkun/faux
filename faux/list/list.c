@@ -714,3 +714,49 @@ void *faux_list_kfind(const faux_list_t *list,
 {
 	return faux_list_find(list, list->kcmpFn, userkey);
 }
+
+
+/** @brief Gets list node by index.
+ *
+ * Note getting item by index is not effective operation for list.
+ *
+ * @param [in] list List.
+ * @param [in] index Item's index.
+ * @return List node by index or NULL on error.
+ */
+faux_list_node_t *faux_list_index_node(const faux_list_t *list, size_t index)
+{
+	faux_list_node_t *iter = NULL;
+	size_t i = 0;
+
+	assert(list);
+	if (!list)
+		return NULL;
+	if (index >= list->len)
+		return NULL;
+
+	iter = list->head;
+	for (i = 0; i < index; i++)
+		iter = faux_list_next_node(iter);
+
+	return iter;
+}
+
+
+/** @brief Gets list item by index.
+ *
+ * Note getting item by index is not effective operation for list.
+ *
+ * @param [in] list List.
+ * @param [in] index Item's index.
+ * @return List node's data by index or NULL on error.
+ */
+void *faux_list_index(const faux_list_t *list, size_t index)
+{
+	faux_list_node_t *res =
+		faux_list_index_node(list, index);
+	if (!res)
+		return NULL;
+
+	return faux_list_data(res);
+}

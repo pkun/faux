@@ -74,6 +74,7 @@ int testc_faux_argv_parse(void)
 	return retval;
 }
 
+
 int testc_faux_argv_is_continuable(void)
 {
 	faux_argv_t *fargv = NULL;
@@ -98,6 +99,55 @@ int testc_faux_argv_is_continuable(void)
 	} else {
 		printf("Line is not continuable\n");
 	}
+
+	return retval;
+}
+
+
+int testc_faux_argv_index(void)
+{
+	faux_argv_t *fargv = NULL;
+	const char* line = "arg0 arg1 arg2";
+	const char* etalon[] = {
+		"arg0",
+		"arg1",
+		"arg2",
+		NULL
+		 };
+	int retval = 0;
+	ssize_t num = 0;
+	ssize_t num_etalon = 3;
+	size_t index = 0;
+
+	printf("Line   : [%s]\n", line);
+
+	fargv = faux_argv_new();
+	num = faux_argv_parse(fargv, line);
+	if (num != num_etalon) {
+		printf("Error: Can't parse line\n");
+		faux_argv_free(fargv);
+		return -1;
+	}
+
+	for (index = 0; index < num; index++) {
+		int r = -1;
+		const char *res = NULL;
+		printf("Etalon %ld : [%s]\n", index, etalon[index]);
+		res = faux_argv_index(fargv, index);
+		if (!res) {
+			printf("The faux_argv_index() return value is NULL\n");
+			break;
+		} else {
+			printf("Result %ld : [%s]\n", index, res);
+		}
+		r = strcmp(etalon[index], res);
+		if (r < 0) {
+			printf("Not equal %ld\n", index);
+			retval = -1;
+		}
+	}
+
+	faux_argv_free(fargv);
 
 	return retval;
 }

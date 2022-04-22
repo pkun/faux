@@ -250,3 +250,22 @@ bool_t faux_argv_add(faux_argv_t *fargv, const char *arg)
 
 	return BOOL_TRUE;
 }
+
+
+/** @brief Gets argument by index.
+ *
+ * @param [in] fargv Allocated argv object.
+ * @return String or NULL on error.
+ */
+const char *faux_argv_index(const faux_argv_t *fargv, size_t index)
+{
+	const char *res = NULL;
+
+	assert(fargv);
+	if (!fargv)
+		return NULL;
+
+	res = (const char *)faux_list_index(fargv->list, index);
+
+	return res;
+}

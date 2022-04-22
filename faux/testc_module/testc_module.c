@@ -23,6 +23,7 @@ const char *testc_module[][2] = {
 	// argv
 	{"testc_faux_argv_parse", "Parse string to arguments"},
 	{"testc_faux_argv_is_continuable", "Is line continuable"},
+	{"testc_faux_argv_index", "Get argument by index"},
 
 	// time
 	{"testc_faux_nsec_timespec_conversion", "Converts nsec from/to struct timespec"},
