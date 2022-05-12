@@ -288,6 +288,8 @@ FAUX_2.0 {
 		faux_str_sprintf;
 		faux_str_tolower;
 		faux_str_toupper;
+		faux_str_cmpn;
+		faux_str_cmp;
 		faux_str_casecmpn;
 		faux_str_casecmp;
 		faux_str_casestr;

@@ -322,6 +322,49 @@ static int faux_str_cmp_chars(char char1, char char2)
 }
 
 
+/** @brief Compare n first characters of two strings.
+ *
+ * @param [in] str1 First string to compare.
+ * @param [in] str2 Second string to compare.
+ * @param [in] n Number of characters to compare.
+ * @return < 0, 0, > 0, see the strcasecmp().
+ */
+int faux_str_cmpn(const char *str1, const char *str2, size_t n)
+{
+	if (!str1 && !str2) // Empty strings are equal
+		return 0;
+
+	if (!str1) // Consider NULL string to be less then empty string
+		return -1;
+
+	if (!str2) // Consider NULL string to be less then empty string
+		return 1;
+
+	return strncmp(str1, str2, n);
+}
+
+
+/** @brief Compare two strings.
+ *
+ * @param [in] str1 First string to compare.
+ * @param [in] str2 Second string to compare.
+ * @return < 0, 0, > 0, see the strcmp().
+ */
+int faux_str_cmp(const char *str1, const char *str2)
+{
+	if (!str1 && !str2) // Empty strings are equal
+		return 0;
+
+	if (!str1) // Consider NULL string to be less then empty string
+		return -1;
+
+	if (!str2) // Consider NULL string to be less then empty string
+		return 1;
+
+	return strcmp(str1, str2);
+}
+
+
 /** @brief Compare n first characters of two strings ignoring case.
  *
  * The difference beetween this function an standard strncasecmp() is
