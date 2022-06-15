@@ -21,7 +21,9 @@ nobase_include_HEADERS =
 EXTRA_DIST = \
 	faux/Makefile.am \
 	utils/Makefile.am \
-	testc/Makefile.am
+	testc/Makefile.am \
+	LICENCE \
+	README.md
 
 include $(top_srcdir)/faux/Makefile.am
 include $(top_srcdir)/utils/Makefile.am

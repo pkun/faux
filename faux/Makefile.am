@@ -39,6 +39,7 @@ nobase_include_HEADERS += \
 	faux/buf.h
 
 EXTRA_DIST += \
+	faux/faux.map \
 	faux/base/Makefile.am \
 	faux/ctype/Makefile.am \
 	faux/str/Makefile.am \
