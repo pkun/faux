@@ -30,6 +30,8 @@ Repository : https://src.libcode.org/pkun/faux
 
 Mailing list : http://groups.google.com/group/libfaux.
 
-Download : https://src.libcode.org/pkun/faux/archive/1.2.2.tar.gz
+Download : https://src.libcode.org/download/faux
+
+Latest release : https://src.libcode.org/download/faux/faux-2.0.0.tar.xz
 
 Author: Serj Kalichev `<serj.kalichev(_at_)libcode.org>`
