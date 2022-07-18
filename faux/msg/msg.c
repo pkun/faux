@@ -390,7 +390,8 @@ static ssize_t faux_msg_add_param_internal(faux_msg_t *msg,
 	faux_phdr_set_type(phdr, type);
 	faux_phdr_set_len(phdr, len);
 	// Copy data
-	memcpy(param + sizeof(*phdr), buf, len);
+	if (len > 0)
+		memcpy(param + sizeof(*phdr), buf, len);
 
 	if (update_len) {
 		// Update number of parameters
@@ -848,8 +849,6 @@ faux_msg_t *faux_msg_deserialize_parts(const faux_hdr_t *hdr,
 	data = body + phdr_whole_len;
 	for (i = 0; i < param_num; i++) {
 		size_t cur_data_len = faux_phdr_get_len(phdr + i);
-		if (0 == cur_data_len)
-			continue;
 		faux_msg_add_param_internal(msg,
 			faux_phdr_get_type(phdr + i),
 			data, cur_data_len, BOOL_FALSE);
