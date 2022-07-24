@@ -301,7 +301,7 @@ char *faux_str_sprintf(const char *fmt, ...)
 }
 
 
-/** @brief Service function to compare to chars in right way.
+/** @brief Service function to compare two chars in right way.
  *
  * The problem is char type can be signed or unsigned on different
  * platforms. So stright comparision can return different results.
