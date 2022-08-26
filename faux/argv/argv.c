@@ -213,6 +213,29 @@ void faux_argv_set_continuable(faux_argv_t *fargv, bool_t continuable)
 }
 
 
+/** @brief Remove last uncompleted entry.
+ *
+ * If argv is continuable consider last entry as uncompleted and remove it.
+ *
+ * @param [in] fargv Allocated fargv object.
+ */
+void faux_argv_del_continuable(faux_argv_t *fargv)
+{
+	faux_list_node_t *tail = NULL;
+
+	assert(fargv);
+	if (!fargv)
+		return;
+
+	if (!fargv->continuable)
+		return;
+	tail = faux_list_tail(fargv->list);
+	if (!tail)
+		return;
+	faux_list_del(fargv->list, tail);
+}
+
+
 /** @brief If given node is last one.
  *
  * @param [in] iter Iterator/Node.
