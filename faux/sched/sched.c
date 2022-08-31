@@ -321,6 +321,7 @@ static ssize_t faux_sched_del_by_something(faux_sched_t *sched, void *value,
 	if (!sched)
 		return -1;
 
+	saved = faux_list_head(sched->list);
 	while ((node = faux_list_match_node(sched->list, cmp_f,
 		value, &saved))) {
 		faux_list_del(sched->list, node);
@@ -370,6 +371,7 @@ ssize_t faux_sched_del_by_data(faux_sched_t *sched, void *data)
 /** @brief Get scheduled event by specified value.
  *
  * Static function.
+ * Saved iterator 'saved' must be initialized to list head before usage.
  *
  * @param [in] sched Allocated and initialized sched object.
  * @param [in] value Value to search for.
@@ -399,6 +401,8 @@ static faux_ev_t *faux_sched_get_by_something(faux_sched_t *sched, void *value,
 
 /** @brief Get sched entries with specified event ID.
  *
+ * Saved iterator 'saved' must be initialized to list head before usage.
+ *
  * @param [in] sched Allocated and initialized sched object.
  * @param [in] ev_id Event ID to search for.
  * @param [in,out] saved Iterator.
@@ -413,6 +417,8 @@ faux_ev_t *faux_sched_get_by_id(faux_sched_t *sched, int ev_id,
 
 
 /** @brief Get sched entries with specified user data pointer.
+ *
+ * Saved iterator 'saved' must be initialized to list head before usage.
  *
  * @param [in] sched Allocated and initialized sched object.
  * @param [in] data Pointer to user data to search for.

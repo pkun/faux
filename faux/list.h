@@ -57,14 +57,14 @@ ssize_t faux_list_del_all(faux_list_t *list);
 
 faux_list_node_t *faux_list_match_node(const faux_list_t *list,
 	faux_list_kcmp_fn matchFn, const void *userkey,
-	faux_list_node_t **saveptr);
+	faux_list_node_t **iter);
 faux_list_node_t *faux_list_kmatch_node(const faux_list_t *list,
-	const void *userkey, faux_list_node_t **saveptr);
+	const void *userkey, faux_list_node_t **iter);
 void *faux_list_match(const faux_list_t *list,
 	faux_list_kcmp_fn matchFn, const void *userkey,
-	faux_list_node_t **saveptr);
+	faux_list_node_t **iter);
 void *faux_list_kmatch(const faux_list_t *list,
-	const void *userkey, faux_list_node_t **saveptr);
+	const void *userkey, faux_list_node_t **iter);
 faux_list_node_t *faux_list_find_node(const faux_list_t *list,
 	faux_list_kcmp_fn matchFn, const void *userkey);
 faux_list_node_t *faux_list_kfind_node(const faux_list_t *list,

@@ -556,11 +556,12 @@ bool_t faux_list_kdel(faux_list_t *list, const void *userkey)
  *
  * Function iterates through the list and executes special matching user defined
  * callback function matchFn for every list node. User can provide "userkey" -
- * the data that matchFn can use how it wants. The matchFn is arbitrary
+ * the data that matchFn can use how it wants. The matchFn is mandatory
  * argument. The userkey argument can be NULL. The function will immediately
- * return matched list node. To continue searching the saveptr argument contains
+ * return matched list node. To continue searching the iter argument contains
  * current iterator. So user can call to faux_list_match_node() for several
  * times and gets all matched nodes from list.
+ * Before function using the iterator must be initialised by list head node.
  *
  * Prototype for matchFn callback function:
  * @code
@@ -570,34 +571,24 @@ bool_t faux_list_kdel(faux_list_t *list, const void *userkey)
  * @param [in] list List.
  * @param [in] matchFn User defined matching callback function.
  * @param [in] userkey User defined data to use in matchFn function.
- * @param [in,out] saveptr Ptr to save iterator.
+ * @param [in,out] iter List node ptr used as an iterator.
  * @return Matched list node.
  */
 faux_list_node_t *faux_list_match_node(const faux_list_t *list,
-	faux_list_kcmp_fn matchFn, const void *userkey,
-	faux_list_node_t **saveptr)
+	faux_list_kcmp_fn matchFn, const void *userkey, faux_list_node_t **iter)
 {
-	faux_list_node_t *iter = NULL;
+	faux_list_node_t *node = NULL;
 
 	assert(list);
+	assert(iter);
 	assert(matchFn);
-	if (!list || !matchFn || !list->head)
+	if (!iter || !matchFn || !list)
 		return NULL;
 
-	if (saveptr)
-		iter = *saveptr;
-	if (!iter)
-		iter = list->head;
-	while (iter) {
-		int res = 0;
-		faux_list_node_t *node = iter;
-
-		iter = faux_list_next_node(node);
-		if (saveptr)
-			*saveptr = iter;
-		res = matchFn(userkey, faux_list_data(node));
+	while ((node = faux_list_each_node(iter))) {
+		int res = matchFn(userkey, faux_list_data(node));
 		if (0 == res)
-			return node;
+			return node; // Match
 		if (list->sorted && (res < 0)) // No chances to find match
 			return NULL;
 	}
@@ -614,13 +605,13 @@ faux_list_node_t *faux_list_match_node(const faux_list_t *list,
  * @sa faux_list_match_node()
  */
 faux_list_node_t *faux_list_kmatch_node(const faux_list_t *list,
-	const void *userkey, faux_list_node_t **saveptr)
+	const void *userkey, faux_list_node_t **iter)
 {
 	assert(list);
 	if (!list)
 		return NULL;
 
-	return faux_list_match_node(list, list->kcmpFn, userkey, saveptr);
+	return faux_list_match_node(list, list->kcmpFn, userkey, iter);
 }
 
 
@@ -630,11 +621,11 @@ faux_list_node_t *faux_list_kmatch_node(const faux_list_t *list,
  *
  * @sa faux_list_match_node()
  */
-void *faux_list_match(const faux_list_t *list, faux_list_kcmp_fn matchFn,
-	const void *userkey, faux_list_node_t **saveptr)
+void *faux_list_match(const faux_list_t *list,
+	faux_list_kcmp_fn matchFn, const void *userkey, faux_list_node_t **iter)
 {
 	faux_list_node_t *res =
-		faux_list_match_node(list, matchFn, userkey, saveptr);
+		faux_list_match_node(list, matchFn, userkey, iter);
 	if (!res)
 		return NULL;
 
@@ -649,14 +640,14 @@ void *faux_list_match(const faux_list_t *list, faux_list_kcmp_fn matchFn,
  *
  * @sa faux_list_match_node()
  */
-void *faux_list_kmatch(const faux_list_t *list, const void *userkey,
-	faux_list_node_t **saveptr)
+void *faux_list_kmatch(const faux_list_t *list,
+	const void *userkey, faux_list_node_t **iter)
 {
 	assert(list);
 	if (!list)
 		return NULL;
 
-	return faux_list_match(list, list->kcmpFn, userkey, saveptr);
+	return faux_list_match(list, list->kcmpFn, userkey, iter);
 }
 
 
@@ -670,7 +661,15 @@ void *faux_list_kmatch(const faux_list_t *list, const void *userkey,
 faux_list_node_t *faux_list_find_node(const faux_list_t *list,
 	faux_list_kcmp_fn matchFn, const void *userkey)
 {
-	return faux_list_match_node(list, matchFn, userkey, NULL);
+	faux_list_node_t *iter = NULL;
+
+	assert(list);
+	if (!list)
+		return NULL;
+
+	iter = faux_list_head(list);
+
+	return faux_list_match_node(list, matchFn, userkey, &iter);
 }
 
 
@@ -684,6 +683,10 @@ faux_list_node_t *faux_list_find_node(const faux_list_t *list,
 faux_list_node_t *faux_list_kfind_node(const faux_list_t *list,
 	const void *userkey)
 {
+	assert(list);
+	if (!list)
+		return NULL;
+
 	return faux_list_find_node(list, list->kcmpFn, userkey);
 }
 
@@ -698,7 +701,15 @@ faux_list_node_t *faux_list_kfind_node(const faux_list_t *list,
 void *faux_list_find(const faux_list_t *list, faux_list_kcmp_fn matchFn,
 	const void *userkey)
 {
-	return faux_list_match(list, matchFn, userkey, NULL);
+	faux_list_node_t *iter = NULL;
+
+	assert(list);
+	if (!list)
+		return NULL;
+
+	iter = faux_list_head(list);
+
+	return faux_list_match(list, matchFn, userkey, &iter);
 }
 
 
@@ -712,6 +723,10 @@ void *faux_list_find(const faux_list_t *list, faux_list_kcmp_fn matchFn,
 void *faux_list_kfind(const faux_list_t *list,
 	const void *userkey)
 {
+	assert(list);
+	if (!list)
+		return NULL;
+
 	return faux_list_find(list, list->kcmpFn, userkey);
 }
 

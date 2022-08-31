@@ -598,6 +598,7 @@ faux_ini_t *faux_ini_extract_subini(const faux_ini_t *ini, const char *prefix)
 		return NULL;
 
 	prefix_len = strlen(prefix);
+	iter = faux_list_head(ini->list);
 	while ((pair = (faux_pair_t *)faux_list_match(ini->list,
 		faux_ini_kcompare_prefix, prefix, &iter))) {
 		const char *name = faux_pair_name(pair);
