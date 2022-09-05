@@ -109,6 +109,25 @@ faux_argv_node_t *faux_argv_iter(const faux_argv_t *fargv)
 }
 
 
+/** @brief Initializes revert iterator to iterate through the entire argv object.
+ *
+ * Before iterating with the faux_argv_eachr() function the iterator must be
+ * initialized. This function do it.
+ *
+ * @param [in] fargv Allocated and initialized argv object.
+ * @return Initialized iterator.
+ * @sa faux_argv_eachr()
+ */
+faux_argv_node_t *faux_argv_iterr(const faux_argv_t *fargv)
+{
+	assert(fargv);
+	if (!fargv)
+		return NULL;
+
+	return (faux_argv_node_t *)faux_list_tail(fargv->list);
+}
+
+
 /** @brief Iterate entire argv object for arguments.
  *
  * Before iteration the iterator must be initialized by faux_argv_iter()
@@ -124,6 +143,24 @@ faux_argv_node_t *faux_argv_iter(const faux_argv_t *fargv)
 const char *faux_argv_each(faux_argv_node_t **iter)
 {
 	return (const char *)faux_list_each((faux_list_node_t **)iter);
+}
+
+
+/** @brief Reverse iterate entire argv object for arguments.
+ *
+ * Before iteration the iterator must be initialized by faux_argv_iterr()
+ * function. Doesn't use faux_argv_eachr() with uninitialized iterator.
+ *
+ * On each call function returns string (argument) and modifies iterator.
+ * Stop iteration when function returns NULL.
+ *
+ * @param [in,out] iter Iterator.
+ * @return String.
+ * @sa faux_argv_iterr()
+ */
+const char *faux_argv_eachr(faux_argv_node_t **iter)
+{
+	return (const char *)faux_list_eachr((faux_list_node_t **)iter);
 }
 
 
@@ -305,6 +342,27 @@ bool_t faux_argv_add(faux_argv_t *fargv, const char *arg)
 		return BOOL_FALSE;
 
 	faux_list_add(fargv->list, faux_str_dup(arg));
+
+	return BOOL_TRUE;
+}
+
+
+/** @brief Deletes argument from fargv object.
+ *
+ * @param [in] fargv Allocated argv object.
+ * @param [in] node Node to delete.
+ * @return BOOL_TRUE - success, BOOL_FALSE - error.
+ */
+bool_t faux_argv_del(faux_argv_t *fargv, faux_argv_node_t *node)
+{
+	assert(fargv);
+	if (!fargv)
+		return BOOL_FALSE;
+	assert(node);
+	if (!node)
+		return BOOL_FALSE;
+
+	faux_list_del(fargv->list, (faux_list_node_t *)node);
 
 	return BOOL_TRUE;
 }

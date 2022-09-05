@@ -20,12 +20,15 @@ void faux_argv_set_quotes(faux_argv_t *fargv, const char *quotes);
 
 ssize_t faux_argv_len(faux_argv_t *fargv);
 faux_argv_node_t *faux_argv_iter(const faux_argv_t *fargv);
+faux_argv_node_t *faux_argv_iterr(const faux_argv_t *fargv);
 const char *faux_argv_each(faux_argv_node_t **iter);
+const char *faux_argv_eachr(faux_argv_node_t **iter);
 const char *faux_argv_current(faux_argv_node_t *iter);
 const char *faux_argv_index(const faux_argv_t *fargv, size_t index);
 
 ssize_t faux_argv_parse(faux_argv_t *fargv, const char *str);
 bool_t faux_argv_add(faux_argv_t *fargv, const char *arg);
+bool_t faux_argv_del(faux_argv_t *fargv, faux_argv_node_t *node);
 
 bool_t faux_argv_is_continuable(const faux_argv_t *fargv);
 void faux_argv_set_continuable(faux_argv_t *fargv, bool_t continuable);

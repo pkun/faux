@@ -7,7 +7,9 @@ FAUX_2.0 {
 		faux_argv_free;
 		faux_argv_set_quotes;
 		faux_argv_iter;
+		faux_argv_iterr;
 		faux_argv_each;
+		faux_argv_eachr;
 		faux_argv_current;
 		faux_argv_parse;
 		faux_argv_len;
@@ -16,6 +18,7 @@ FAUX_2.0 {
 		faux_argv_del_continuable;
 		faux_argv_is_last;
 		faux_argv_add;
+		faux_argv_del;
 		faux_argv_index;
 		faux_argv_line;
 
