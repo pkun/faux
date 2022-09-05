@@ -14,6 +14,7 @@ typedef faux_list_node_t faux_argv_node_t;
 C_DECL_BEGIN
 
 faux_argv_t *faux_argv_new(void);
+faux_argv_t *faux_argv_dup(const faux_argv_t *origin);
 void faux_argv_free(faux_argv_t *fargv);
 void faux_argv_set_quotes(faux_argv_t *fargv, const char *quotes);
 

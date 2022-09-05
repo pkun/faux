@@ -3,6 +3,7 @@ FAUX_2.0 {
 	global:
 
 		faux_argv_new;
+		faux_argv_dup;
 		faux_argv_free;
 		faux_argv_set_quotes;
 		faux_argv_iter;

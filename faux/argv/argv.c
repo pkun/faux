@@ -40,6 +40,41 @@ faux_argv_t *faux_argv_new(void)
 }
 
 
+/** @brief Duplicate existing argv object.
+ *
+ * @param [in] fargv Allocated and initialized argv object.
+ * @return Allocated and initialized duplicate or NULL on error.
+ */
+faux_argv_t *faux_argv_dup(const faux_argv_t *origin)
+{
+	faux_argv_t *fargv = NULL;
+	faux_list_t *list = NULL;
+	faux_argv_node_t *iter = NULL;
+	const char *arg = NULL;
+
+	assert(origin);
+	if (!origin)
+		return NULL;
+
+	fargv = faux_argv_new();
+	assert(fargv);
+	if (!fargv)
+		return NULL;
+
+	// Copy all fields but list must be recreated
+	list = fargv->list;
+	*fargv = *origin;
+	fargv->list = list;
+
+	// Copy list
+	iter = faux_argv_iter(origin);
+	while ((arg = faux_argv_each(&iter)))
+		faux_argv_add(fargv, arg);
+
+	return fargv;
+}
+
+
 /** @brief Frees the argv object object.
  *
  * After using the argv object must be freed. Function frees argv object.
