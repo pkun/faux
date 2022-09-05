@@ -33,6 +33,8 @@ void faux_argv_del_continuable(faux_argv_t *fargv);
 
 bool_t faux_argv_is_last(faux_argv_node_t *iter);
 
+char *faux_argv_line(const faux_argv_t *fargv);
+
 C_DECL_END
 
 #endif				/* _faux_argv_h */

@@ -327,3 +327,39 @@ const char *faux_argv_index(const faux_argv_t *fargv, size_t index)
 
 	return res;
 }
+
+
+/** @brief Gets whole text line (concatinated arguments).
+ *
+ * TODO: Now args with spaces is printed simply with quotes. It must be fixed
+ * later because arg can contain quotes itself.
+ *
+ * @param [in] fargv Allocated argv object.
+ * @return String or NULL on error.
+ */
+char *faux_argv_line(const faux_argv_t *fargv)
+{
+	bool_t is_first_arg = BOOL_TRUE;
+	char *line = NULL;
+	faux_argv_node_t *iter = NULL;
+	const char *arg = NULL;
+
+	iter = faux_argv_iter(fargv);
+	while ((arg = faux_argv_each(&iter))) {
+		bool_t space_found = BOOL_FALSE;
+
+		if (is_first_arg)
+			is_first_arg = BOOL_FALSE;
+		else
+			faux_str_cat(&line, " ");
+		if (faux_str_chars(arg, " \t"))
+			space_found = BOOL_TRUE;
+		if (space_found)
+			faux_str_cat(&line, "\"");
+		faux_str_cat(&line, arg);
+		if (space_found)
+			faux_str_cat(&line, "\"");
+	}
+
+	return line;
+}

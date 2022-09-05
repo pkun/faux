@@ -17,6 +17,7 @@ FAUX_2.0 {
 		faux_argv_is_last;
 		faux_argv_add;
 		faux_argv_index;
+		faux_argv_line;
 
 		faux_async_new;
 		faux_async_free;
