@@ -93,3 +93,35 @@ int testc_faux_str_getline(void)
 
 	return 0;
 }
+
+
+int testc_faux_str_numcmp(void)
+{
+	if (faux_str_numcmp("abc2", "abc10") >= 0) {
+		printf("'abc2' >= 'abc10'\n");
+		return -1;
+	}
+
+	if (faux_str_numcmp("abc2ccc", "abc10ccc") >= 0) {
+		printf("'abc2ccc' >= 'abc10ccc'\n");
+		return -1;
+	}
+
+	if (faux_str_numcmp("abc2ccc", "abcaccc") >= 0) {
+		printf("'abc2ccc' >= 'abcaccc'\n");
+		return -1;
+	}
+
+	if (faux_str_numcmp("abc222222222222222ccc", "abc222222222222222cdc") >= 0) {
+		printf("'abc222222222222222ccc' >= 'abc222222222222222cdc'\n");
+		return -1;
+	}
+
+	// Overflow
+	if (faux_str_numcmp("abc222222222222222222222222222222ccc", "abc1022222222222222222222222222222ccc") <= 0) {
+		printf("'abc222222222222222222222222222222ccc' <= 'abc1022222222222222222222222222222ccc'\n");
+		return -1;
+	}
+
+	return 0;
+}

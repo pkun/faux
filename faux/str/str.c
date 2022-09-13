@@ -13,6 +13,7 @@
 #include <stdarg.h>
 
 #include "faux/ctype.h"
+#include "faux/conv.h"
 #include "faux/str.h"
 
 /** @brief Free the memory allocated for the string.
@@ -435,6 +436,57 @@ int faux_str_casecmp(const char *str1, const char *str2)
 
 	return faux_str_cmp_chars(
 		faux_ctype_tolower(*p1), faux_ctype_tolower(*p2));
+}
+
+
+/** @brief Compare two strings considering numbers.
+ *
+ * "a2" < "a10"
+ *
+ * @param [in] str1 First string to compare.
+ * @param [in] str2 Second string to compare.
+ * @return < 0, 0, > 0, see the strcasecmp().
+ */
+int faux_str_numcmp(const char *str1, const char *str2)
+{
+	const char *p1 = str1;
+	const char *p2 = str2;
+
+	if (!p1 && !p2) // Empty strings are equal
+		return 0;
+
+	if (!p1) // Consider NULL string to be less then empty string
+		return -1;
+
+	if (!p2) // Consider NULL string to be less then empty string
+		return 1;
+
+	while (*p1 != '\0' && *p2 != '\0') {
+		if (faux_ctype_isdigit(*p1) && faux_ctype_isdigit(*p2)) {
+			unsigned long long int v1 = 0;
+			unsigned long long int v2 = 0;
+			if (!faux_conv_atoull(p1, &v1, 10) ||
+				!faux_conv_atoull(p2, &v2, 10)) // Overflow?
+				return faux_str_cmp(str1, str2); // Standard comparison
+			if (v1 > v2)
+				return 1;
+			if (v1 < v2)
+				return -1;
+			// Skip all digits if equal
+			while (faux_ctype_isdigit(*p1))
+				p1++;
+			while (faux_ctype_isdigit(*p2))
+				p2++;
+		} else {
+			int res = faux_str_cmp_chars(*p1, *p2);
+			if (res != 0)
+				return res;
+			p1++;
+			p2++;
+		}
+	}
+
+	return faux_str_cmp_chars(*p1, *p2);
 }
 
 

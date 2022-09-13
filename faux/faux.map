@@ -298,6 +298,7 @@ FAUX_2.0 {
 		faux_str_cmp;
 		faux_str_casecmpn;
 		faux_str_casecmp;
+		faux_str_numcmp;
 		faux_str_casestr;
 		faux_str_charsn;
 		faux_str_chars;
