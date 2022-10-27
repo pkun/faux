@@ -146,7 +146,7 @@ bool_t faux_conv_atoi(const char *str, int *val, int base)
 	long int tmp = 0;
 
 	// Use existent func. The long int is longer or equal to int.
-	if (faux_conv_atol(str, &tmp, base) < 0)
+	if (!faux_conv_atol(str, &tmp, base))
 		return BOOL_FALSE;
 	if ((tmp < INT_MIN) || (tmp > INT_MAX)) // Overflow
 		return BOOL_FALSE;
@@ -172,7 +172,7 @@ bool_t faux_conv_atoui(const char *str, unsigned int *val, int base)
 	unsigned long int tmp = 0;
 
 	// Use existent func. The long int is longer or equal to int.
-	if (faux_conv_atoul(str, &tmp, base) < 0)
+	if (!faux_conv_atoul(str, &tmp, base))
 		return BOOL_FALSE;
 	if (tmp > UINT_MAX) // Overflow
 		return BOOL_FALSE;
@@ -197,7 +197,7 @@ bool_t faux_conv_atos(const char *str, short *val, int base)
 {
 	long int tmp = 0;
 
-	if (faux_conv_atol(str, &tmp, base) < 0)
+	if (!faux_conv_atol(str, &tmp, base))
 		return BOOL_FALSE;
 	if ((tmp < SHRT_MIN) || (tmp > SHRT_MAX)) // Overflow
 		return BOOL_FALSE;
@@ -222,7 +222,7 @@ bool_t faux_conv_atous(const char *str, unsigned short *val, int base)
 {
 	unsigned long int tmp = 0;
 
-	if (faux_conv_atoul(str, &tmp, base) < 0)
+	if (!faux_conv_atoul(str, &tmp, base))
 		return BOOL_FALSE;
 	if (tmp > USHRT_MAX) // Overflow
 		return BOOL_FALSE;
@@ -247,7 +247,7 @@ bool_t faux_conv_atoc(const char *str, char *val, int base)
 {
 	long int tmp = 0;
 
-	if (faux_conv_atol(str, &tmp, base) < 0)
+	if (!faux_conv_atol(str, &tmp, base))
 		return BOOL_FALSE;
 	if ((tmp < CHAR_MIN) || (tmp > CHAR_MAX)) // Overflow
 		return BOOL_FALSE;
@@ -272,7 +272,7 @@ bool_t faux_conv_atouc(const char *str, unsigned char *val, int base)
 {
 	unsigned long int tmp = 0;
 
-	if (faux_conv_atoul(str, &tmp, base) < 0)
+	if (!faux_conv_atoul(str, &tmp, base))
 		return BOOL_FALSE;
 	if (tmp > UCHAR_MAX) // Overflow
 		return BOOL_FALSE;
