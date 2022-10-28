@@ -630,7 +630,7 @@ bool_t faux_msg_iov(const faux_msg_t *msg, struct iovec **iov_out, size_t *iov_n
 	if (!iov_num_out)
 		return BOOL_FALSE;
 
-	// Calculate number if struct iovec entries.
+	// Calculate number of struct iovec entries.
 	// n = (msg header) + ((param hdr) + (param data)) * (param_num)
 	vec_entries_num = 1 + (2 * faux_msg_get_param_num(msg));
 	iov = faux_zmalloc(vec_entries_num * sizeof(*iov));
@@ -727,7 +727,7 @@ ssize_t faux_msg_send_async(const faux_msg_t *msg, faux_async_t *async)
 {
 	size_t vec_entries_num = 0;
 	struct iovec *iov = NULL;
-	size_t ret = 0;
+	ssize_t ret = 0;
 
 	assert(msg);
 	if (!msg)

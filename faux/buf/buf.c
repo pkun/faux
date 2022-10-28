@@ -681,7 +681,7 @@ ssize_t faux_buf_dwrite_lock(faux_buf_t *buf, size_t len,
 		if (!iter) {
 			iter = faux_list_head(buf->list);
 		// Not empty list. First element
-		} else if (iter == buf->wchunk) {
+		} else if ((iter == buf->wchunk) && (i == 0)) {
 			size_t l = faux_buf_wavail(buf);
 			if (0 == l) { // Not enough space within current chunk
 				iter = faux_list_next_node(iter);
