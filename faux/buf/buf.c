@@ -822,6 +822,7 @@ ssize_t faux_buf_dwrite_unlock(faux_buf_t *buf, size_t really_written,
 			faux_list_del(buf->list, buf->wchunk);
 			buf->wchunk = NULL;
 			buf->wpos = buf->chunk_size;
+			buf->rpos = 0;
 		}
 	}
 
