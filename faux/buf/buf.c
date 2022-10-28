@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <syslog.h>
 
 #include "faux/faux.h"
 #include "faux/str.h"

@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <syslog.h>
 
 #include "faux/faux.h"
 #include "faux/str.h"
@@ -412,14 +413,14 @@ ssize_t faux_async_in(faux_async_t *async)
 		// Read data
 		bytes_readed = read(async->fd, data, locked_len);
 		if (bytes_readed < 0) {
+			faux_buf_dwrite_unlock_easy(async->ibuf, 0);
 			if ( // Something went wrong
 				(errno != EINTR) &&
 				(errno != EAGAIN) &&
 				(errno != EWOULDBLOCK)
-			) {
-				faux_buf_dwrite_unlock_easy(async->ibuf, 0);
+			)
 				return -1;
-			}
+			break;
 		}
 		faux_buf_dwrite_unlock_easy(async->ibuf, bytes_readed);
 		total_readed += bytes_readed;
