@@ -673,7 +673,7 @@ char *faux_str_charsn(const char *str, const char *chars_to_search, size_t n)
 	if (!str || !chars_to_search)
 		return NULL;
 
-	while ((*current_char != '\0') && (len > 0)) {
+	while ((len > 0) && (*current_char != '\0')) {
 		if (strchr(chars_to_search, *current_char))
 			return (char *)current_char;
 		current_char++;
