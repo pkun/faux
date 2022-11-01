@@ -54,6 +54,7 @@ const char *testc_module[][2] = {
 	{"testc_faux_buf_boundaries", "Dynamic buffer. Check boundaries case"},
 	{"testc_faux_buf_direct", "Dynamic buffer. Direct access"},
 	{"testc_faux_buf_dwrite_unlock0", "Dynamic buffer. Chunk removing"},
+	{"testc_faux_buf_mass", "Massive write and read"},
 
 	// End of list
 	{NULL, NULL}

@@ -530,3 +530,84 @@ int testc_faux_buf_dwrite_unlock0(void)
 
 	return 0;
 }
+
+
+int testc_faux_buf_mass(void)
+{
+	ssize_t len = 0;
+	faux_buf_t *buf = NULL;
+	ssize_t res = 0;
+	unsigned char valw = 0;
+	unsigned char valr = 0;
+	size_t tlw = 0;
+	size_t tlr = 0;
+	size_t len_r = 234;
+
+	// Create buf
+	printf("faux_buf_new()\n");
+	buf = faux_buf_new(CHUNK);
+	if (!buf) {
+		fprintf(stderr, "faux_buf_new() error\n");
+		return -1;
+	}
+
+	// Write to buffer
+	printf("faux_buf_write()\n");
+	for (len = 3000; len < 8900; len += 3) {
+		unsigned char *t = faux_malloc(len);
+		int i = 0;
+		for (i = 0; i < len; i++)
+			t[i] = valw++;
+		if ((res = faux_buf_write(buf, t, len)) != len) {
+			fprintf(stderr, "faux_buf_write() error %ld\n", res);
+			return -1;
+		}
+		tlw += res;
+		faux_free(t);
+	}
+	// Buf length
+	printf("faux_buf_len()\n");
+	if (faux_buf_len(buf) != tlw) {
+		fprintf(stderr, "faux_buf_len() error\n");
+		return -1;
+	}
+
+	// Read to buffer
+	printf("faux_buf_read()\n");
+	while (faux_buf_len(buf) != 0) {
+		unsigned char *t = faux_malloc(len_r);
+		int i = 0;
+		if ((res = faux_buf_read(buf, t, len_r)) < 0) {
+			fprintf(stderr, "faux_buf_read() error %ld\n", res);
+			return -1;
+		}
+		for (i = 0; i < res; i++) {
+			if (t[i] != valr++) {
+				fprintf(stderr, "Incorrect valr %d != %ld\n",
+					t[i], tlr + i);
+				return -1;
+			}
+		}
+		tlr += res;
+		faux_free(t);
+		len_r += 7;
+	}
+
+	// Buf length
+	printf("faux_buf_len()\n");
+	if (tlr != tlw) {
+		fprintf(stderr, "tlr != tlw\n");
+		return -1;
+	}
+
+	// val
+	printf("valr and valw\n");
+	if (valr != valw) {
+		fprintf(stderr, "valr != valw\n");
+		return -1;
+	}
+
+	faux_buf_free(buf);
+
+	return 0;
+}
