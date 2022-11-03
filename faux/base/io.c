@@ -12,6 +12,7 @@
 #include <sys/uio.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <poll.h>
 
 #include "faux/faux.h"
 
@@ -48,7 +49,8 @@ ssize_t faux_write(int fd, const void *buf, size_t n)
  *
  * The system write() can be interrupted by signal or can write less bytes
  * than specified. This function will continue to write data until all data
- * will be written or error occured.
+ * will be written or error occured. Function support even non-blocking file
+ * descriptors. It uses poll() for such fd.
  *
  * @param [in] fd File descriptor.
  * @param [in] buf Buffer to write.
@@ -59,23 +61,43 @@ ssize_t faux_write(int fd, const void *buf, size_t n)
  */
 ssize_t faux_write_block(int fd, const void *buf, size_t n)
 {
-	ssize_t bytes_written = 0;
 	size_t total_written = 0;
 	size_t left = n;
 	const void *data = buf;
+	struct pollfd fds = {};
 
+	fds.fd = fd;
+	fds.events = POLLOUT;
 	do {
-		bytes_written = faux_write(fd, data, left);
-		if (bytes_written < 0) { // Error
+		int prc = 0;
+		fds.revents = 0; // Reset revents before poll()
+		prc = poll(&fds, 1, -1);
+		if (prc < 0) {
+			if (EINTR == errno)
+				continue;
 			if (total_written != 0)
-				return total_written;
+				break;
 			return -1;
 		}
-		if (0 == bytes_written) // Insufficient space
-			return total_written;
-		data += bytes_written;
-		left = left - bytes_written;
-		total_written += bytes_written;
+		if (fds.revents & POLLOUT) {
+			ssize_t bytes_written = 0;
+			bytes_written = faux_write(fd, data, left);
+			if (bytes_written < 0) { // Error
+				if (total_written != 0)
+					break;
+				return -1;
+			}
+			if (0 == bytes_written) // Insufficient space
+				break;
+			data += bytes_written;
+			left = left - bytes_written;
+			total_written += bytes_written;
+		}
+		if (fds.revents & (POLLHUP | POLLERR | POLLNVAL)) {
+			if (total_written != 0)
+				break;
+			return -1;
+		}
 	} while (left > 0);
 
 	return total_written;
