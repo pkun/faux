@@ -138,7 +138,8 @@ ssize_t faux_read(int fd, void *buf, size_t n)
  *
  * The system read() can be interrupted by signal or can read less bytes
  * than specified. This function will continue to read data until all data
- * will be readed or error occured.
+ * will be readed or error occured. Function works even for non-blocking
+ * file descriptors.
  *
  * @param [in] fd File descriptor.
  * @param [in] buf Buffer to write.
@@ -149,23 +150,43 @@ ssize_t faux_read(int fd, void *buf, size_t n)
  */
 size_t faux_read_block(int fd, void *buf, size_t n)
 {
-	ssize_t bytes_readed = 0;
 	size_t total_readed = 0;
 	size_t left = n;
 	void *data = buf;
+	struct pollfd fds = {};
 
+	fds.fd = fd;
+	fds.events = POLLIN;
 	do {
-		bytes_readed = read(fd, data, left);
-		if (bytes_readed < 0) {
+		int prc = 0;
+		fds.revents = 0; // Reset revents before poll()
+		prc = poll(&fds, 1, -1);
+		if (prc < 0) {
+			if (EINTR == errno)
+				continue;
 			if (total_readed != 0)
-				return total_readed;
+				break;
 			return -1;
 		}
-		if (0 == bytes_readed) // EOF
-			return total_readed;
-		data += bytes_readed;
-		left = left - bytes_readed;
-		total_readed += bytes_readed;
+		if (fds.revents & POLLIN) {
+			ssize_t bytes_readed = 0;
+			bytes_readed = read(fd, data, left);
+			if (bytes_readed < 0) {
+				if (total_readed != 0)
+					break;
+				return -1;
+			}
+			if (0 == bytes_readed) // EOF
+				break;
+			data += bytes_readed;
+			left = left - bytes_readed;
+			total_readed += bytes_readed;
+		}
+		if (fds.revents & (POLLHUP | POLLERR | POLLNVAL)) {
+			if (total_readed != 0)
+				break;
+			return -1;
+		}
 	} while (left > 0);
 
 	return total_readed;

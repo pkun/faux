@@ -337,13 +337,13 @@ bool_t faux_eloop_loop(faux_eloop_t *eloop)
 #ifdef HAVE_SIGNALFD
 			if (fd == eloop->signal_fd) {
 				struct signalfd_siginfo signal_info = {};
-				while (faux_read_block(fd, &signal_info,
+				while (faux_read(fd, &signal_info,
 					sizeof(signal_info)) == sizeof(signal_info)) {
 					int signo = signal_info.ssi_signo;
 #else
 			if (fd == signal_pipe[0]) {
 				int tmp = 0;
-				while (faux_read_block(fd, &tmp,
+				while (faux_read(fd, &tmp,
 					sizeof(tmp)) == sizeof(tmp)) {
 					int signo = tmp;
 #endif // HAVE_SIGNALFD
