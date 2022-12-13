@@ -100,6 +100,7 @@ ssize_t faux_filesize(const char *path);
 bool_t faux_isdir(const char *path);
 bool_t faux_isfile(const char *path);
 bool_t faux_rm(const char *path);
+bool_t faux_mkdir_p(const char *path, mode_t mode);
 char *faux_expand_tilde(const char *path);
 
 C_DECL_END

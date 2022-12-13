@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <libgen.h>
 
 #include "faux/str.h"
 
@@ -149,6 +150,43 @@ bool_t faux_rm(const char *path)
 	closedir(dir);
 
 	if (rmdir(path) < 0)
+		return BOOL_FALSE;
+
+	return BOOL_TRUE;
+}
+
+
+/** @brief Make dir with parents.
+ *
+ * This is the same as mkdir -p.
+ *
+ * @param [in] path Directory to create.
+ * @param [in] mode Mode of newly created dir.
+ * @return BOOL_TRUE - success, BOOL_FALSE on error.
+ */
+bool_t faux_mkdir_p(const char *path, mode_t mode)
+{
+	char *dir_d = NULL;
+	char *dname = NULL;
+
+	assert(path);
+	if (!path)
+		return BOOL_FALSE;
+
+	// Already exists
+	if (faux_isdir(path))
+		return BOOL_TRUE;
+
+	// Get dirname
+	dir_d = faux_str_dup(path);
+	dname = dirname(dir_d);
+	if (!faux_mkdir_p(dname, mode)) {
+		faux_str_free(dir_d);
+		return BOOL_FALSE;
+	}
+	faux_str_free(dir_d);
+
+	if (mkdir(path, mode) < 0)
 		return BOOL_FALSE;
 
 	return BOOL_TRUE;

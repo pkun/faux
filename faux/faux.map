@@ -104,6 +104,7 @@ FAUX_2.0 {
 		faux_isdir;
 		faux_isfile;
 		faux_rm;
+		faux_mkdir_p;
 		faux_expand_tilde;
 
 		faux_file_fdopen;
