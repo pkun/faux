@@ -506,8 +506,6 @@ char *faux_str_casestr(const char *haystack, const char *needle)
 	size_t ptr_len = 0;
 	size_t needle_len = 0;
 
-	assert(haystack);
-	assert(needle);
 	if (!haystack || !needle)
 		return NULL;
 
@@ -541,7 +539,6 @@ char *faux_str_c_esc(const char *src)
 	size_t src_len = 0;
 	size_t dst_len = 0;
 
-	assert(src);
 	if (!src)
 		return NULL;
 
@@ -623,7 +620,6 @@ char *faux_str_c_bin(const char *src, size_t n)
 	char *dst_ptr = NULL;
 	size_t dst_len = 0;
 
-	assert(src);
 	if (!src)
 		return NULL;
 
@@ -668,8 +664,6 @@ char *faux_str_charsn(const char *str, const char *chars_to_search, size_t n)
 	const char *current_char = str;
 	size_t len = n;
 
-	assert(str);
-	assert(chars_to_search);
 	if (!str || !chars_to_search)
 		return NULL;
 
@@ -695,7 +689,6 @@ char *faux_str_charsn(const char *str, const char *chars_to_search, size_t n)
  */
 char *faux_str_chars(const char *str, const char *chars_to_search)
 {
-	assert(str);
 	if (!str)
 		return NULL;
 
@@ -720,7 +713,6 @@ static char *faux_str_deesc(const char *string, size_t len)
 	char *p = NULL;
 	bool_t escaped = BOOL_FALSE;
 
-	assert(string);
 	if (!string)
 		return NULL;
 	if (0 == len)
@@ -954,7 +946,6 @@ char *faux_str_getline(const char *str, const char **saveptr)
 	const char *find_pos = NULL;
 	const char *eol = "\n\r";
 
-	assert(str);
 	if (!str)
 		return NULL;
 	if ('\0' == *str) {
