@@ -106,6 +106,9 @@ bool_t faux_rm(const char *path);
 bool_t faux_mkdir_p(const char *path, mode_t mode);
 char *faux_expand_tilde(const char *path);
 
+// System
+bool_t faux_daemon(int nochdir, int noclose, const char *pidfile, mode_t mode);
+
 C_DECL_END
 
 #endif /* _faux_types_h */

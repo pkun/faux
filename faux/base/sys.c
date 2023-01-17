@@ -43,10 +43,12 @@ bool_t faux_daemon(int nochdir, int noclose, const char *pidfile, mode_t mode)
 			if ((fd = open(pidfile,
 				O_WRONLY | O_CREAT | O_EXCL | O_TRUNC,
 				mode)) >= 0) {
+				ssize_t r = 0;
 				char str[20] = {};
 				snprintf(str, sizeof(str), "%u\n", pid);
 				str[sizeof(str) - 1] = '\0';
-				write(fd, str, strlen(str));
+				r = write(fd, str, strlen(str));
+				r = r; // Happy compiler
 				close(fd);
 			}
 		}
