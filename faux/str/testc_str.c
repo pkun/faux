@@ -66,7 +66,7 @@ int testc_faux_str_getline(void)
 		"arg 2",
 		NULL
 		 };
-	ssize_t num_etalon = 3;
+	size_t num_etalon = 3;
 	size_t index = 0;
 	char *str = NULL;
 	const char *saveptr = NULL;
@@ -76,7 +76,6 @@ int testc_faux_str_getline(void)
 	saveptr = line;
 	while ((str = faux_str_getline(saveptr, &saveptr)) && (index < num_etalon)) {
 		int r = -1;
-		const char *res = NULL;
 		printf("Etalon %ld : [%s]\n", index, etalon[index]);
 		r = strcmp(etalon[index], str);
 		if (r < 0) {

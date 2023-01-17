@@ -117,7 +117,7 @@ int testc_faux_argv_index(void)
 	int retval = 0;
 	ssize_t num = 0;
 	ssize_t num_etalon = 3;
-	size_t index = 0;
+	ssize_t index = 0;
 
 	printf("Line   : [%s]\n", line);
 

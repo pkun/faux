@@ -567,7 +567,7 @@ int testc_faux_buf_mass(void)
 	}
 	// Buf length
 	printf("faux_buf_len()\n");
-	if (faux_buf_len(buf) != tlw) {
+	if (faux_buf_len(buf) != (ssize_t)tlw) {
 		fprintf(stderr, "faux_buf_len() error\n");
 		return -1;
 	}
