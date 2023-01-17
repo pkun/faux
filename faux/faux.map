@@ -107,6 +107,8 @@ FAUX_2.0 {
 		faux_mkdir_p;
 		faux_expand_tilde;
 
+		faux_daemon;
+
 		faux_file_fdopen;
 		faux_file_open;
 		faux_file_close;
