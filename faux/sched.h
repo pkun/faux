@@ -58,6 +58,7 @@ faux_ev_t *faux_sched_pop(faux_sched_t *sched);
 ssize_t faux_sched_del(faux_sched_t *sched, faux_ev_t *ev);
 ssize_t faux_sched_del_by_id(faux_sched_t *sched, int id);
 ssize_t faux_sched_del_by_data(faux_sched_t *sched, void *data);
+faux_list_node_t *faux_sched_init_ev_iter(faux_sched_t *sched);
 faux_ev_t *faux_sched_get_by_id(faux_sched_t *sched, int ev_id,
 	faux_list_node_t **saved);
 faux_ev_t *faux_sched_get_by_data(faux_sched_t *sched, void *data,

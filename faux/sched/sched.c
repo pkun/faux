@@ -368,6 +368,21 @@ ssize_t faux_sched_del_by_data(faux_sched_t *sched, void *data)
 }
 
 
+/** @brief Init scheduled event iterator.
+ *
+ * @param [in] sched Allocated and initialized sched object.
+ * @return Event iterator or NULL on error or empty scheduled event list.
+ */
+faux_list_node_t *faux_sched_init_ev_iter(faux_sched_t *sched)
+{
+	assert(sched);
+	if (!sched)
+		return NULL;
+
+	return faux_list_head(sched->list);
+}
+
+
 /** @brief Get scheduled event by specified value.
  *
  * Static function.

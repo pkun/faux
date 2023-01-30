@@ -284,6 +284,7 @@ FAUX_2.0 {
 		faux_sched_del;
 		faux_sched_del_by_id;
 		faux_sched_del_by_data;
+		faux_sched_init_ev_iter;
 		faux_sched_get_by_id;
 		faux_sched_get_by_data;
 
