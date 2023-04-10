@@ -316,6 +316,7 @@ FAUX_2.0 {
 		faux_str_encode;
 		faux_str_equal_part;
 		faux_str_getline;
+		faux_str_unclosed_quotes;
 
 		faux_sysdb_getpwnam;
 		faux_sysdb_getpwuid;

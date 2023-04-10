@@ -47,6 +47,7 @@ char *faux_str_c_bin(const char *src, size_t n);
 char *faux_str_nextword(const char *str, const char **saveptr,
 	const char *alt_quotes, bool_t *qclosed);
 char *faux_str_getline(const char *str, const char **saveptr);
+bool_t faux_str_unclosed_quotes(const char *str, const char *alt_quotes);
 
 C_DECL_END
 

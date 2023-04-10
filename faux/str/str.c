@@ -972,3 +972,28 @@ char *faux_str_getline(const char *str, const char **saveptr)
 
 	return faux_str_dup(str);
 }
+
+
+/** @brief Indicates if string has unclosed quotes.
+ *
+ * @param [in] str String to analyze.
+ * @return BOOL_TRUE if string has unclosed quotes, BOOL_FALSE if doesn't.
+ */
+bool_t faux_str_unclosed_quotes(const char *str, const char *alt_quotes)
+{
+	const char *saveptr = str;
+	char *word = NULL;
+
+	if (faux_str_is_empty(str))
+		return BOOL_FALSE;
+
+	do {
+		bool_t closed_quotes = BOOL_TRUE;
+		word = faux_str_nextword(saveptr, &saveptr, alt_quotes, &closed_quotes);
+		faux_str_free(word);
+		if (!closed_quotes)
+			return BOOL_TRUE;
+	} while (word);
+
+	return BOOL_FALSE;
+}
