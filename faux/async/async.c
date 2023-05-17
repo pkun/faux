@@ -125,6 +125,36 @@ int faux_async_fd(const faux_async_t *async)
 }
 
 
+/** @brief Get input buffer from async I/O object.
+ *
+ * @param [in] async Allocated and initialized async I/O object.
+ * @return faux_buf_t object.
+ */
+faux_buf_t *faux_async_ibuf(const faux_async_t *async)
+{
+	assert(async);
+	if (!async)
+		return NULL;
+
+	return async->ibuf;
+}
+
+
+/** @brief Get output buffer from async I/O object.
+ *
+ * @param [in] async Allocated and initialized async I/O object.
+ * @return faux_buf_t object.
+ */
+faux_buf_t *faux_async_obuf(const faux_async_t *async)
+{
+	assert(async);
+	if (!async)
+		return NULL;
+
+	return async->obuf;
+}
+
+
 /** @brief Set read callback and associated user data.
  *
  * If callback function pointer is NULL then class will drop all readed data.

@@ -32,6 +32,8 @@ C_DECL_BEGIN
 faux_async_t *faux_async_new(int fd);
 void faux_async_free(faux_async_t *async);
 int faux_async_fd(const faux_async_t *async);
+faux_buf_t *faux_async_ibuf(const faux_async_t *async);
+faux_buf_t *faux_async_obuf(const faux_async_t *async);
 void faux_async_set_read_cb(faux_async_t *async,
 	faux_async_read_cb_fn read_cb, void *user_data);
 bool_t faux_async_set_read_limits(faux_async_t *async, size_t min, size_t max);

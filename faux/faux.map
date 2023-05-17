@@ -25,6 +25,8 @@ FAUX_2.0 {
 		faux_async_new;
 		faux_async_free;
 		faux_async_fd;
+		faux_async_ibuf;
+		faux_async_obuf;
 		faux_async_set_read_cb;
 		faux_async_set_read_limits;
 		faux_async_set_stall_cb;
