@@ -86,3 +86,33 @@ void *faux_zmalloc(size_t size)
 
 	return ptr;
 }
+
+
+/** Securely clean memory buffer.
+ *
+ * If buffer is used for some crypto data then it's better to cleanse memory
+ * before freing. It's not enough to nullify it. Instead fill it with pseudo
+ * random numbers.
+ *
+ * @param [in] ptr Pointer
+ * @param [in] size Size of memory (in bytes) to clean it.
+ */
+
+void faux_cleanse(void *ptr, size_t size)
+{
+	static unsigned char cleanse_ctr = 0; // It must be static
+	unsigned char *p = (unsigned char *)ptr;
+	size_t loop = size;
+	size_t ctr = cleanse_ctr;
+
+	while(loop) {
+		*p = (unsigned char)ctr;
+		p++;
+		ctr += (17 + ((size_t)p & 0x0f));
+		loop--;
+	}
+	p = (unsigned char *)memchr(ptr, (unsigned char)ctr, size);
+	if (p)
+		ctr += 63 + (size_t)p;
+	cleanse_ctr = (unsigned char)ctr;
+}

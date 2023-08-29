@@ -90,6 +90,7 @@ void faux_free(void *ptr);
 void *faux_malloc(size_t size);
 void faux_bzero(void *ptr, size_t size);
 void *faux_zmalloc(size_t size);
+void faux_cleanse(void *ptr, size_t size);
 
 // I/O
 ssize_t faux_write(int fd, const void *buf, size_t n);

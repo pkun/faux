@@ -95,6 +95,7 @@ FAUX_2.0 {
 		faux_malloc;
 		faux_bzero;
 		faux_zmalloc;
+		faux_cleanse;
 
 		faux_write;
 		faux_read;
