@@ -105,7 +105,10 @@ void faux_cleanse(void *ptr, size_t size)
 	size_t loop = size;
 	size_t ctr = cleanse_ctr;
 
-	while(loop) {
+	if (size == 0)
+		return;
+
+	while (loop) {
 		*p = (unsigned char)ctr;
 		p++;
 		ctr += (17 + ((size_t)p & 0x0f));
