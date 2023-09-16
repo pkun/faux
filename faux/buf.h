@@ -37,6 +37,7 @@ ssize_t faux_buf_dwrite_lock_easy(faux_buf_t *buf, void **data);
 ssize_t faux_buf_dwrite_unlock_easy(faux_buf_t *buf, size_t really_written);
 ssize_t faux_buf_dread_lock_easy(faux_buf_t *buf, void **data);
 ssize_t faux_buf_dread_unlock_easy(faux_buf_t *buf, size_t really_readed);
+bool_t faux_buf_empty(faux_buf_t *buf);
 
 C_DECL_END
 

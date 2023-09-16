@@ -84,6 +84,30 @@ void faux_buf_free(faux_buf_t *buf)
 }
 
 
+/** @brief Empty dynamic buffer object.
+ *
+ * @param [in] buf Buffer object.
+ */
+bool_t faux_buf_empty(faux_buf_t *buf)
+{
+	if (!buf)
+		return BOOL_FALSE;
+
+	// Don't empty locked buffer
+	if (faux_buf_is_rlocked(buf) ||
+		faux_buf_is_wlocked(buf))
+		return BOOL_FALSE;
+
+	faux_list_del_all(buf->list);
+	buf->rpos = 0;
+	buf->wpos = buf->chunk_size;
+	buf->len = 0;
+	buf->wchunk = NULL;
+
+	return BOOL_TRUE;
+}
+
+
 /** @brief Returns length of buffer.
  *
  * @param [in] buf Allocated and initialized buffer object.
