@@ -606,8 +606,11 @@ bool_t faux_eloop_add_signal(faux_eloop_t *eloop, int signo,
 	if (!eloop || (signo < 0))
 		return BOOL_FALSE;
 
-	if (sigismember(&eloop->sig_set, signo) == 1)
-		return BOOL_FALSE; // Already exists
+	if (sigismember(&eloop->sig_set, signo) == 1) { // Already exists
+		// Signal must be reassigned. So remove previous one
+		if (!faux_eloop_del_signal(eloop, signo))
+			return BOOL_FALSE;
+	}
 
 	// Firstly try to add signal to sigset. Library function will validate
 	// signal number value.
