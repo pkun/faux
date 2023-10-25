@@ -357,7 +357,8 @@ ssize_t faux_async_writev(faux_async_t *async,
  * @param [in] async Allocated and initialized async I/O object.
  * @return Length of data actually written or < 0 on error.
  */
-ssize_t faux_async_out(faux_async_t *async)
+static ssize_t faux_async_out_internal(faux_async_t *async,
+	bool_t process_all_data)
 {
 	ssize_t total_written = 0;
 
@@ -406,9 +407,26 @@ ssize_t faux_async_out(faux_async_t *async)
 					async->stall_udata);
 			break;
 		}
+
+		// Programm can be more responsive if to write only one data
+		// block and then allow other events to be processed
+		if (!process_all_data)
+			break;
 	}
 
 	return total_written;
+}
+
+
+ssize_t faux_async_out(faux_async_t *async)
+{
+	return faux_async_out_internal(async, BOOL_TRUE);
+}
+
+
+ssize_t faux_async_out_easy(faux_async_t *async)
+{
+	return faux_async_out_internal(async, BOOL_FALSE);
 }
 
 
@@ -423,7 +441,8 @@ ssize_t faux_async_out(faux_async_t *async)
  * @param [in] async Allocated and initialized async I/O object.
  * @return Length of data actually readed or < 0 on error.
  */
-ssize_t faux_async_in(faux_async_t *async)
+static ssize_t faux_async_in_internal(faux_async_t *async,
+	bool_t process_all_data)
 {
 	ssize_t total_readed = 0;
 	ssize_t bytes_readed = 0;
@@ -473,7 +492,19 @@ ssize_t faux_async_in(faux_async_t *async)
 			async->read_cb(async, async->ibuf,
 				copy_len, async->read_udata);
 		}
-	} while (bytes_readed == locked_len);
+	} while ((bytes_readed == locked_len) && process_all_data);
 
 	return total_readed;
+}
+
+
+ssize_t faux_async_in(faux_async_t *async)
+{
+	return faux_async_in_internal(async, BOOL_TRUE);
+}
+
+
+ssize_t faux_async_in_easy(faux_async_t *async)
+{
+	return faux_async_in_internal(async, BOOL_FALSE);
 }

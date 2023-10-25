@@ -35,7 +35,9 @@ FAUX_2.0 {
 		faux_async_write;
 		faux_async_writev;
 		faux_async_out;
+		faux_async_out_easy;
 		faux_async_in;
+		faux_async_in_easy;
 
 		faux_conv_atol;
 		faux_conv_atoul;

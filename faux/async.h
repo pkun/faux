@@ -45,7 +45,9 @@ ssize_t faux_async_write(faux_async_t *async, void *data, size_t len);
 ssize_t faux_async_writev(faux_async_t *async,
 	const struct iovec *iov, int iovcnt);
 ssize_t faux_async_out(faux_async_t *async);
+ssize_t faux_async_out_easy(faux_async_t *async);
 ssize_t faux_async_in(faux_async_t *async);
+ssize_t faux_async_in_easy(faux_async_t *async);
 
 C_DECL_END
 
