@@ -458,7 +458,7 @@ static ssize_t faux_async_in_internal(faux_async_t *async,
 
 		locked_len = faux_buf_dwrite_lock_easy(async->ibuf, &data);
 		if (locked_len <= 0)
-			return -1;
+			break; // May be buffer is full
 		// Read data
 		bytes_readed = read(async->fd, data, locked_len);
 		if (bytes_readed < 0) {
