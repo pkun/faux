@@ -396,6 +396,11 @@ static ssize_t faux_async_out_internal(faux_async_t *async,
 		} else if (bytes_written != data_to_write) {
 			// Postpone next read
 			postpone = BOOL_TRUE;
+		// Write only one data block and buffer is not empty
+		// Programm can be more responsive if to write only one data
+		// block and then allow other events to be processed
+		} else if (!process_all_data && (faux_buf_len(async->obuf) > 0)) {
+			postpone = BOOL_TRUE;
 		}
 
 		// Postponed
@@ -407,11 +412,6 @@ static ssize_t faux_async_out_internal(faux_async_t *async,
 					async->stall_udata);
 			break;
 		}
-
-		// Programm can be more responsive if to write only one data
-		// block and then allow other events to be processed
-		if (!process_all_data)
-			break;
 	}
 
 	return total_written;
