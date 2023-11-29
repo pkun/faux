@@ -326,6 +326,9 @@ ssize_t faux_buf_read(faux_buf_t *buf, void *data, size_t len)
 	char *dst = (char *)data;
 	size_t i = 0;
 
+	assert(buf);
+	if (!buf)
+		return -1;
 	assert(data);
 	if (!data)
 		return -1;
@@ -609,6 +612,9 @@ ssize_t faux_buf_write(faux_buf_t *buf, const void *data, size_t len)
 	char *src = (char *)data;
 	size_t i = 0;
 
+	assert(buf);
+	if (!buf)
+		return -1;
 	assert(data);
 	if (!data)
 		return -1;
