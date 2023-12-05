@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "faux/ctype.h"
 #include "faux/str.h"
@@ -80,6 +81,7 @@ char *faux_testc_tmpfile_deploy(const void *buf, size_t len)
 
 	bytes_written = faux_file_write_block(f, buf, len);
 	faux_file_close(f);
+	close(fd);
 	if (bytes_written < 0)
 		return NULL;
 

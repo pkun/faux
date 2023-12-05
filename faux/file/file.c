@@ -32,7 +32,10 @@
 
 /** @brief Create file object using existent fd.
  *
- * Create file object and link it to existent file descriptor.
+ * Create file object and link it to existent file descriptor. The
+ * correspondent faux_file_close() will not really close the file because
+ * faux_file_fdopen() doesn't really open file but just link to existing
+ * fd.
  *
  * @param [in] fd Already opened file descriptor.
  * @return Allocated and initialized file object or NULL on error.
@@ -63,6 +66,7 @@ faux_file_t *faux_file_fdopen(int fd)
 	}
 	f->len = 0;
 	f->eof = BOOL_FALSE;
+	f->close_file = BOOL_FALSE; // Don't close fd because it's just a link
 
 	return f;
 }
@@ -84,6 +88,7 @@ faux_file_t *faux_file_fdopen(int fd)
 faux_file_t *faux_file_open(const char *pathname, int flags, mode_t mode)
 {
 	int fd = -1;
+	faux_file_t *f = NULL;
 
 	assert(pathname);
 	if (!pathname)
@@ -93,14 +98,23 @@ faux_file_t *faux_file_open(const char *pathname, int flags, mode_t mode)
 	if (fd < 0)
 		return NULL;
 
-	return faux_file_fdopen(fd);
+	f = faux_file_fdopen(fd);
+	if (!f) {
+		close(fd);
+		return NULL;
+	}
+	f->close_file = BOOL_TRUE;
+
+	return f;
 }
 
 
 /** @brief Closes file and frees file object.
  *
- * Function closes previously opened (by faux_file_open() or faux_file_fdopen())
- * file and frees file object structures.
+ * Function closes previously opened (by faux_file_open())
+ * file and frees file object structures. Note object initialized by
+ * faux_file_fdopen() will not really close fd because it was opened
+ * by another code previously.
  *
  * @param [in] f File object to close and free.
  * @return BOOL_TRUE - success, BOOL_FALSE - error
@@ -116,8 +130,10 @@ bool_t faux_file_close(faux_file_t *f)
 	faux_free(f->buf);
 	faux_free(f);
 
-	if (close(fd) < 0)
-		return BOOL_FALSE;
+	if (f->close_file) {
+		if (close(fd) < 0)
+			return BOOL_FALSE;
+	}
 
 	return BOOL_TRUE;
 }
