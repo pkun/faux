@@ -997,3 +997,28 @@ bool_t faux_str_unclosed_quotes(const char *str, const char *alt_quotes)
 
 	return BOOL_FALSE;
 }
+
+
+/** @brief Indicates is string has content.
+ *
+ * Empty string has no content. String contains only spaces is considered
+ * doesn't have content too.
+ *
+ * @param [in] str String to analyze.
+ * @return BOOL_TRUE if string has content, BOOL_FALSE if doesn't.
+ */
+bool_t faux_str_has_content(const char *str)
+{
+	const char *l = str;
+
+	if (faux_str_is_empty(l))
+		return BOOL_FALSE;
+
+	while (*l) {
+		if (!isspace(*l))
+			return BOOL_TRUE;
+		l++;
+	}
+
+	return BOOL_FALSE;
+}

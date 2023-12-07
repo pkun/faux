@@ -40,6 +40,7 @@ char *faux_str_casestr(const char *haystack, const char *needle);
 char *faux_str_charsn(const char *str, const char *chars_to_search, size_t n);
 char *faux_str_chars(const char *str, const char *chars_to_search);
 bool_t faux_str_is_empty(const char *str);
+bool_t faux_str_has_content(const char *str);
 
 char *faux_str_c_esc(const char *src);
 char *faux_str_c_bin(const char *src, size_t n);

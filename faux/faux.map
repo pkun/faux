@@ -312,6 +312,7 @@ FAUX_2.0 {
 		faux_str_charsn;
 		faux_str_chars;
 		faux_str_is_empty;
+		faux_str_has_content;
 		faux_str_c_esc;
 		faux_str_c_bin;
 		faux_str_nextword;
