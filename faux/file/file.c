@@ -121,21 +121,19 @@ faux_file_t *faux_file_open(const char *pathname, int flags, mode_t mode)
  */
 bool_t faux_file_close(faux_file_t *f)
 {
-	int fd = -1;
+	bool_t rc = BOOL_TRUE;
 
 	if (!f)
 		return BOOL_FALSE;
 
-	fd = f->fd;
+	if (f->close_file) {
+		if (close(f->fd) < 0)
+			rc = BOOL_FALSE;
+	}
 	faux_free(f->buf);
 	faux_free(f);
 
-	if (f->close_file) {
-		if (close(fd) < 0)
-			return BOOL_FALSE;
-	}
-
-	return BOOL_TRUE;
+	return rc;
 }
 
 
