@@ -43,6 +43,7 @@ bool_t faux_str_is_empty(const char *str);
 bool_t faux_str_has_content(const char *str);
 
 char *faux_str_c_esc(const char *src);
+char *faux_str_c_esc_space(const char *src);
 char *faux_str_c_esc_quote(const char *src);
 char *faux_str_c_bin(const char *src, size_t n);
 

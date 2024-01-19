@@ -313,6 +313,7 @@ FAUX_2.0 {
 		faux_str_is_empty;
 		faux_str_has_content;
 		faux_str_c_esc;
+		faux_str_c_esc_space;
 		faux_str_c_esc_quote;
 		faux_str_c_bin;
 		faux_str_nextword;

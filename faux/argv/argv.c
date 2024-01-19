@@ -405,18 +405,15 @@ char *faux_argv_line(const faux_argv_t *fargv)
 	iter = faux_argv_iter(fargv);
 	while ((arg = faux_argv_each(&iter))) {
 		bool_t space_found = BOOL_FALSE;
+		char *str = NULL;
 
 		if (is_first_arg)
 			is_first_arg = BOOL_FALSE;
 		else
 			faux_str_cat(&line, " ");
-		if (faux_str_chars(arg, " \t"))
-			space_found = BOOL_TRUE;
-		if (space_found)
-			faux_str_cat(&line, "\"");
-		faux_str_cat(&line, arg);
-		if (space_found)
-			faux_str_cat(&line, "\"");
+		str = faux_str_c_esc_quote(arg);
+		faux_str_cat(&line, str);
+		faux_str_free(str);
 	}
 
 	return line;

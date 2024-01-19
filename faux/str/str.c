@@ -524,13 +524,14 @@ char *faux_str_casestr(const char *haystack, const char *needle)
 }
 
 
-/** Prepare string for embedding to C-code (make escaping).
+/** Escape string.
  *
  * @warning The returned pointer must be freed by faux_str_free().
  * @param [in] src String for escaping.
+ * @param [in] escape_space Flag to escape spaces or not
  * @return Escaped string or NULL on error.
  */
-char *faux_str_c_esc(const char *src)
+static char *faux_str_c_esc_internal(const char *src, bool_t escape_space)
 {
 	const char *src_ptr = src;
 	char *dst = NULL;
@@ -577,6 +578,12 @@ char *faux_str_c_esc(const char *src)
 		case '\t':
 			esc = "\\t";
 			break;
+		case ' ':
+			if (escape_space)
+				esc = "\\ ";
+			else
+				esc = " ";
+			break;
 		default:
 			// Check is the symbol control character. Control
 			// characters has codes from 0x00 to 0x1f.
@@ -602,6 +609,30 @@ char *faux_str_c_esc(const char *src)
 	faux_str_free(dst); // 'dst' size >= 'escaped' size
 
 	return escaped;
+}
+
+
+/** Prepare string for embedding to C-code (make escaping).
+ *
+ * @warning The returned pointer must be freed by faux_str_free().
+ * @param [in] src String for escaping.
+ * @return Escaped string or NULL on error.
+ */
+char *faux_str_c_esc(const char *src)
+{
+	return faux_str_c_esc_internal(src, BOOL_FALSE);
+}
+
+
+/** Escaping string (escape spaces).
+ *
+ * @warning The returned pointer must be freed by faux_str_free().
+ * @param [in] src String for escaping.
+ * @return Escaped string or NULL on error.
+ */
+char *faux_str_c_esc_space(const char *src)
+{
+	return faux_str_c_esc_internal(src, BOOL_TRUE);
 }
 
 
