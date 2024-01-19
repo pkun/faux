@@ -124,3 +124,35 @@ int testc_faux_str_numcmp(void)
 
 	return 0;
 }
+
+
+int testc_faux_str_c_esc_quote(void)
+{
+	char *src = NULL;
+	char *etalon = NULL;
+	char *esc = NULL;
+
+	src = "aaa\\bbb\"";
+	etalon = "aaa\\\\bbb\\\"";
+	esc = faux_str_c_esc_quote(src);
+	if (strcmp(esc, etalon) != 0) {
+		printf("Problem with string without spaces\n");
+		printf("src=[%s], etalon=[%s], esc=[%s]\n",
+			src, etalon, esc);
+		return -1;
+	}
+	faux_str_free(esc);
+
+	src = "aaa\\ bbb\"";
+	etalon = "\"aaa\\\\ bbb\\\"\"";
+	esc = faux_str_c_esc_quote(src);
+	if (strcmp(esc, etalon) != 0) {
+		printf("Problem with string with spaces\n");
+		printf("src=[%s], etalon=[%s], esc=[%s]\n",
+			src, etalon, esc);
+		return -1;
+	}
+	faux_str_free(esc);
+
+	return 0;
+}

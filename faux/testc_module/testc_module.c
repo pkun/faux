@@ -17,6 +17,7 @@ const char *testc_module[][2] = {
 	{"testc_faux_str_nextword", "Find next word (quotation)"},
 	{"testc_faux_str_getline", "Get line from string"},
 	{"testc_faux_str_numcmp", "Numeric comparison"},
+	{"testc_faux_str_c_esc_quote", "Escape and add quotes for string with spaces"},
 
 	// ini
 	{"testc_faux_ini_parse_file", "Complex test of INI file parsing"},

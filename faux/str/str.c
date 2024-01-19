@@ -605,6 +605,37 @@ char *faux_str_c_esc(const char *src)
 }
 
 
+/** Escape string and add quotes if necessary.
+ *
+ * Quotes will be added if string contains spaces.
+ *
+ * @warning The returned pointer must be freed by faux_str_free().
+ * @param [in] src Input string.
+ * @return Processed string or NULL on error.
+ */
+char *faux_str_c_esc_quote(const char *src)
+{
+	char *space = NULL;
+	char *escaped = NULL;
+	char *result = NULL;
+
+	if (!src)
+		return NULL;
+
+	escaped = faux_str_c_esc(src);
+	// String with space must have quotes
+	space = strchr(escaped, ' ');
+	if (space) {
+		result = faux_str_sprintf("\"%s\"", escaped);
+		faux_str_free(escaped);
+	} else {
+		result = escaped;
+	}
+
+	return result;
+}
+
+
 #define BYTE_CONV_LEN 4 // Length of one byte converted to string
 
 /** Prepare binary block for embedding to C-code.

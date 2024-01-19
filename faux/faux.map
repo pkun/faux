@@ -225,7 +225,6 @@ FAUX_2.0 {
 		faux_msg_deserialize;
 		faux_msg_debug;
 
-
 		faux_send;
 		faux_send_block;
 		faux_sendv;
@@ -314,6 +313,7 @@ FAUX_2.0 {
 		faux_str_is_empty;
 		faux_str_has_content;
 		faux_str_c_esc;
+		faux_str_c_esc_quote;
 		faux_str_c_bin;
 		faux_str_nextword;
 		faux_str_suffix;
