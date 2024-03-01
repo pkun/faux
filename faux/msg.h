@@ -27,6 +27,8 @@
  * parameter headers for each parameter. Parameter's header contains parameter
  * type and length of parameter. After parameter headers array the parameter's
  * data follows in a sequence.
+ *
+ * Multibyte header fields use network (big-endian) byte order.
  */
 
 
