@@ -1,13 +1,11 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 m4_define([MAJOR_VERSION], 2)
-m4_define([MINOR_VERSION], 1)
+m4_define([MINOR_VERSION], 2)
 m4_define([MICRO_VERSION], 0)
 
-AC_PREREQ(2.59)
-AC_INIT([faux],
-        [MAJOR_VERSION.MINOR_VERSION.MICRO_VERSION],
-        [serj.kalichev at gmail dot com])
+AC_PREREQ([2.71])
+AC_INIT([faux],[MAJOR_VERSION.MINOR_VERSION.MICRO_VERSION],[serj.kalichev at gmail dot com])
 
 AC_CONFIG_AUX_DIR(aux_scripts)
 AC_CONFIG_MACRO_DIR([m4])
@@ -125,10 +123,7 @@ AC_CHECK_HEADERS(locale.h, [],
 AC_DEFUN([AM_LANGINFO_CODESET],
 [
   AC_CACHE_CHECK([for nl_langinfo and CODESET], [am_cv_langinfo_codeset],
-    [AC_TRY_LINK([#include <langinfo.h>],
-      [char* cs = nl_langinfo(CODESET); return !cs;],
-      [am_cv_langinfo_codeset=yes],
-      [am_cv_langinfo_codeset=no])
+    [AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <langinfo.h>]], [[char* cs = nl_langinfo(CODESET); return !cs;]])],[am_cv_langinfo_codeset=yes],[am_cv_langinfo_codeset=no])
     ])
   if test $am_cv_langinfo_codeset = yes; then
     AC_DEFINE([HAVE_LANGINFO_CODESET], [1],
